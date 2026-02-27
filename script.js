@@ -1,5 +1,5 @@
 let watchId
-let lastSpeed = 0
+let lastPosition = null
 let lastTime = null
 
 let peakDecel = 0
@@ -8,13 +8,11 @@ let brakeStartTime = null
 let braking = false
 
 let speedHistory = []
-
 let chart
 
 function startTracking() {
 
   document.getElementById("crashAlert").innerText = ""
-
   initChart()
 
   if (!navigator.geolocation) {
@@ -25,20 +23,26 @@ function startTracking() {
   watchId = navigator.geolocation.watchPosition(position => {
 
     let currentTime = Date.now()
-    let speed = position.coords.speed
 
-    if (speed == null) return
-
-    speed = speed * 3.6
-    document.getElementById("speed").innerText = speed.toFixed(1)
-
-    updateChart(speed)
-    speedHistory.push(speed)
-
-    if (lastTime) {
+    if (lastPosition && lastTime) {
 
       let dt = (currentTime - lastTime) / 1000
-      let accel = ((speed - lastSpeed) / 3.6) / dt
+
+      let distance = getDistance(
+        lastPosition.coords.latitude,
+        lastPosition.coords.longitude,
+        position.coords.latitude,
+        position.coords.longitude
+      )
+
+      let speed = (distance / dt) * 3.6
+
+      document.getElementById("speed").innerText = speed.toFixed(1)
+
+      updateChart(speed)
+      speedHistory.push(speed)
+
+      let accel = (speed / 3.6) / dt
       let decel = -accel
 
       if (decel > peakDecel) peakDecel = decel
@@ -53,7 +57,7 @@ function startTracking() {
         braking = false
       }
 
-      if (Math.abs(accel) > 15) {
+      if (Math.abs(accel) > 20) {
         document.getElementById("crashAlert").innerText = "💥 CRASH DETECTED"
       }
 
@@ -65,19 +69,36 @@ function startTracking() {
         document.getElementById("duration").innerText = duration.toFixed(1)
       }
 
-      lastSpeed = speed
     }
 
+    lastPosition = position
     lastTime = currentTime
 
   },{
-    enableHighAccuracy: true
+    enableHighAccuracy: true,
+    maximumAge: 0
   })
 
 }
 
 function stopTracking(){
   navigator.geolocation.clearWatch(watchId)
+}
+
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000
+  const dLat = (lat2-lat1) * Math.PI/180
+  const dLon = (lon2-lon1) * Math.PI/180
+
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
+    Math.sin(dLon/2) *
+    Math.sin(dLon/2)
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
 }
 
 function initChart(){
@@ -108,7 +129,6 @@ function updateChart(speed){
 }
 
 function exportCSV(){
-
   let csv = "SpeedHistory(km/h)\n"
   speedHistory.forEach(s => {
     csv += s + "\n"
