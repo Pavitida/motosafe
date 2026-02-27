@@ -1,13 +1,11 @@
-let watchId = null;
-
-let lastSpeed = 0;
-let lastTime = 0;
-
 let braking = false;
 let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
 let decelData = [];
+
+let velocity = 0; // คำนวณจากการอินทิเกรต
+let lastTime = 0;
 
 const speedEl = document.getElementById("speed");
 const peakEl = document.getElementById("peak");
@@ -35,32 +33,40 @@ const chart = new Chart(ctx, {
     }
 });
 
-function startRide(){
+async function startRide(){
 
+    if (typeof DeviceMotionEvent.requestPermission === "function") {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission !== "granted") {
+            alert("Permission denied");
+            return;
+        }
+    }
+
+    window.addEventListener("devicemotion", handleMotion);
     lastTime = Date.now();
-
-    watchId = navigator.geolocation.watchPosition(
-        handleGPS,
-        err => alert(err.message),
-        { enableHighAccuracy: true }
-    );
 }
 
-function handleGPS(position){
+function handleMotion(event){
 
     let now = Date.now();
     let dt = (now - lastTime) / 1000;
+    lastTime = now;
+
     if(dt <= 0) return;
 
-    let speedMS = position.coords.speed;
-    if(speedMS === null) speedMS = 0;
+    let accel = event.accelerationIncludingGravity.y;
 
-    speedEl.innerText = (speedMS * 3.6).toFixed(1);
+    if(accel === null) return;
 
-    let acceleration = (speedMS - lastSpeed) / dt;
+    // คำนวณความเร็วจาก a*dt
+    velocity += accel * dt;
+
+    let speedKMH = Math.abs(velocity * 3.6);
+    speedEl.innerText = speedKMH.toFixed(1);
 
     // เริ่มจับเบรก
-    if(acceleration < -1 && !braking){
+    if(accel < -2 && !braking){
         braking = true;
         brakeStartTime = now;
         brakeDistance = 0;
@@ -74,9 +80,9 @@ function handleGPS(position){
 
     if(braking){
 
-        brakeDistance += speedMS * dt;
+        brakeDistance += Math.abs(velocity) * dt;
 
-        let decel = Math.abs(acceleration);
+        let decel = Math.abs(accel);
 
         if(decel > peakDecel){
             peakDecel = decel;
@@ -88,7 +94,7 @@ function handleGPS(position){
         chart.data.datasets[0].data.push(decel);
         chart.update();
 
-        if(speedMS < 0.5){
+        if(Math.abs(velocity) < 0.3){
 
             braking = false;
 
@@ -99,11 +105,8 @@ function handleGPS(position){
             durationEl.innerText = duration.toFixed(2);
         }
     }
-
-    lastSpeed = speedMS;
-    lastTime = now;
 }
 
 function stopRide(){
-    navigator.geolocation.clearWatch(watchId);
+    window.removeEventListener("devicemotion", handleMotion);
 }
