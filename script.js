@@ -3,6 +3,7 @@ let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
 let decelSamples = [];
+let maxSpeedBeforeBrake = 0;
 
 let velocity = 0;
 let lastTime = 0;
@@ -11,13 +12,11 @@ let calmTime = 0;
 let filteredAccel = 0;
 const alpha = 0.2;
 
-// ปรับให้ไวขึ้นสำหรับทดสอบมือถือ
 const BRAKE_THRESHOLD = -1.2;
 const CALM_THRESHOLD = 0.5;
 const CALM_DURATION = 0.4;
 
-let currentSession = null;
-let allSessions = JSON.parse(localStorage.getItem("motoSessions")) || [];
+let allEvents = JSON.parse(localStorage.getItem("motoData")) || [];
 
 const speedEl = document.getElementById("speed");
 const peakEl = document.getElementById("peak");
@@ -55,12 +54,9 @@ async function startRide(){
   }
 
   velocity = 0;
-
-  currentSession = {
-    id: Date.now()
-  };
-
+  maxSpeedBeforeBrake = 0;
   lastTime = Date.now();
+
   window.addEventListener("devicemotion", handleMotion);
 }
 
@@ -71,17 +67,18 @@ function handleMotion(event){
   lastTime = now;
   if(dt <= 0) return;
 
-  let accel = event.accelerationIncludingGravity.y;
+  let accel = event.acceleration.y; // ใช้ตัวนี้แม่นกว่า
   if(accel === null) return;
 
   filteredAccel = alpha * accel + (1 - alpha) * filteredAccel;
   velocity += filteredAccel * dt;
 
-  if(Math.abs(filteredAccel) < 0.3){
-    velocity *= 0.9;
-  }
+  let speedKmH = Math.abs(velocity * 3.6);
+  speedEl.innerText = speedKmH.toFixed(1);
 
-  speedEl.innerText = Math.abs(velocity * 3.6).toFixed(1);
+  if(speedKmH > maxSpeedBeforeBrake && !braking){
+    maxSpeedBeforeBrake = speedKmH;
+  }
 
   // เริ่มเบรก
   if(filteredAccel < BRAKE_THRESHOLD && !braking){
@@ -102,6 +99,9 @@ function handleMotion(event){
     brakeDistance += Math.abs(velocity) * dt;
 
     let decel = Math.abs(filteredAccel);
+
+    if(decel > 15) decel = 15; // clamp realism
+
     decelSamples.push(decel);
 
     if(decel > peakDecel){
@@ -118,13 +118,11 @@ function handleMotion(event){
       calmTime = 0;
     }
 
-    // 🔥 จบเบรก → สรุปทันที
     if(calmTime > CALM_DURATION){
 
       braking = false;
 
       let duration = (now - brakeStartTime) / 1000;
-
       let avgDecel =
         decelSamples.reduce((a,b)=>a+b,0) / decelSamples.length;
 
@@ -132,23 +130,22 @@ function handleMotion(event){
       distanceEl.innerText = brakeDistance.toFixed(2);
       durationEl.innerText = duration.toFixed(2);
 
-      const brakeEvent = {
-        session_id: currentSession.id,
-        start: brakeStartTime,
-        end: now,
+      let severity = "Mild";
+      if(avgDecel >= 3 && avgDecel < 6) severity = "Moderate";
+      if(avgDecel >= 6) severity = "Hard";
+
+      const eventData = {
+        timestamp: now,
         peak: peakDecel,
         avg: avgDecel,
         distance: brakeDistance,
-        duration: duration
+        duration: duration,
+        maxSpeed: maxSpeedBeforeBrake,
+        severity: severity
       };
 
-      // บันทึกทันที
-      allSessions.push(brakeEvent);
-
-      localStorage.setItem(
-        "motoSessions",
-        JSON.stringify(allSessions)
-      );
+      allEvents.push(eventData);
+      localStorage.setItem("motoData", JSON.stringify(allEvents));
 
       updateSummary();
     }
@@ -161,38 +158,52 @@ function stopRide(){
 
 function updateSummary(){
 
-  let totalEvents = allSessions.length;
-  let avgOfAvg = 0;
+  let total = allEvents.length;
+  let totalAvg = 0;
+  let totalDistance = 0;
+  let maxPeak = 0;
+  let hardCount = 0;
 
-  allSessions.forEach(e=>{
-    avgOfAvg += e.avg;
+  allEvents.forEach(e=>{
+    totalAvg += e.avg;
+    totalDistance += e.distance;
+    if(e.peak > maxPeak) maxPeak = e.peak;
+    if(e.severity === "Hard") hardCount++;
   });
 
-  if(totalEvents > 0){
-    avgOfAvg /= totalEvents;
-  }
+  let avgDecel = total ? totalAvg/total : 0;
+  let meanDistance = total ? totalDistance/total : 0;
 
   summaryEl.innerHTML = `
     <h3>Summary Dashboard</h3>
-    <p>Total Brake Events: ${totalEvents}</p>
-    <p>Average Deceleration (m/s²): ${avgOfAvg.toFixed(2)}</p>
+    <p>Total Brake Events: ${total}</p>
+    <p>Average Deceleration: ${avgDecel.toFixed(2)} m/s²</p>
+    <p>Mean Brake Distance: ${meanDistance.toFixed(2)} m</p>
+    <p>Max Peak Recorded: ${maxPeak.toFixed(2)} m/s²</p>
+    <p>Total Hard Brakes: ${hardCount}</p>
   `;
 }
 
 function exportCSV(){
 
-  let csv = "session_id,start,end,peak,avg,distance,duration\n";
+  let csv = "timestamp,peak,avg,distance,duration,maxSpeed,severity\n";
 
-  allSessions.forEach(e=>{
-    csv += `${e.session_id},${e.start},${e.end},${e.peak},${e.avg},${e.distance},${e.duration}\n`;
+  allEvents.forEach(e=>{
+    csv += `${e.timestamp},${e.peak},${e.avg},${e.distance},${e.duration},${e.maxSpeed},${e.severity}\n`;
   });
 
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "motosafe_brake_events.csv";
+  a.download = "motosafe_research_data.csv";
   a.click();
+}
+
+function clearData(){
+  localStorage.removeItem("motoData");
+  allEvents = [];
+  updateSummary();
 }
 
 updateSummary();
