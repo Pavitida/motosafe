@@ -4,44 +4,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MotoSafe Pro</title>
 <link rel="stylesheet" href="style.css">
-
+<link rel="manifest" href="manifest.json">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
 
 <h1>🏍 MotoSafe Pro</h1>
 
-<div class="card-container">
+<div class="grid">
+  <div class="card">
+    <h3>Speed (km/h)</h3>
+    <p id="speed">0</p>
+  </div>
 
-<div class="card">
-<h3>Speed (km/h)</h3>
-<p id="speed">0</p>
+  <div class="card">
+    <h3>Peak Decel (m/s²)</h3>
+    <p id="peakDecel">0</p>
+  </div>
+
+  <div class="card">
+    <h3>Brake Distance (m)</h3>
+    <p id="brakeDistance">0</p>
+  </div>
+
+  <div class="card">
+    <h3>Duration (s)</h3>
+    <p id="duration">0</p>
+  </div>
 </div>
 
-<div class="card">
-<h3>Peak Decel (m/s²)</h3>
-<p id="peakDecel">0</p>
-</div>
+<h2 id="crashAlert"></h2>
 
-<div class="card">
-<h3>Brake Distance (m)</h3>
-<p id="brakeDistance">0</p>
-</div>
-
-<div class="card">
-<h3>Duration (s)</h3>
-<p id="duration">0</p>
-</div>
-
-</div>
-
-<h2 id="crashAlert" class="crash"></h2>
-
-<button onclick="startSystem()">Start</button>
+<button onclick="startTracking()">Start</button>
+<button onclick="stopTracking()">Stop</button>
 <button onclick="exportCSV()">Export CSV</button>
 
-<div class="chart-container">
-<canvas id="speedChart"></canvas>
+<div class="chartBox">
+  <canvas id="chart"></canvas>
 </div>
 
 <script src="script.js"></script>
