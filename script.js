@@ -108,3 +108,18 @@ function updateChart(speed) {
 
     chart.update()
 }
+function exportCSV() {
+
+    let csv = "Speed(km/h),PeakDecel(m/s2),BrakeDistance(m),Duration(s)\n"
+
+    csv += document.getElementById("speed").innerText + ","
+    csv += document.getElementById("peakDecel").innerText + ","
+    csv += document.getElementById("brakeDistance").innerText + ","
+    csv += document.getElementById("duration").innerText
+
+    let blob = new Blob([csv], { type: 'text/csv' })
+    let link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = "MotoSafeSession.csv"
+    link.click()
+}
