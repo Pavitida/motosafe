@@ -1,16 +1,17 @@
 body{
   margin:0;
-  font-family: Arial;
+  font-family: Arial, Helvetica, sans-serif;
   background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
   color:white;
   text-align:center;
 }
 
 h1{
-  margin-top:20px;
+  margin-top:30px;
+  font-size:32px;
 }
 
-.stats{
+.container{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:20px;
@@ -18,22 +19,20 @@ h1{
 }
 
 .card{
-  background: rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.08);
   padding:25px;
   border-radius:20px;
-  backdrop-filter: blur(10px);
-  box-shadow:0 10px 25px rgba(0,0,0,0.3);
 }
 
 .card h2{
   margin:0;
   font-size:18px;
+  opacity:0.8;
 }
 
-.card p{
-  font-size:28px;
+.value{
+  font-size:32px;
   margin-top:10px;
-  font-weight:bold;
 }
 
 .buttons{
@@ -41,26 +40,19 @@ h1{
 }
 
 button{
-  margin:10px;
   padding:12px 25px;
   border:none;
   border-radius:12px;
-  background:#4f8cff;
-  color:white;
+  margin:10px;
   font-size:16px;
   cursor:pointer;
-  transition:0.3s;
-}
-
-button:hover{
-  transform:scale(1.05);
-  background:#2d6cdf;
+  background:#4f8cff;
+  color:white;
 }
 
 canvas{
-  max-width:90%;
-  margin:20px auto;
   background:white;
   border-radius:20px;
-  padding:15px;
+  margin:20px;
+  padding:10px;
 }
