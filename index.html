@@ -1,48 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MotoSafe Pro</title>
+  <meta charset="UTF-8">
+  <title>MotoSafe Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-<h1>🏍 MotoSafe Pro</h1>
+  <h1>🏍 MotoSafe Dashboard</h1>
 
-<div class="stats">
-  <div class="card">
-    <h2>Speed (km/h)</h2>
-    <p id="speed">0</p>
+  <div class="stats">
+    <div class="card">
+      <h2>Speed</h2>
+      <p id="speed">0 km/h</p>
+    </div>
+
+    <div class="card">
+      <h2>Lean Angle</h2>
+      <p id="lean">0°</p>
+    </div>
   </div>
 
-  <div class="card">
-    <h2>Peak Decel (m/s²)</h2>
-    <p id="decel">0</p>
+  <div class="buttons">
+    <button onclick="startRide()">Start Ride</button>
+    <button onclick="stopRide()">Stop Ride</button>
+    <button onclick="resetData()">Reset</button>
   </div>
 
-  <div class="card">
-    <h2>Brake Distance (m)</h2>
-    <p id="distance">0</p>
-  </div>
+  <canvas id="speedChart"></canvas>
 
-  <div class="card">
-    <h2>Duration (s)</h2>
-    <p id="duration">0</p>
-  </div>
-</div>
-
-<h2 id="crash" style="color:red;"></h2>
-
-<button id="startBtn">Start</button>
-<button id="exportBtn">Export CSV</button>
-
-<canvas id="chart"></canvas>
-
-<script src="app.js"></script>
-
+  <script src="script.js"></script>
 </body>
 </html>
