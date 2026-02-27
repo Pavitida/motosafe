@@ -1,45 +1,64 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MotoSafe Pro</title>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
 </head>
 <body>
 
+<div class="container">
+
 <h1>🏍 MotoSafe Pro Brake Analyzer</h1>
 
-<div class="dashboard">
-  <div class="card">Speed (km/h)<span id="speed">0</span></div>
-  <div class="card">Decel (m/s²)<span id="decel">0</span></div>
-  <div class="card">Brake Distance (m)<span id="distance">0</span></div>
-  <div class="card">Duration (ms)<span id="duration">0</span></div>
+<div class="grid">
+  <div class="card">
+    <p>Speed (km/h)</p>
+    <h2 id="speed">0</h2>
+  </div>
+
+  <div class="card">
+    <p>Peak Decel (m/s²)</p>
+    <h2 id="decel">0</h2>
+  </div>
+
+  <div class="card">
+    <p>Brake Distance (m)</p>
+    <h2 id="distance">0</h2>
+  </div>
+
+  <div class="card">
+    <p>Duration (s)</p>
+    <h2 id="duration">0</h2>
+  </div>
 </div>
 
-<h2 id="status">System Ready</h2>
+<div class="status" id="status">Waiting...</div>
 
-<button id="startBtn">Start Monitoring</button>
-<button id="exportBtn">Export CSV</button>
+<div class="buttons">
+  <button onclick="startMonitoring()">Start</button>
+  <button onclick="exportCSV()">Export CSV</button>
+</div>
 
-<canvas id="graph" width="380" height="220"></canvas>
+<canvas id="chart"></canvas>
 
-<h2>📊 Brake Log</h2>
-<table>
+<div class="table-wrapper">
+<table id="logTable">
 <thead>
 <tr>
-<th>#</th>
 <th>Speed</th>
 <th>Peak Decel</th>
 <th>Distance</th>
 <th>Duration</th>
 </tr>
 </thead>
-<tbody id="logTable"></tbody>
+<tbody></tbody>
 </table>
+</div>
+
+</div>
 
 <script src="script.js"></script>
 </body>
