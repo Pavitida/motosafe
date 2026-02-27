@@ -1,80 +1,39 @@
 body {
-margin: 0;
-font-family: Arial, sans-serif;
-background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-color: white;
-padding: 20px;
-padding-top: calc(env(safe-area-inset-top) + 20px);
+    font-family: Arial;
+    background: linear-gradient(to bottom, #0f2027, #203a43);
+    color: white;
+    text-align: center;
+    padding: 20px;
 }
 
-.container {
-max-width: 600px;
-margin: auto;
-}
-
-h1 {
-text-align: center;
-margin-bottom: 10px;
-}
-
-.tabs {
-display: flex;
-justify-content: space-around;
-margin-bottom: 15px;
-}
-
-.tabs button {
-padding: 10px 15px;
-border: none;
-border-radius: 10px;
-background: #1e90ff;
-color: white;
-}
-
-.tab-content {
-display: none;
-}
-
-.tab-content.active {
-display: block;
-}
-
-.cards {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 10px;
+.card-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
 }
 
 .card {
-background: rgba(255,255,255,0.1);
-padding: 15px;
-border-radius: 15px;
-text-align: center;
-}
-
-.card p {
-font-size: 22px;
-margin: 5px 0 0 0;
-}
-
-.buttons {
-text-align: center;
-margin: 15px 0;
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 15px;
 }
 
 button {
-padding: 10px 20px;
-border: none;
-border-radius: 10px;
-background: #1e90ff;
-color: white;
-margin: 5px;
+    margin: 10px;
+    padding: 12px 25px;
+    border-radius: 10px;
+    border: none;
+    font-size: 16px;
 }
 
 .chart-container {
-position: relative;
-height: 250px;
-background: white;
-border-radius: 15px;
-padding: 10px;
+    margin-top: 30px;
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.crash {
+    color: red;
+    font-size: 22px;
 }
