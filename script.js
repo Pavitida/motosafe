@@ -1,6 +1,6 @@
 // ==============================
-// MOTO SAFE PRO - FINAL VERSION
-// Realtime + Auto Session + G-Force
+// MOTO SAFE PRO - FINAL FIXED
+// Realtime + Auto Session + Start Button
 // ==============================
 
 let monitoring = false;
@@ -14,11 +14,10 @@ let impactForce = 0;
 
 let sessions = [];
 
-const BRAKE_THRESHOLD = 2.5;     // เริ่มเบรก
-const STOP_THRESHOLD = 0.8;      // จบเบรก
+const BRAKE_THRESHOLD = 2.5;
+const STOP_THRESHOLD = 0.8;
 const MIN_TIME = 0.5;
-
-const G = 9.81; // gravity constant
+const G = 9.81;
 
 // ================= TAB SYSTEM =================
 function showTab(id) {
@@ -30,15 +29,38 @@ function showTab(id) {
     if (target) target.style.display = "block";
 }
 
+// ================= START BUTTON =================
+function startMonitoring() {
+
+    if (monitoring) return;
+
+    if (typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function") {
+
+        DeviceMotionEvent.requestPermission()
+            .then(state => {
+                if (state === "granted") {
+                    activateSensor();
+                } else {
+                    alert("Permission denied");
+                }
+            });
+
+    } else {
+        activateSensor();
+    }
+}
+
+function activateSensor() {
+    monitoring = true;
+    window.addEventListener("devicemotion", handleMotion);
+    updateText("status", "Monitoring...");
+}
+
 // ================= CHART =================
 let brakeChart;
 
 window.onload = function () {
-    initChart();
-    requestPermission();
-};
-
-function initChart() {
     const ctx = document.getElementById("brakeChart").getContext("2d");
 
     brakeChart = new Chart(ctx, {
@@ -60,30 +82,7 @@ function initChart() {
             }
         }
     });
-}
-
-// ================= PERMISSION =================
-function requestPermission() {
-
-    if (typeof DeviceMotionEvent !== "undefined" &&
-        typeof DeviceMotionEvent.requestPermission === "function") {
-
-        DeviceMotionEvent.requestPermission()
-            .then(state => {
-                if (state === "granted") {
-                    startMonitoring();
-                }
-            });
-
-    } else {
-        startMonitoring();
-    }
-}
-
-function startMonitoring() {
-    monitoring = true;
-    window.addEventListener("devicemotion", handleMotion);
-}
+};
 
 // ================= SENSOR =================
 function handleMotion(event) {
@@ -93,14 +92,12 @@ function handleMotion(event) {
     const acc = event.accelerationIncludingGravity;
     if (!acc) return;
 
-    // ใช้แกน X เป็นทิศหน้า-หลัง
     const decel = Math.abs(acc.x || 0);
-
     const gForce = decel / G;
 
     updateText("decel", decel.toFixed(2) + " m/s²");
 
-    // ================= REALTIME GRAPH =================
+    // realtime graph
     const time = new Date().toLocaleTimeString();
     brakeChart.data.labels.push(time);
     brakeChart.data.datasets[0].data.push(decel);
@@ -112,20 +109,17 @@ function handleMotion(event) {
 
     brakeChart.update();
 
-    // ================= AUTO BRAKE START =================
+    // detect braking
     if (!braking && decel > BRAKE_THRESHOLD) {
-
         braking = true;
         startTime = Date.now();
         peakDecel = 0;
         duration = 0;
         distance = 0;
         impactForce = 0;
-
         updateText("status", "🚨 Braking Detected");
     }
 
-    // ================= DURING BRAKE =================
     if (braking) {
 
         duration = (Date.now() - startTime) / 1000;
@@ -133,25 +127,22 @@ function handleMotion(event) {
         if (decel > peakDecel) peakDecel = decel;
         if (gForce > impactForce) impactForce = gForce;
 
-        // Physics integration
         distance = 0.5 * peakDecel * duration * duration;
 
         updateText("duration", duration.toFixed(2) + " s");
         updateText("distance", distance.toFixed(2) + " m");
         updateText("speed", (peakDecel * duration * 3.6).toFixed(1) + " km/h");
 
-        // ================= AUTO BRAKE END =================
         if (decel < STOP_THRESHOLD && duration > MIN_TIME) {
             finishSession();
         }
     }
 }
 
-// ================= FINISH SESSION =================
+// ================= FINISH =================
 function finishSession() {
 
     braking = false;
-
     updateText("status", "Finished");
 
     const session = {
@@ -210,7 +201,7 @@ function updateAnalytics() {
     updateText("maxDecel", max.toFixed(2));
 }
 
-// ================= SAFE TEXT UPDATE =================
+// ================= SAFE TEXT =================
 function updateText(id, value) {
     const el = document.getElementById(id);
     if (el) el.innerText = value;
