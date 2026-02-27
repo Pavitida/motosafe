@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoSafe Pro</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🏍 MotoSafe Pro Brake Analyzer</h1>
+
+<div class="dashboard">
+  <div class="card">Speed (km/h)<span id="speed">0</span></div>
+  <div class="card">Decel (m/s²)<span id="decel">0</span></div>
+  <div class="card">Brake Distance (m)<span id="distance">0</span></div>
+  <div class="card">Duration (ms)<span id="duration">0</span></div>
+</div>
+
+<h2 id="status">System Ready</h2>
+
+<button id="startBtn">Start Monitoring</button>
+<button id="exportBtn">Export CSV</button>
+
+<canvas id="graph" width="380" height="220"></canvas>
+
+<h2>📊 Brake Log</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Speed</th>
+<th>Peak Decel</th>
+<th>Distance</th>
+<th>Duration</th>
+</tr>
+</thead>
+<tbody id="logTable"></tbody>
+</table>
+
+<script src="script.js"></script>
+</body>
+</html>
