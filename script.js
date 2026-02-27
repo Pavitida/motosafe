@@ -1,125 +1,122 @@
 let watchId
-let speed = 0
 let lastSpeed = 0
 let lastTime = null
 
 let peakDecel = 0
 let brakeDistance = 0
-let duration = 0
-let braking = false
 let brakeStartTime = null
+let braking = false
 
-let crashThreshold = 15 // m/s²
-
-let speedData = []
-let timeData = []
+let speedHistory = []
 
 let chart
 
-function startSystem() {
+function startTracking() {
 
-    document.getElementById("crashAlert").innerText = ""
+  document.getElementById("crashAlert").innerText = ""
 
-    initChart()
+  initChart()
 
-    if (navigator.geolocation) {
+  if (!navigator.geolocation) {
+    alert("GPS not supported")
+    return
+  }
 
-        watchId = navigator.geolocation.watchPosition(position => {
+  watchId = navigator.geolocation.watchPosition(position => {
 
-            let currentTime = Date.now()
-            let newSpeed = position.coords.speed
+    let currentTime = Date.now()
+    let speed = position.coords.speed
 
-            if (newSpeed == null) return
+    if (speed == null) return
 
-            newSpeed = newSpeed * 3.6 // km/h
-            speed = newSpeed
+    speed = speed * 3.6
+    document.getElementById("speed").innerText = speed.toFixed(1)
 
-            document.getElementById("speed").innerText = speed.toFixed(1)
+    updateChart(speed)
+    speedHistory.push(speed)
 
-            updateChart(speed)
+    if (lastTime) {
 
-            if (lastTime) {
+      let dt = (currentTime - lastTime) / 1000
+      let accel = ((speed - lastSpeed) / 3.6) / dt
+      let decel = -accel
 
-                let dt = (currentTime - lastTime) / 1000
-                let accel = ((speed - lastSpeed) / 3.6) / dt
-                let decel = -accel
+      if (decel > peakDecel) peakDecel = decel
 
-                if (decel > peakDecel) peakDecel = decel
-
-                if (decel > 2) {
-                    if (!braking) {
-                        braking = true
-                        brakeStartTime = currentTime
-                    }
-                    brakeDistance += (speed / 3.6) * dt
-                    duration = (currentTime - brakeStartTime) / 1000
-                } else {
-                    braking = false
-                }
-
-                if (Math.abs(accel) > crashThreshold) {
-                    document.getElementById("crashAlert").innerText = "💥 CRASH DETECTED!"
-                }
-
-                document.getElementById("peakDecel").innerText = peakDecel.toFixed(2)
-                document.getElementById("brakeDistance").innerText = brakeDistance.toFixed(1)
-                document.getElementById("duration").innerText = duration.toFixed(1)
-
-                lastSpeed = speed
-            }
-
-            lastTime = currentTime
-
-        }, error => {
-            alert("Please allow GPS access")
-        }, {
-            enableHighAccuracy: true
-        })
-    }
-}
-
-function initChart() {
-    const ctx = document.getElementById('speedChart')
-    chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Speed (km/h)',
-                data: [],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true
+      if (decel > 2) {
+        if (!braking) {
+          braking = true
+          brakeStartTime = currentTime
         }
-    })
-}
+        brakeDistance += (speed/3.6) * dt
+      } else {
+        braking = false
+      }
 
-function updateChart(speed) {
+      if (Math.abs(accel) > 15) {
+        document.getElementById("crashAlert").innerText = "💥 CRASH DETECTED"
+      }
 
-    chart.data.labels.push('')
-    chart.data.datasets[0].data.push(speed)
+      document.getElementById("peakDecel").innerText = peakDecel.toFixed(2)
+      document.getElementById("brakeDistance").innerText = brakeDistance.toFixed(1)
 
-    if (chart.data.labels.length > 50) {
-        chart.data.labels.shift()
-        chart.data.datasets[0].data.shift()
+      if (brakeStartTime) {
+        let duration = (currentTime - brakeStartTime)/1000
+        document.getElementById("duration").innerText = duration.toFixed(1)
+      }
+
+      lastSpeed = speed
     }
 
-    chart.update()
+    lastTime = currentTime
+
+  },{
+    enableHighAccuracy: true
+  })
+
 }
-function exportCSV() {
 
-    let csv = "Speed(km/h),PeakDecel(m/s2),BrakeDistance(m),Duration(s)\n"
+function stopTracking(){
+  navigator.geolocation.clearWatch(watchId)
+}
 
-    csv += document.getElementById("speed").innerText + ","
-    csv += document.getElementById("peakDecel").innerText + ","
-    csv += document.getElementById("brakeDistance").innerText + ","
-    csv += document.getElementById("duration").innerText
+function initChart(){
+  const ctx = document.getElementById("chart")
+  chart = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:[],
+      datasets:[{
+        label:'Speed (km/h)',
+        data:[],
+        borderWidth:2
+      }]
+    }
+  })
+}
 
-    let blob = new Blob([csv], { type: 'text/csv' })
-    let link = document.createElement("a")
-    link.href = URL.createObjectURL(blob)
-    link.download = "MotoSafeSession.csv"
-    link.click()
+function updateChart(speed){
+  chart.data.labels.push('')
+  chart.data.datasets[0].data.push(speed)
+
+  if(chart.data.labels.length > 50){
+    chart.data.labels.shift()
+    chart.data.datasets[0].data.shift()
+  }
+
+  chart.update()
+}
+
+function exportCSV(){
+
+  let csv = "SpeedHistory(km/h)\n"
+  speedHistory.forEach(s => {
+    csv += s + "\n"
+  })
+
+  let blob = new Blob([csv], {type:'text/csv'})
+  let link = document.createElement("a")
+  link.href = URL.createObjectURL(blob)
+  link.download = "MotoSafeData.csv"
+  link.click()
 }
