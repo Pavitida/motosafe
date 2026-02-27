@@ -1,122 +1,161 @@
+// ====== GLOBAL ======
 let monitoring = false;
-let braking = false;
-
-let velocity = 0;
-let distance = 0;
+let startTime = 0;
+let speed = 0;
 let peakDecel = 0;
+let distance = 0;
+let duration = 0;
+let logData = [];
 
-let brakeStartTime = 0;
-let brakeData = [];
+// ====== CHART SETUP ======
+const ctx = document.getElementById('brakeChart').getContext('2d');
 
-let logs = [];
-
-let lastTime = null;
-
-const speedEl = document.getElementById("speed");
-const decelEl = document.getElementById("decel");
-const distanceEl = document.getElementById("distance");
-const durationEl = document.getElementById("duration");
-const statusEl = document.getElementById("status");
-
-function startMonitoring() {
-  if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    DeviceMotionEvent.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        window.addEventListener("devicemotion", handleMotion);
-      }
-    });
-  } else {
-    window.addEventListener("devicemotion", handleMotion);
-  }
-  monitoring = true;
-}
-
-function handleMotion(event) {
-  if (!monitoring) return;
-
-  const acc = event.accelerationIncludingGravity.y || 0;
-  const now = Date.now();
-
-  if (!lastTime) lastTime = now;
-  const dt = (now - lastTime) / 1000;
-  lastTime = now;
-
-  const decel = -acc;
-
-  // integrate velocity
-  velocity += decel * dt;
-  if (velocity < 0) velocity = 0;
-
-  // detect brake start
-  if (!braking && decel > 2.5) {
-    braking = true;
-    brakeStartTime = now;
-    peakDecel = decel;
-    distance = 0;
-    brakeData = [];
-    statusEl.innerText = "Braking...";
-  }
-
-  if (braking) {
-    peakDecel = Math.max(peakDecel, decel);
-    distance += velocity * dt;
-    brakeData.push({decel, velocity});
-
-    // detect brake end
-    if (decel < 0.5) {
-      const duration = (now - brakeStartTime) / 1000;
-
-      if (duration > 0.3) {
-        finishBrake(duration);
-      }
-
-      braking = false;
-      velocity = 0;
+const brakeChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [],
+        datasets: [{
+            label: 'Deceleration (m/s²)',
+            data: [],
+            borderWidth: 2,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
     }
-  }
+});
 
-  speedEl.innerText = (velocity * 3.6).toFixed(1);
-  decelEl.innerText = peakDecel.toFixed(2);
-  distanceEl.innerText = distance.toFixed(2);
+// ====== START FUNCTION ======
+function startMonitoring() {
+
+    if (monitoring) return;
+
+    monitoring = true;
+    startTime = Date.now();
+    peakDecel = 0;
+    distance = 0;
+    duration = 0;
+
+    brakeChart.data.labels = [];
+    brakeChart.data.datasets[0].data = [];
+    brakeChart.update();
+
+    document.getElementById("status").innerText = "Braking...";
+
+    if (typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function") {
+
+        DeviceMotionEvent.requestPermission()
+            .then(permissionState => {
+                if (permissionState === "granted") {
+                    window.addEventListener("devicemotion", handleMotion);
+                }
+            })
+            .catch(console.error);
+
+    } else {
+        window.addEventListener("devicemotion", handleMotion);
+    }
 }
 
-function finishBrake(duration) {
-  durationEl.innerText = duration.toFixed(2);
+// ====== HANDLE SENSOR ======
+function handleMotion(event) {
 
-  logs.push({
-    speed: (velocity*3.6).toFixed(1),
-    peak: peakDecel.toFixed(2),
-    distance: distance.toFixed(2),
-    duration: duration.toFixed(2)
-  });
+    if (!monitoring) return;
 
-  addRow();
-  statusEl.innerText = "Brake Recorded";
+    const acc = event.accelerationIncludingGravity;
+    if (!acc) return;
+
+    const decel = Math.abs(acc.x || 0);
+
+    if (decel > peakDecel) {
+        peakDecel = decel;
+    }
+
+    const currentTime = Date.now();
+    duration = (currentTime - startTime) / 1000;
+
+    // simple physics estimation
+    speed = peakDecel * duration * 3.6;
+    distance = 0.5 * peakDecel * duration * duration;
+
+    // update UI
+    document.getElementById("speed").innerText = speed.toFixed(1);
+    document.getElementById("decel").innerText = peakDecel.toFixed(2);
+    document.getElementById("distance").innerText = distance.toFixed(2);
+    document.getElementById("duration").innerText = duration.toFixed(2);
+
+    // update chart
+    brakeChart.data.labels.push(duration.toFixed(2));
+    brakeChart.data.datasets[0].data.push(decel);
+    brakeChart.update();
+
+    // auto stop condition
+    if (duration > 3) {
+        stopMonitoring();
+    }
 }
 
-function addRow() {
-  const tbody = document.querySelector("#logTable tbody");
-  const row = tbody.insertRow();
+// ====== STOP ======
+function stopMonitoring() {
 
-  const last = logs[logs.length -1];
+    monitoring = false;
+    window.removeEventListener("devicemotion", handleMotion);
 
-  row.insertCell(0).innerText = last.speed;
-  row.insertCell(1).innerText = last.peak;
-  row.insertCell(2).innerText = last.distance;
-  row.insertCell(3).innerText = last.duration;
+    document.getElementById("status").innerText = "Finished";
+
+    // save log
+    logData.push({
+        speed: speed.toFixed(1),
+        peak: peakDecel.toFixed(2),
+        distance: distance.toFixed(2),
+        duration: duration.toFixed(2)
+    });
+
+    updateTable();
 }
 
+// ====== TABLE ======
+function updateTable() {
+
+    const table = document.getElementById("logTable");
+    table.innerHTML = "";
+
+    logData.forEach(row => {
+        table.innerHTML += `
+            <tr>
+                <td>${row.speed}</td>
+                <td>${row.peak}</td>
+                <td>${row.distance}</td>
+                <td>${row.duration}</td>
+            </tr>
+        `;
+    });
+}
+
+// ====== EXPORT CSV ======
 function exportCSV() {
-  let csv = "Speed,PeakDecel,Distance,Duration\n";
-  logs.forEach(l => {
-    csv += `${l.speed},${l.peak},${l.distance},${l.duration}\n`;
-  });
 
-  const blob = new Blob([csv], {type: "text/csv"});
-  const url = URL.createObjectURL(blob);
+    let csv = "Speed,Peak Decel,Distance,Duration\n";
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "brake_log.csv";
-  a.click();
+    logData.forEach(row => {
+        csv += `${row.speed},${row.peak},${row.distance},${row.duration}\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "brake_log.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
 }
