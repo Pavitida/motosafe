@@ -147,13 +147,26 @@ function handleMotion(event){
 }
 
 function stopRide(){
+
   window.removeEventListener("devicemotion", handleMotion);
 
   if(currentSession){
-    allSessions.push(currentSession);
-    localStorage.setItem("motoSessions", JSON.stringify(allSessions));
-    updateSummary();
+
+    // ถ้ามี brake event ค่อยบันทึก
+    if(currentSession.brakeEvents.length > 0){
+
+      allSessions.push(currentSession);
+
+      localStorage.setItem(
+        "motoSessions",
+        JSON.stringify(allSessions)
+      );
+    }
+
+    currentSession = null;
   }
+
+  updateSummary();
 }
 
 function updateSummary(){
