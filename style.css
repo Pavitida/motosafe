@@ -1,81 +1,80 @@
 body {
 margin: 0;
 font-family: Arial, sans-serif;
-background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
 color: white;
-display: flex;
-justify-content: center;
+padding: 20px;
+padding-top: calc(env(safe-area-inset-top) + 20px);
 }
 
 .container {
-max-width: 900px;
-width: 95%;
-padding: 20px;
-box-sizing: border-box;
+max-width: 600px;
+margin: auto;
 }
 
 h1 {
 text-align: center;
-margin-bottom: 20px;
+margin-bottom: 10px;
 }
 
-.grid {
+.tabs {
+display: flex;
+justify-content: space-around;
+margin-bottom: 15px;
+}
+
+.tabs button {
+padding: 10px 15px;
+border: none;
+border-radius: 10px;
+background: #1e90ff;
+color: white;
+}
+
+.tab-content {
+display: none;
+}
+
+.tab-content.active {
+display: block;
+}
+
+.cards {
 display: grid;
-grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
-gap: 15px;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
 }
 
 .card {
-background: rgba(255,255,255,0.08);
+background: rgba(255,255,255,0.1);
 padding: 15px;
-border-radius: 12px;
+border-radius: 15px;
 text-align: center;
 }
 
-.status {
-text-align: center;
+.card p {
 font-size: 22px;
-margin: 20px 0;
-color: #00ff88;
+margin: 5px 0 0 0;
 }
 
 .buttons {
-display: flex;
-justify-content: center;
-gap: 15px;
-flex-wrap: wrap;
+text-align: center;
+margin: 15px 0;
 }
 
 button {
 padding: 10px 20px;
 border: none;
-border-radius: 8px;
-background: #2196f3;
-color: white;
-font-size: 16px;
-cursor: pointer;
-}
-
-canvas {
-margin-top: 25px;
-background: white;
 border-radius: 10px;
-width: 100%;
-max-height: 250px;
+background: #1e90ff;
+color: white;
+margin: 5px;
 }
 
-.table-wrapper {
-overflow-x: auto;
-margin-top: 20px;
-}
-
-table {
-width: 100%;
-border-collapse: collapse;
-background: rgba(255,255,255,0.1);
-}
-
-th, td {
+.chart-container {
+position: relative;
+height: 250px;
+background: white;
+border-radius: 15px;
 padding: 10px;
-text-align: center;
 }
