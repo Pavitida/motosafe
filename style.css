@@ -1,39 +1,50 @@
-body {
-    font-family: Arial;
-    background: linear-gradient(to bottom, #0f2027, #203a43);
-    color: white;
-    text-align: center;
-    padding: 20px;
-}
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoSafe Pro</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-.card-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-}
+<body>
 
-.card {
-    background: rgba(255,255,255,0.1);
-    padding: 20px;
-    border-radius: 15px;
-}
+<h1>🏍 MotoSafe Pro</h1>
 
-button {
-    margin: 10px;
-    padding: 12px 25px;
-    border-radius: 10px;
-    border: none;
-    font-size: 16px;
-}
+<div class="grid">
+  <div class="card">
+    <h3>Speed (km/h)</h3>
+    <p id="speed">0</p>
+  </div>
 
-.chart-container {
-    margin-top: 30px;
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-}
+  <div class="card">
+    <h3>Peak Decel (m/s²)</h3>
+    <p id="peakDecel">0</p>
+  </div>
 
-.crash {
-    color: red;
-    font-size: 22px;
-}
+  <div class="card">
+    <h3>Brake Distance (m)</h3>
+    <p id="brakeDistance">0</p>
+  </div>
+
+  <div class="card">
+    <h3>Duration (s)</h3>
+    <p id="duration">0</p>
+  </div>
+</div>
+
+<h2 id="crashAlert"></h2>
+
+<button onclick="startTracking()">Start</button>
+<button onclick="stopTracking()">Stop</button>
+<button onclick="exportCSV()">Export CSV</button>
+
+<div class="chartBox">
+  <canvas id="chart"></canvas>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
