@@ -1,90 +1,56 @@
 // ==============================
-// MOTO SAFE PRO - FINAL FIXED
-// Realtime + Auto Session + Start Button
+// MOTO SAFE ULTIMATE VERSION
+// GPS Speed + Real Brake Analysis + Crash Detection
 // ==============================
 
 let monitoring = false;
 let braking = false;
 
-let startTime = 0;
 let peakDecel = 0;
+let startSpeed = 0;
+let endSpeed = 0;
 let duration = 0;
-let distance = 0;
-let impactForce = 0;
+let startTime = 0;
 
 let sessions = [];
 
-const BRAKE_THRESHOLD = 2.5;
+const BRAKE_THRESHOLD = 2.5; // m/s²
 const STOP_THRESHOLD = 0.8;
-const MIN_TIME = 0.5;
+const CRASH_G = 8; // 8g ถือว่า crash
 const G = 9.81;
 
-// ================= TAB SYSTEM =================
-function showTab(id) {
-    document.querySelectorAll(".tab-content").forEach(tab => {
-        tab.style.display = "none";
-    });
+let currentSpeed = 0; // km/h
 
-    const target = document.getElementById(id);
-    if (target) target.style.display = "block";
-}
-
-// ================= START BUTTON =================
+// ================= START =================
 function startMonitoring() {
 
     if (monitoring) return;
 
+    monitoring = true;
+
+    requestMotion();
+    startGPS();
+
+    updateText("status", "Monitoring...");
+}
+
+// ================= MOTION =================
+function requestMotion() {
     if (typeof DeviceMotionEvent !== "undefined" &&
         typeof DeviceMotionEvent.requestPermission === "function") {
 
         DeviceMotionEvent.requestPermission()
             .then(state => {
                 if (state === "granted") {
-                    activateSensor();
-                } else {
-                    alert("Permission denied");
+                    window.addEventListener("devicemotion", handleMotion);
                 }
             });
 
     } else {
-        activateSensor();
+        window.addEventListener("devicemotion", handleMotion);
     }
 }
 
-function activateSensor() {
-    monitoring = true;
-    window.addEventListener("devicemotion", handleMotion);
-    updateText("status", "Monitoring...");
-}
-
-// ================= CHART =================
-let brakeChart;
-
-window.onload = function () {
-    const ctx = document.getElementById("brakeChart").getContext("2d");
-
-    brakeChart = new Chart(ctx, {
-        type: "line",
-        data: {
-            labels: [],
-            datasets: [{
-                label: "Deceleration (m/s²)",
-                data: [],
-                borderWidth: 2,
-                tension: 0.3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-};
-
-// ================= SENSOR =================
 function handleMotion(event) {
 
     if (!monitoring) return;
@@ -97,27 +63,18 @@ function handleMotion(event) {
 
     updateText("decel", decel.toFixed(2) + " m/s²");
 
-    // realtime graph
-    const time = new Date().toLocaleTimeString();
-    brakeChart.data.labels.push(time);
-    brakeChart.data.datasets[0].data.push(decel);
-
-    if (brakeChart.data.labels.length > 40) {
-        brakeChart.data.labels.shift();
-        brakeChart.data.datasets[0].data.shift();
+    // ===== Crash Detection =====
+    if (gForce > CRASH_G) {
+        updateText("status", "💥 CRASH DETECTED!");
     }
 
-    brakeChart.update();
-
-    // detect braking
-    if (!braking && decel > BRAKE_THRESHOLD) {
+    // ===== Detect Brake Start =====
+    if (!braking && decel > BRAKE_THRESHOLD && currentSpeed > 5) {
         braking = true;
         startTime = Date.now();
         peakDecel = 0;
-        duration = 0;
-        distance = 0;
-        impactForce = 0;
-        updateText("status", "🚨 Braking Detected");
+        startSpeed = currentSpeed;
+        updateText("status", "🚨 Braking...");
     }
 
     if (braking) {
@@ -125,38 +82,103 @@ function handleMotion(event) {
         duration = (Date.now() - startTime) / 1000;
 
         if (decel > peakDecel) peakDecel = decel;
-        if (gForce > impactForce) impactForce = gForce;
 
-        distance = 0.5 * peakDecel * duration * duration;
-
-        updateText("duration", duration.toFixed(2) + " s");
-        updateText("distance", distance.toFixed(2) + " m");
-        updateText("speed", (peakDecel * duration * 3.6).toFixed(1) + " km/h");
-
-        if (decel < STOP_THRESHOLD && duration > MIN_TIME) {
+        // End brake
+        if (decel < STOP_THRESHOLD && duration > 0.5) {
+            endSpeed = currentSpeed;
             finishSession();
         }
     }
 }
 
-// ================= FINISH =================
+// ================= GPS =================
+function startGPS() {
+
+    if (!navigator.geolocation) {
+        alert("GPS not supported");
+        return;
+    }
+
+    navigator.geolocation.watchPosition(position => {
+
+        let speedMS = position.coords.speed; // m/s
+
+        if (speedMS === null) return;
+
+        currentSpeed = speedMS * 3.6; // convert to km/h
+        updateText("speed", currentSpeed.toFixed(1) + " km/h");
+
+        updateSpeedChart(currentSpeed);
+
+    }, error => {
+        console.log(error);
+    }, {
+        enableHighAccuracy: true,
+        maximumAge: 1000
+    });
+}
+
+// ================= CHART =================
+let speedChart;
+
+window.onload = function () {
+
+    const ctx = document.getElementById("brakeChart").getContext("2d");
+
+    speedChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Speed (km/h)",
+                data: [],
+                borderWidth: 2,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+};
+
+function updateSpeedChart(speed) {
+
+    const time = new Date().toLocaleTimeString();
+
+    speedChart.data.labels.push(time);
+    speedChart.data.datasets[0].data.push(speed);
+
+    if (speedChart.data.labels.length > 40) {
+        speedChart.data.labels.shift();
+        speedChart.data.datasets[0].data.shift();
+    }
+
+    speedChart.update();
+}
+
+// ================= FINISH SESSION =================
 function finishSession() {
 
     braking = false;
-    updateText("status", "Finished");
+
+    const speedDrop = startSpeed - endSpeed;
 
     const session = {
-        peak: peakDecel,
-        distance: distance,
-        duration: duration,
-        impact: impactForce,
+        startSpeed,
+        endSpeed,
+        speedDrop,
+        peakDecel,
+        duration,
         date: new Date().toLocaleString()
     };
 
     sessions.push(session);
 
+    updateText("status", "Brake Recorded");
+
     updateSessions();
-    updateAnalytics();
 }
 
 // ================= SESSION LIST =================
@@ -172,33 +194,14 @@ function updateSessions() {
             <div class="card">
                 <h4>Session ${i + 1}</h4>
                 <p>${s.date}</p>
-                <p>Peak Decel: ${s.peak.toFixed(2)} m/s²</p>
-                <p>Impact: ${s.impact.toFixed(2)} g</p>
-                <p>Distance: ${s.distance.toFixed(2)} m</p>
+                <p>Start Speed: ${s.startSpeed.toFixed(1)} km/h</p>
+                <p>End Speed: ${s.endSpeed.toFixed(1)} km/h</p>
+                <p>Speed Drop: ${s.speedDrop.toFixed(1)} km/h</p>
+                <p>Peak Decel: ${s.peakDecel.toFixed(2)} m/s²</p>
                 <p>Duration: ${s.duration.toFixed(2)} s</p>
             </div>
         `;
     });
-}
-
-// ================= ANALYTICS =================
-function updateAnalytics() {
-
-    if (sessions.length === 0) return;
-
-    let total = 0;
-    let best = sessions[0].distance;
-    let max = sessions[0].peak;
-
-    sessions.forEach(s => {
-        total += s.distance;
-        if (s.distance < best) best = s.distance;
-        if (s.peak > max) max = s.peak;
-    });
-
-    updateText("avgDistance", (total / sessions.length).toFixed(2));
-    updateText("bestDistance", best.toFixed(2));
-    updateText("maxDecel", max.toFixed(2));
 }
 
 // ================= SAFE TEXT =================
