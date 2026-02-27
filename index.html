@@ -1,52 +1,48 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MotoSafe Pro</title>
-<link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="style.css">
 </head>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<link rel="apple-touch-icon" href="icon.png">
+
 <body>
 
 <h1>🏍 MotoSafe Pro</h1>
 
-<div class="grid">
+<div class="stats">
   <div class="card">
-    <h3>Speed (km/h)</h3>
+    <h2>Speed (km/h)</h2>
     <p id="speed">0</p>
   </div>
 
   <div class="card">
-    <h3>Peak Decel (m/s²)</h3>
-    <p id="peakDecel">0</p>
+    <h2>Peak Decel (m/s²)</h2>
+    <p id="decel">0</p>
   </div>
 
   <div class="card">
-    <h3>Brake Distance (m)</h3>
-    <p id="brakeDistance">0</p>
+    <h2>Brake Distance (m)</h2>
+    <p id="distance">0</p>
   </div>
 
   <div class="card">
-    <h3>Duration (s)</h3>
+    <h2>Duration (s)</h2>
     <p id="duration">0</p>
   </div>
 </div>
 
-<h2 id="crashAlert"></h2>
+<h2 id="crash" style="color:red;"></h2>
 
-<button onclick="startTracking()">Start</button>
-<button onclick="stopTracking()">Stop</button>
-<button onclick="exportCSV()">Export CSV</button>
+<button id="startBtn">Start</button>
+<button id="exportBtn">Export CSV</button>
 
-<div class="chartBox">
-  <canvas id="chart"></canvas>
-</div>
+<canvas id="chart"></canvas>
 
-<script src="script.js"></script>
+<script src="app.js"></script>
 
 </body>
 </html>
