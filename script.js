@@ -1,12 +1,18 @@
 let monitoring = false;
+let braking = false;
+
 let startTime = 0;
 let peakDecel = 0;
-let speed = 0;
-let distance = 0;
 let duration = 0;
+let distance = 0;
+
 let sessions = [];
 
-// ===== CHART SETUP =====
+const BRAKE_THRESHOLD = 2.5;   // เริ่มเบรกเมื่อเกินค่านี้
+const STOP_THRESHOLD = 1.0;    // หยุดเมื่อแรงต่ำกว่านี้
+const MIN_BRAKE_TIME = 0.5;    // เบรกอย่างน้อย 0.5 วิ
+
+// ===== CHART =====
 const ctx = document.getElementById('brakeChart').getContext('2d');
 
 const brakeChart = new Chart(ctx, {
@@ -24,21 +30,12 @@ const brakeChart = new Chart(ctx, {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            y: {
-                beginAtZero: true
-            }
+            y: { beginAtZero: true }
         }
     }
 });
 
-// ===== TAB SYSTEM =====
-function showTab(id) {
-    document.querySelectorAll('.tab-content')
-        .forEach(tab => tab.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
-
-// ===== START BUTTON (iOS FIXED) =====
+// ===== START SYSTEM =====
 function startMonitoring() {
 
     if (monitoring) return;
@@ -57,29 +54,18 @@ function startMonitoring() {
             .catch(console.error);
 
     } else {
-        beginMonitoring(); // Android
+        beginMonitoring();
     }
 }
 
 function beginMonitoring() {
 
     monitoring = true;
-    startTime = Date.now();
-    peakDecel = 0;
-    speed = 0;
-    distance = 0;
-    duration = 0;
-
-    brakeChart.data.labels = [];
-    brakeChart.data.datasets[0].data = [];
-    brakeChart.update();
-
-    document.getElementById("status").innerText = "Braking...";
-
+    document.getElementById("status").innerText = "Waiting for braking...";
     window.addEventListener("devicemotion", handleMotion);
 }
 
-// ===== HANDLE SENSOR =====
+// ===== SENSOR LOGIC =====
 function handleMotion(event) {
 
     if (!monitoring) return;
@@ -89,39 +75,55 @@ function handleMotion(event) {
 
     const decel = Math.abs(acc.x || 0);
 
-    if (decel > peakDecel) peakDecel = decel;
+    // 🔥 ตรวจจับเริ่มเบรก
+    if (!braking && decel > BRAKE_THRESHOLD) {
 
-    duration = (Date.now() - startTime) / 1000;
+        braking = true;
+        startTime = Date.now();
+        peakDecel = 0;
+        duration = 0;
+        distance = 0;
 
-    // basic physics estimation
-    speed = peakDecel * duration * 3.6;
-    distance = 0.5 * peakDecel * duration * duration;
+        brakeChart.data.labels = [];
+        brakeChart.data.datasets[0].data = [];
+        brakeChart.update();
 
-    // Update UI
-    document.getElementById("speed").innerText = speed.toFixed(1);
-    document.getElementById("decel").innerText = peakDecel.toFixed(2);
-    document.getElementById("distance").innerText = distance.toFixed(2);
-    document.getElementById("duration").innerText = duration.toFixed(2);
+        document.getElementById("status").innerText = "Braking detected!";
+    }
 
-    // Update chart
-    brakeChart.data.labels.push(duration.toFixed(2));
-    brakeChart.data.datasets[0].data.push(decel);
-    brakeChart.update();
+    // ระหว่างเบรก
+    if (braking) {
 
-    // Auto stop after 3 seconds
-    if (duration > 3) stopMonitoring();
+        if (decel > peakDecel) peakDecel = decel;
+
+        duration = (Date.now() - startTime) / 1000;
+
+        // integration แบบง่าย (ประมาณค่า)
+        distance += decel * 0.02;
+
+        document.getElementById("decel").innerText = peakDecel.toFixed(2);
+        document.getElementById("duration").innerText = duration.toFixed(2);
+        document.getElementById("distance").innerText = distance.toFixed(2);
+
+        brakeChart.data.labels.push(duration.toFixed(2));
+        brakeChart.data.datasets[0].data.push(decel);
+        brakeChart.update();
+
+        // 🔥 ตรวจจับหยุดเบรก
+        if (decel < STOP_THRESHOLD && duration > MIN_BRAKE_TIME) {
+            finishBrake();
+        }
+    }
 }
 
-// ===== STOP =====
-function stopMonitoring() {
+// ===== FINISH =====
+function finishBrake() {
 
-    monitoring = false;
-    window.removeEventListener("devicemotion", handleMotion);
+    braking = false;
 
     document.getElementById("status").innerText = "Finished";
 
     const session = {
-        speed: speed,
         peak: peakDecel,
         distance: distance,
         duration: duration,
@@ -134,10 +136,12 @@ function stopMonitoring() {
     updateAnalytics();
 }
 
-// ===== SESSION DISPLAY =====
+// ===== SESSIONS =====
 function updateSessions() {
 
     const list = document.getElementById("sessionList");
+    if (!list) return;
+
     list.innerHTML = "";
 
     sessions.forEach((s, i) => {
@@ -145,7 +149,6 @@ function updateSessions() {
             <div class="card">
                 <h4>Session ${i + 1}</h4>
                 <p>${s.date}</p>
-                <p>Speed: ${s.speed.toFixed(1)} km/h</p>
                 <p>Peak: ${s.peak.toFixed(2)} m/s²</p>
                 <p>Distance: ${s.distance.toFixed(2)} m</p>
                 <p>Duration: ${s.duration.toFixed(2)} s</p>
@@ -179,7 +182,7 @@ function updateAnalytics() {
         max.toFixed(2);
 }
 
-// ===== EXPORT CSV =====
+// ===== EXPORT =====
 function exportCSV() {
 
     if (sessions.length === 0) {
@@ -187,10 +190,10 @@ function exportCSV() {
         return;
     }
 
-    let csv = "Speed,Peak,Distance,Duration,Date\n";
+    let csv = "Peak,Distance,Duration,Date\n";
 
     sessions.forEach(s => {
-        csv += `${s.speed},${s.peak},${s.distance},${s.duration},${s.date}\n`;
+        csv += `${s.peak},${s.distance},${s.duration},${s.date}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
