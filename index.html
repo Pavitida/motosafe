@@ -3,75 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MotoSafe Pro Brake Analyzer</title>
+<title>MotoSafe Pro</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f2027">
-
 <link rel="stylesheet" href="style.css">
 
-<!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
 
 <div class="container">
 
-    <h1>🏍 MotoSafe Pro Brake Analyzer</h1>
+<h1>🏍 MotoSafe Pro</h1>
 
-    <div class="cards">
-        <div class="card">
-            <h3>Speed (km/h)</h3>
-            <p id="speed">0</p>
-        </div>
+<div class="tabs">
+<button onclick="showTab('live')">Live</button>
+<button onclick="showTab('sessions')">Sessions</button>
+<button onclick="showTab('analytics')">Analytics</button>
+</div>
 
-        <div class="card">
-            <h3>Peak Decel (m/s²)</h3>
-            <p id="decel">0</p>
-        </div>
+<!-- LIVE -->
+<div id="live" class="tab-content active">
 
-        <div class="card">
-            <h3>Brake Distance (m)</h3>
-            <p id="distance">0</p>
-        </div>
+<div class="cards">
+<div class="card"><h3>Speed (km/h)</h3><p id="speed">0</p></div>
+<div class="card"><h3>Peak Decel (m/s²)</h3><p id="decel">0</p></div>
+<div class="card"><h3>Brake Distance (m)</h3><p id="distance">0</p></div>
+<div class="card"><h3>Duration (s)</h3><p id="duration">0</p></div>
+</div>
 
-        <div class="card">
-            <h3>Duration (s)</h3>
-            <p id="duration">0</p>
-        </div>
-    </div>
+<h2 id="status">Ready</h2>
 
-    <h2 id="status">Ready</h2>
+<div class="buttons">
+<button onclick="startMonitoring()">Start</button>
+<button onclick="exportCSV()">Export CSV</button>
+</div>
 
-    <div class="buttons">
-        <button onclick="startMonitoring()">Start</button>
-        <button onclick="exportCSV()">Export CSV</button>
-    </div>
+<div class="chart-container">
+<canvas id="brakeChart"></canvas>
+</div>
 
-    <div class="chart-container">
-        <canvas id="brakeChart"></canvas>
-    </div>
+</div>
 
-    <h2>📊 Brake Log</h2>
+<!-- SESSIONS -->
+<div id="sessions" class="tab-content">
+<h2>📊 Brake Sessions</h2>
+<div id="sessionList"></div>
+</div>
 
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Speed</th>
-                    <th>Peak Decel</th>
-                    <th>Distance</th>
-                    <th>Duration</th>
-                </tr>
-            </thead>
-            <tbody id="logTable"></tbody>
-        </table>
-    </div>
+<!-- ANALYTICS -->
+<div id="analytics" class="tab-content">
+<h2>📈 Analytics</h2>
+<p>Average Distance: <span id="avgDistance">0</span> m</p>
+<p>Best Distance: <span id="bestDistance">0</span> m</p>
+<p>Max Decel: <span id="maxDecel">0</span> m/s²</p>
+</div>
 
 </div>
 
 <script src="script.js"></script>
-
 </body>
 </html>
