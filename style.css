@@ -1,50 +1,34 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MotoSafe Pro</title>
-<link rel="stylesheet" href="style.css">
-<link rel="manifest" href="manifest.json">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
+body{
+  font-family:Arial;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  color:white;
+  text-align:center;
+}
 
-<body>
+.stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+  padding:20px;
+}
 
-<h1>🏍 MotoSafe Pro</h1>
+.card{
+  background:rgba(255,255,255,0.1);
+  padding:20px;
+  border-radius:15px;
+}
 
-<div class="grid">
-  <div class="card">
-    <h3>Speed (km/h)</h3>
-    <p id="speed">0</p>
-  </div>
-
-  <div class="card">
-    <h3>Peak Decel (m/s²)</h3>
-    <p id="peakDecel">0</p>
-  </div>
-
-  <div class="card">
-    <h3>Brake Distance (m)</h3>
-    <p id="brakeDistance">0</p>
-  </div>
-
-  <div class="card">
-    <h3>Duration (s)</h3>
-    <p id="duration">0</p>
-  </div>
-</div>
-
-<h2 id="crashAlert"></h2>
-
-<button onclick="startTracking()">Start</button>
-<button onclick="stopTracking()">Stop</button>
-<button onclick="exportCSV()">Export CSV</button>
-
-<div class="chartBox">
-  <canvas id="chart"></canvas>
-</div>
-
-<script src="script.js"></script>
-
-</body>
-</html>
+button{
+  margin:10px;
+  padding:12px 20px;
+  border:none;
+  border-radius:10px;
+  background:#4f8cff;
+  color:white;
+  font-size:16px;
+}
+canvas{
+  background:white;
+  border-radius:15px;
+  margin:20px;
+}
