@@ -1,39 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MotoSafe Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>MotoSafe Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#203a43" />
 
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
 
-  <h1>🏍 MotoSafe Dashboard</h1>
+  <h1>🏍 MotoSafe Pro</h1>
 
-  <div class="stats">
+  <div class="container">
     <div class="card">
-      <h2>Speed</h2>
-      <p id="speed">0 km/h</p>
+      <h2>Speed (km/h)</h2>
+      <div id="speed" class="value">0</div>
     </div>
 
     <div class="card">
-      <h2>Lean Angle</h2>
-      <p id="lean">0°</p>
+      <h2>Peak Decel (m/s²)</h2>
+      <div id="peak" class="value">0</div>
+    </div>
+
+    <div class="card">
+      <h2>Brake Distance (m)</h2>
+      <div id="distance" class="value">0</div>
+    </div>
+
+    <div class="card">
+      <h2>Duration (s)</h2>
+      <div id="duration" class="value">0</div>
     </div>
   </div>
 
   <div class="buttons">
-    <button onclick="startRide()">Start Ride</button>
-    <button onclick="stopRide()">Stop Ride</button>
-    <button onclick="resetData()">Reset</button>
+    <button onclick="startRide()">Start</button>
+    <button onclick="stopRide()">Stop</button>
   </div>
 
   <canvas id="speedChart"></canvas>
 
   <script src="script.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+  </script>
+
 </body>
 </html>
