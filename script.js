@@ -1,24 +1,34 @@
-let riding = false;
 let watchId = null;
 
 let lastSpeed = 0;
+let lastTime = 0;
+
+let state = "RIDING";
+let brakeSamples = 0;
+
+let brakeStartTime = 0;
+let brakeStartSpeed = 0;
 let brakeDistance = 0;
+let peakDecel = 0;
+let decelSum = 0;
+let decelCount = 0;
 
 const speedEl = document.getElementById("speed");
-const leanEl = document.getElementById("lean");
+const peakEl = document.getElementById("peak");
+const distanceEl = document.getElementById("distance");
+const durationEl = document.getElementById("duration");
 
-const ctx = document.getElementById('speedChart').getContext('2d');
+const ctx = document.getElementById("speedChart").getContext("2d");
 
-const speedChart = new Chart(ctx, {
-    type: 'line',
+const chart = new Chart(ctx, {
+    type: "line",
     data: {
         labels: [],
         datasets: [{
-            label: 'Speed (km/h)',
+            label: "Deceleration (m/s²)",
             data: [],
-            borderColor: '#4f8cff',
-            backgroundColor: 'rgba(79,140,255,0.2)',
-            tension: 0.4
+            borderColor: "#4f8cff",
+            tension: 0.3
         }]
     },
     options: {
@@ -29,111 +39,94 @@ const speedChart = new Chart(ctx, {
     }
 });
 
-async function startRide(){
+function startRide(){
+    lastTime = Date.now();
 
-    if(riding) return;
-
-    // ขอ permission sensor (iPhone)
-    if (typeof DeviceMotionEvent.requestPermission === "function") {
-        const permission = await DeviceMotionEvent.requestPermission();
-        if (permission !== "granted") {
-            alert("Sensor permission denied");
-            return;
-        }
-    }
-
-    riding = true;
-    brakeDistance = 0;
-
-    // GPS
     watchId = navigator.geolocation.watchPosition(
         handleGPS,
-        (err) => alert("GPS error: " + err.message),
+        err => alert(err.message),
         { enableHighAccuracy: true }
     );
-
-    // Accelerometer
-    window.addEventListener("devicemotion", handleMotion);
-}
-
-function stopRide(){
-    riding = false;
-
-    if(watchId !== null){
-        navigator.geolocation.clearWatch(watchId);
-    }
-
-    window.removeEventListener("devicemotion", handleMotion);
-
-    alert("Brake Distance: " + brakeDistance.toFixed(2) + " m");
-}
-
-function resetData(){
-    speedChart.data.labels = [];
-    speedChart.data.datasets[0].data = [];
-    speedChart.update();
-
-    speedEl.innerText = "0 km/h";
-    leanEl.innerText = "0°";
-
-    lastSpeed = 0;
-    brakeDistance = 0;
 }
 
 function handleGPS(position){
 
-    if(!riding) return;
+    let now = Date.now();
+    let dt = (now - lastTime) / 1000;
+    if(dt <= 0) return;
 
-    let speedMS = position.coords.speed; // m/s
-
-    if(speedMS === null){
-        speedMS = 0;
-    }
+    let speedMS = position.coords.speed;
+    if(speedMS === null) speedMS = 0;
 
     let speedKMH = speedMS * 3.6;
+    speedEl.innerText = speedKMH.toFixed(1);
 
-    // คำนวณระยะเบรก
-    if(speedMS < lastSpeed){
-        brakeDistance += speedMS;
+    let acceleration = (speedMS - lastSpeed) / dt;
+
+    // ===== STATE MACHINE =====
+
+    if(state === "RIDING"){
+
+        if(speedKMH > 5 && acceleration < -1.2){
+            brakeSamples++;
+
+            if(brakeSamples >= 2){
+                state = "BRAKING";
+
+                brakeStartTime = now;
+                brakeStartSpeed = speedMS;
+                brakeDistance = 0;
+                peakDecel = 0;
+                decelSum = 0;
+                decelCount = 0;
+
+                chart.data.labels = [];
+                chart.data.datasets[0].data = [];
+                chart.update();
+            }
+        } else {
+            brakeSamples = 0;
+        }
+    }
+
+    else if(state === "BRAKING"){
+
+        let decel = Math.abs(acceleration);
+
+        brakeDistance += speedMS * dt;
+
+        if(decel > peakDecel){
+            peakDecel = decel;
+        }
+
+        decelSum += decel;
+        decelCount++;
+
+        chart.data.labels.push("");
+        chart.data.datasets[0].data.push(decel);
+        chart.update();
+
+        // STOP condition
+        if(speedKMH < 1){
+
+            state = "STOPPED";
+
+            let duration = (now - brakeStartTime) / 1000;
+            let avgDecel = decelSum / decelCount;
+
+            peakEl.innerText = peakDecel.toFixed(2);
+            distanceEl.innerText = brakeDistance.toFixed(2);
+            durationEl.innerText = duration.toFixed(2);
+
+            console.log("Initial Speed:", (brakeStartSpeed*3.6).toFixed(1));
+            console.log("Average Decel:", avgDecel.toFixed(2));
+        }
     }
 
     lastSpeed = speedMS;
-
-    speedEl.innerText = speedKMH.toFixed(1) + " km/h";
-
-    speedChart.data.labels.push("");
-    speedChart.data.datasets[0].data.push(speedKMH);
-
-    if(speedChart.data.labels.length > 30){
-        speedChart.data.labels.shift();
-        speedChart.data.datasets[0].data.shift();
-    }
-
-    speedChart.update();
+    lastTime = now;
 }
 
-function handleMotion(event){
-
-    if(!riding) return;
-
-    let ax = event.accelerationIncludingGravity.x;
-    let az = event.accelerationIncludingGravity.z;
-
-    if(ax === null) return;
-
-    // Lean angle
-    let lean = Math.atan2(ax, az) * (180/Math.PI);
-    leanEl.innerText = lean.toFixed(1) + "°";
-
-    // Crash detection (แรงกระแทกสูง)
-    let totalAcc = Math.sqrt(
-        event.accelerationIncludingGravity.x ** 2 +
-        event.accelerationIncludingGravity.y ** 2 +
-        event.accelerationIncludingGravity.z ** 2
-    );
-
-    if(totalAcc > 25){
-        alert("💥 Crash Detected!");
-        stopRide();
-    }
+function stopRide(){
+    navigator.geolocation.clearWatch(watchId);
 }
