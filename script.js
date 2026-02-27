@@ -141,6 +141,7 @@ function handleMotion(event){
         distance: brakeDistance,
         duration: duration
       });
+      updateSummary();
     }
   }
 }
