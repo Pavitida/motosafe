@@ -2,27 +2,17 @@ let braking = false;
 let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
-let decelSamples = [];
-let maxSpeedBeforeBrake = 0;
-
 let velocity = 0;
 let lastTime = 0;
-let calmTime = 0;
 
-let filteredAccel = 0;
-const alpha = 0.2;
+const HARD_BRAKE_THRESHOLD = 6;
 
-const BRAKE_THRESHOLD = -1.2;
-const CALM_THRESHOLD = 0.5;
-const CALM_DURATION = 0.4;
-
-let allEvents = JSON.parse(localStorage.getItem("motoData")) || [];
+let hardBrakeLogs = JSON.parse(localStorage.getItem("hardBrakes")) || [];
 
 const speedEl = document.getElementById("speed");
 const peakEl = document.getElementById("peak");
 const distanceEl = document.getElementById("distance");
 const durationEl = document.getElementById("duration");
-const summaryEl = document.getElementById("summary");
 
 const ctx = document.getElementById("speedChart").getContext("2d");
 
@@ -30,12 +20,22 @@ const chart = new Chart(ctx, {
   type: "line",
   data: {
     labels: [],
-    datasets: [{
-      label: "Deceleration (m/s²)",
-      data: [],
-      borderColor: "#4f8cff",
-      tension: 0.3
-    }]
+    datasets: [
+      {
+        label: "Normal Decel",
+        data: [],
+        borderColor: "#4f8cff",
+        backgroundColor: "#4f8cff",
+        tension: 0.3
+      },
+      {
+        label: "Hard Brake",
+        data: [],
+        borderColor: "red",
+        backgroundColor: "red",
+        tension: 0.3
+      }
+    ]
   },
   options: {
     responsive: true,
@@ -53,9 +53,13 @@ async function startRide(){
     }
   }
 
-  velocity = 0;
-  maxSpeedBeforeBrake = 0;
   lastTime = Date.now();
+  velocity = 0;
+
+  chart.data.labels = [];
+  chart.data.datasets[0].data = [];
+  chart.data.datasets[1].data = [];
+  chart.update();
 
   window.addEventListener("devicemotion", handleMotion);
 }
@@ -67,87 +71,70 @@ function handleMotion(event){
   lastTime = now;
   if(dt <= 0) return;
 
-  let accel = event.acceleration.y; // ใช้ตัวนี้แม่นกว่า
+  let accel = event.accelerationIncludingGravity.y;
   if(accel === null) return;
 
-  filteredAccel = alpha * accel + (1 - alpha) * filteredAccel;
-  velocity += filteredAccel * dt;
+  velocity += accel * dt;
+  let speedKMH = Math.abs(velocity * 3.6);
+  speedEl.innerText = speedKMH.toFixed(1);
 
-  let speedKmH = Math.abs(velocity * 3.6);
-  speedEl.innerText = speedKmH.toFixed(1);
-
-  if(speedKmH > maxSpeedBeforeBrake && !braking){
-    maxSpeedBeforeBrake = speedKmH;
-  }
-
-  // เริ่มเบรก
-  if(filteredAccel < BRAKE_THRESHOLD && !braking){
+  // เริ่มจับช่วงเบรก
+  if(accel < -2 && !braking){
     braking = true;
     brakeStartTime = now;
     brakeDistance = 0;
     peakDecel = 0;
-    decelSamples = [];
-    calmTime = 0;
-
-    chart.data.labels = [];
-    chart.data.datasets[0].data = [];
-    chart.update();
   }
 
   if(braking){
 
     brakeDistance += Math.abs(velocity) * dt;
-
-    let decel = Math.abs(filteredAccel);
-
-    if(decel > 15) decel = 15; // clamp realism
-
-    decelSamples.push(decel);
+    let decel = Math.abs(accel);
 
     if(decel > peakDecel){
       peakDecel = decel;
     }
 
     chart.data.labels.push("");
-    chart.data.datasets[0].data.push(decel);
-    chart.update();
 
-    if(Math.abs(filteredAccel) < CALM_THRESHOLD){
-      calmTime += dt;
+    if(decel > HARD_BRAKE_THRESHOLD){
+      chart.data.datasets[0].data.push(null);
+      chart.data.datasets[1].data.push(decel);
     } else {
-      calmTime = 0;
+      chart.data.datasets[0].data.push(decel);
+      chart.data.datasets[1].data.push(null);
     }
 
-    if(calmTime > CALM_DURATION){
+    chart.update();
+
+    if(Math.abs(velocity) < 0.3){
 
       braking = false;
 
       let duration = (now - brakeStartTime) / 1000;
-      let avgDecel =
-        decelSamples.reduce((a,b)=>a+b,0) / decelSamples.length;
 
       peakEl.innerText = peakDecel.toFixed(2);
       distanceEl.innerText = brakeDistance.toFixed(2);
       durationEl.innerText = duration.toFixed(2);
 
-      let severity = "Mild";
-      if(avgDecel >= 3 && avgDecel < 6) severity = "Moderate";
-      if(avgDecel >= 6) severity = "Hard";
+      if(peakDecel > HARD_BRAKE_THRESHOLD){
 
-      const eventData = {
-        timestamp: now,
-        peak: peakDecel,
-        avg: avgDecel,
-        distance: brakeDistance,
-        duration: duration,
-        maxSpeed: maxSpeedBeforeBrake,
-        severity: severity
-      };
+        alert("⚠️ HARD BRAKE DETECTED!");
 
-      allEvents.push(eventData);
-      localStorage.setItem("motoData", JSON.stringify(allEvents));
+        navigator.geolocation.getCurrentPosition(pos => {
 
-      updateSummary();
+          const log = {
+            peak: peakDecel,
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude,
+            time: new Date().toISOString()
+          };
+
+          hardBrakeLogs.push(log);
+          localStorage.setItem("hardBrakes", JSON.stringify(hardBrakeLogs));
+
+        });
+      }
     }
   }
 }
@@ -155,55 +142,3 @@ function handleMotion(event){
 function stopRide(){
   window.removeEventListener("devicemotion", handleMotion);
 }
-
-function updateSummary(){
-
-  let total = allEvents.length;
-  let totalAvg = 0;
-  let totalDistance = 0;
-  let maxPeak = 0;
-  let hardCount = 0;
-
-  allEvents.forEach(e=>{
-    totalAvg += e.avg;
-    totalDistance += e.distance;
-    if(e.peak > maxPeak) maxPeak = e.peak;
-    if(e.severity === "Hard") hardCount++;
-  });
-
-  let avgDecel = total ? totalAvg/total : 0;
-  let meanDistance = total ? totalDistance/total : 0;
-
-  summaryEl.innerHTML = `
-    <h3>Summary Dashboard</h3>
-    <p>Total Brake Events: ${total}</p>
-    <p>Average Deceleration: ${avgDecel.toFixed(2)} m/s²</p>
-    <p>Mean Brake Distance: ${meanDistance.toFixed(2)} m</p>
-    <p>Max Peak Recorded: ${maxPeak.toFixed(2)} m/s²</p>
-    <p>Total Hard Brakes: ${hardCount}</p>
-  `;
-}
-
-function exportCSV(){
-
-  let csv = "timestamp,peak,avg,distance,duration,maxSpeed,severity\n";
-
-  allEvents.forEach(e=>{
-    csv += `${e.timestamp},${e.peak},${e.avg},${e.distance},${e.duration},${e.maxSpeed},${e.severity}\n`;
-  });
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "motosafe_research_data.csv";
-  a.click();
-}
-
-function clearData(){
-  localStorage.removeItem("motoData");
-  allEvents = [];
-  updateSummary();
-}
-
-updateSummary();
