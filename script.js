@@ -6,10 +6,6 @@ let velocity = 0;
 let lastTime = 0;
 
 const HARD_THRESHOLD = 6;
-const HARD_MIN_DURATION = 0.15;
-
-let hardTimer = 0;
-let isHardBraking = false;
 
 let hardBrakeLogs = JSON.parse(localStorage.getItem("hardBrakes")) || [];
 
@@ -26,7 +22,7 @@ const chart = new Chart(ctx, {
     labels: [],
     datasets: [
       {
-        label: "Normal Brake",
+        label: "Deceleration (m/s²)",
         data: [],
         borderColor: "#4f8cff",
         tension: 0.3
@@ -55,14 +51,7 @@ async function startRide(){
     }
   }
 
-  velocity = 0;
   lastTime = Date.now();
-
-  chart.data.labels = [];
-  chart.data.datasets[0].data = [];
-  chart.data.datasets[1].data = [];
-  chart.update();
-
   window.addEventListener("devicemotion", handleMotion);
 }
 
@@ -80,14 +69,16 @@ function handleMotion(event){
   let speedKMH = Math.abs(velocity * 3.6);
   speedEl.innerText = speedKMH.toFixed(1);
 
-  // เริ่มจับเบรก
   if(accel < -2 && !braking){
     braking = true;
     brakeStartTime = now;
     brakeDistance = 0;
     peakDecel = 0;
-    hardTimer = 0;
-    isHardBraking = false;
+
+    chart.data.labels = [];
+    chart.data.datasets[0].data = [];
+    chart.data.datasets[1].data = [];
+    chart.update();
   }
 
   if(braking){
@@ -100,19 +91,9 @@ function handleMotion(event){
       peakDecel = decel;
     }
 
-    // ตรวจ hard brake แบบต่อเนื่อง
-    if(decel > HARD_THRESHOLD){
-      hardTimer += dt;
-      if(hardTimer >= HARD_MIN_DURATION){
-        isHardBraking = true;
-      }
-    } else {
-      hardTimer = 0;
-    }
-
     chart.data.labels.push("");
 
-    if(isHardBraking){
+    if(decel > HARD_THRESHOLD){
       chart.data.datasets[0].data.push(null);
       chart.data.datasets[1].data.push(decel);
     } else {
@@ -122,7 +103,6 @@ function handleMotion(event){
 
     chart.update();
 
-    // จบช่วงเบรก
     if(Math.abs(velocity) < 0.3){
 
       braking = false;
@@ -132,7 +112,8 @@ function handleMotion(event){
       distanceEl.innerText = brakeDistance.toFixed(2);
       durationEl.innerText = duration.toFixed(2);
 
-      if(isHardBraking){
+      // เพิ่มเฉพาะตรงนี้
+      if(peakDecel > HARD_THRESHOLD){
 
         alert("⚠️ HARD BRAKE DETECTED");
 
