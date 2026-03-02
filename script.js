@@ -1,21 +1,23 @@
-// ===============================
-// MotoSafe Pro - Stable Base Version
-// ===============================
+// ======================================
+// MotoSafe Pro - Clean Stable Final
+// ======================================
 
 let braking = false;
 let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
+
 let velocity = 0;
 let lastTime = 0;
 
 let totalBrakeEvents = 0;
-let totalDecelSum = 0;
+let totalPeakSum = 0;
 let totalDistanceSum = 0;
 let maxPeakRecorded = 0;
 
 const BRAKE_THRESHOLD = 1.5;
 
+// ===== DOM =====
 const speedEl = document.getElementById("speed");
 const peakEl = document.getElementById("peak");
 const distanceEl = document.getElementById("distance");
@@ -26,6 +28,7 @@ const avgDecelEl = document.getElementById("avgDecel");
 const meanDistanceEl = document.getElementById("meanDistance");
 const maxPeakEl = document.getElementById("maxPeak");
 
+// ===== Chart =====
 const ctx = document.getElementById("speedChart").getContext("2d");
 
 const chart = new Chart(ctx, {
@@ -53,6 +56,10 @@ const chart = new Chart(ctx, {
 let filteredAccel = 0;
 const alpha = 0.2;
 
+// ======================================
+// START
+// ======================================
+
 async function startRide(){
 
   if (typeof DeviceMotionEvent.requestPermission === "function") {
@@ -63,31 +70,51 @@ async function startRide(){
     }
   }
 
-  lastTime = Date.now();
+  // 🔥 RESET ทุกอย่าง
   velocity = 0;
+  filteredAccel = 0;
+  braking = false;
+
+  speedEl.innerText = "0.0";
+  peakEl.innerText = "0.00";
+  distanceEl.innerText = "0.00";
+  durationEl.innerText = "0.00";
+
+  lastTime = Date.now();
+
   window.addEventListener("devicemotion", handleMotion);
 }
 
+// ======================================
+// MOTION HANDLER
+// ======================================
+
 function handleMotion(event){
 
-  let now = Date.now();
-  let dt = (now - lastTime) / 1000;
+  const now = Date.now();
+  const dt = (now - lastTime) / 1000;
   lastTime = now;
+
   if(dt <= 0) return;
 
-  let rawAccel = event.accelerationIncludingGravity?.y;
+  const rawAccel = event.accelerationIncludingGravity?.y;
   if(rawAccel == null) return;
 
+  // Smooth ค่า
   filteredAccel = alpha * rawAccel + (1 - alpha) * filteredAccel;
+
+  // กัน noise เล็ก ๆ ไม่ให้ drift
+  if(Math.abs(filteredAccel) < 0.1) return;
 
   velocity += filteredAccel * dt;
 
+  // กันค่าหลุด
   if(Math.abs(velocity) > 50) velocity = 0;
 
-  let speedKMH = Math.abs(velocity * 3.6);
+  const speedKMH = Math.abs(velocity * 3.6);
   speedEl.innerText = speedKMH.toFixed(1);
 
-  // ===== Start Brake =====
+  // ===== เริ่ม Brake Event =====
   if(filteredAccel < -BRAKE_THRESHOLD && !braking){
 
     braking = true;
@@ -100,43 +127,53 @@ function handleMotion(event){
     chart.update();
   }
 
+  // ===== ระหว่าง Brake =====
   if(braking){
 
     brakeDistance += Math.abs(velocity) * dt;
 
-    let decel = Math.abs(filteredAccel);
+    const decel = Math.abs(filteredAccel);
 
-    if(decel > peakDecel) peakDecel = decel;
+    if(decel > peakDecel){
+      peakDecel = decel;
+    }
 
     chart.data.labels.push("");
     chart.data.datasets[0].data.push(decel);
     chart.update();
 
+    // ===== จบ Brake =====
     if(Math.abs(velocity) < 0.5){
 
       braking = false;
-      totalBrakeEvents++;
 
-      totalDecelSum += peakDecel;
+      totalBrakeEvents++;
+      totalPeakSum += peakDecel;
       totalDistanceSum += brakeDistance;
 
       if(peakDecel > maxPeakRecorded){
         maxPeakRecorded = peakDecel;
-        maxPeakEl.innerText = maxPeakRecorded.toFixed(2);
       }
 
-      let duration = (now - brakeStartTime) / 1000;
+      const duration = (Date.now() - brakeStartTime) / 1000;
 
+      // ===== Update Card =====
       peakEl.innerText = peakDecel.toFixed(2);
       distanceEl.innerText = brakeDistance.toFixed(2);
       durationEl.innerText = duration.toFixed(2);
 
+      // ===== Update Summary =====
       totalBrakeEl.innerText = totalBrakeEvents;
-      avgDecelEl.innerText = (totalDecelSum / totalBrakeEvents).toFixed(2);
+      avgDecelEl.innerText = (totalPeakSum / totalBrakeEvents).toFixed(2);
       meanDistanceEl.innerText = (totalDistanceSum / totalBrakeEvents).toFixed(2);
+      maxPeakEl.innerText = maxPeakRecorded.toFixed(2);
     }
   }
 }
+
+// ======================================
+// STOP
+// ======================================
 
 function stopRide(){
   window.removeEventListener("devicemotion", handleMotion);
