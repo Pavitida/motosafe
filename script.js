@@ -1,5 +1,5 @@
 // ======================================
-// MotoSafe Pro - Clean Academic Version
+// MotoSafe Pro - 2 Level Brake + Dual Color Chart
 // ======================================
 
 // ---------------- STATE ----------------
@@ -13,7 +13,8 @@ let braking = false;
 let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
-let brakeSamples = 0;
+
+let currentType = "normal"; // normal | hard
 
 // ---------------- SUMMARY ----------------
 let totalEvents = 0;
@@ -23,13 +24,13 @@ let totalPeak = 0;
 let maxPeak = 0;
 
 // ---------------- THRESHOLDS ----------------
-const START_THRESHOLD = -1.2;   // เริ่มถือว่าเบรก
-const HARD_THRESHOLD = -3.5;    // เบรกแรง
-const END_THRESHOLD = -0.3;     // จบ event
-const MIN_DURATION = 0.25;      // อย่างน้อย 0.25 วิ
-const DEADZONE = 0.15;          // กันสั่น
-const MIN_SPEED = 3;            // km/h
-const MAX_ACCEL_LIMIT = 15;     // กันค่าหลุด
+const START_THRESHOLD = -1.2;
+const HARD_THRESHOLD = -3.5;
+const END_THRESHOLD = -0.3;
+const MIN_DURATION = 0.25;
+const DEADZONE = 0.15;
+const MIN_SPEED = 3;
+const MAX_ACCEL_LIMIT = 15;
 
 // ---------------- DOM ----------------
 const speedEl = document.getElementById("speed");
@@ -37,6 +38,45 @@ const peakEl = document.getElementById("peak");
 const distanceEl = document.getElementById("distance");
 const durationEl = document.getElementById("duration");
 const summaryEl = document.getElementById("summary");
+
+// ---------------- CHART ----------------
+const ctx = document.getElementById("speedChart").getContext("2d");
+
+const chart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: "Normal Brake",
+        data: [],
+        borderColor: "blue",
+        borderWidth: 2,
+        tension: 0.3
+      },
+      {
+        label: "Hard Brake",
+        data: [],
+        borderColor: "red",
+        borderWidth: 2,
+        tension: 0.3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    animation: false,
+    scales: {
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "Deceleration (m/s²)"
+        }
+      }
+    }
+  }
+});
 
 // ---------------- START ----------------
 async function startRide() {
@@ -49,6 +89,11 @@ async function startRide() {
   velocity = 0;
   braking = false;
   lastTime = Date.now();
+
+  chart.data.labels = [];
+  chart.data.datasets[0].data = [];
+  chart.data.datasets[1].data = [];
+  chart.update();
 
   window.addEventListener("devicemotion", handleMotion);
 }
@@ -70,24 +115,18 @@ function handleMotion(event) {
   lastTime = now;
   if (dt <= 0) return;
 
-  // ใช้ acceleration (ไม่รวม gravity)
   let accel = event.acceleration?.y;
   if (accel == null) return;
 
-  // ตัดสัญญาณสั่นเล็ก ๆ
   if (Math.abs(accel) < DEADZONE) accel = 0;
-
   if (Math.abs(accel) > MAX_ACCEL_LIMIT) return;
 
-  // Low-pass filter
   filteredAccel = alpha * accel + (1 - alpha) * filteredAccel;
 
-  // integrate เฉพาะตอนมีแรงจริง
   if (filteredAccel !== 0) {
     velocity += filteredAccel * dt;
   }
 
-  // กัน drift ตอนใกล้ 0
   if (Math.abs(velocity) < 0.05) velocity = 0;
 
   const speedKmh = Math.abs(velocity * 3.6);
@@ -102,20 +141,37 @@ function handleMotion(event) {
     brakeStartTime = now;
     brakeDistance = 0;
     peakDecel = 0;
-    brakeSamples = 0;
+    currentType = "normal";
+
+    chart.data.labels = [];
+    chart.data.datasets[0].data = [];
+    chart.data.datasets[1].data = [];
   }
 
   // ---------------- DURING BRAKE ----------------
   if (braking) {
-
-    brakeSamples++;
 
     brakeDistance += Math.abs(velocity) * dt;
 
     const decel = Math.abs(filteredAccel);
     if (decel > peakDecel) peakDecel = decel;
 
-    // จบ event
+    if (decel >= Math.abs(HARD_THRESHOLD)) {
+      currentType = "hard";
+    }
+
+    chart.data.labels.push("");
+
+    if (currentType === "hard") {
+      chart.data.datasets[0].data.push(null);
+      chart.data.datasets[1].data.push(decel);
+    } else {
+      chart.data.datasets[0].data.push(decel);
+      chart.data.datasets[1].data.push(null);
+    }
+
+    chart.update();
+
     if (filteredAccel > END_THRESHOLD) {
       finalizeBrake(now);
     }
@@ -136,12 +192,11 @@ function finalizeBrake(now) {
 
   if (peakDecel > maxPeak) maxPeak = peakDecel;
 
-  if (peakDecel >= Math.abs(HARD_THRESHOLD)) {
+  if (currentType === "hard") {
     hardEvents++;
     alert("⚠️ HARD BRAKE DETECTED");
   }
 
-  // อัปเดตการ์ด
   peakEl.innerText = peakDecel.toFixed(2);
   distanceEl.innerText = brakeDistance.toFixed(2);
   durationEl.innerText = duration.toFixed(2);
@@ -158,11 +213,11 @@ function updateSummary() {
   const meanDistance = totalEvents ? (totalDistance / totalEvents) : 0;
 
   summaryEl.innerHTML = `
-    <h3>Summary Dashboard</h3>
+    <h3>Summary</h3>
     <p>Total Brake Events: ${totalEvents}</p>
     <p>Hard Brakes: ${hardEvents}</p>
-    <p>Average Peak Decel: ${avgPeak.toFixed(2)} m/s²</p>
-    <p>Mean Brake Distance: ${meanDistance.toFixed(2)} m</p>
-    <p>Max Peak Recorded: ${maxPeak.toFixed(2)} m/s²</p>
+    <p>Average Peak: ${avgPeak.toFixed(2)} m/s²</p>
+    <p>Mean Distance: ${meanDistance.toFixed(2)} m</p>
+    <p>Max Peak: ${maxPeak.toFixed(2)} m/s²</p>
   `;
 }
