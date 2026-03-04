@@ -1,66 +1,53 @@
 // ======================================
-// MotoSafe Pro - FINAL STABLE VERSION
+// MotoSafe PRO – 3 Level Brake Detection
 // ======================================
 
+// ---------- STATE ----------
+let velocity = 0;
+let lastTime = 0;
+
+let filteredAccel = 0;
+const alpha = 0.2; // smoothing factor
+
 let braking = false;
+let brakeCounter = 0;
 let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
 let brakeSamples = 0;
 
-let velocity = 0;
-let lastTime = 0;
+let prevFiltered = 0;
 
-let totalBrakeEvents = 0;
-let totalHardBrakes = 0;
-let totalPeakSum = 0;
-let totalDistanceSum = 0;
-let maxPeakRecorded = 0;
+// ---------- SUMMARY ----------
+let totalEvents = 0;
+let normalBrakes = 0;
+let hardBrakes = 0;
+let totalPeak = 0;
+let totalDistance = 0;
+let maxPeak = 0;
 
-const BRAKE_START_THRESHOLD = -2.0;   // เริ่ม brake
-const BRAKE_END_THRESHOLD = -0.5;     // ใช้ดูว่าหลุดจาก brake
-const HARD_BRAKE_THRESHOLD = 4.0;     // แรงจริง
-const MAX_DECEL_LIMIT = 12;           // กันค่าหลุด
+// ---------- THRESHOLDS ----------
+const START_THRESHOLD = -1.5;   // เริ่มถือว่า brake
+const HARD_THRESHOLD = -4.0;    // brake แรง
+const END_THRESHOLD = -0.5;     // จบ event
+const MIN_SAMPLES = 10;         // อย่างน้อย ~0.2s
+const MIN_SPEED = 10;           // km/h
+const MAX_ACCEL_LIMIT = 12;     // กันค่าหลุด
 
-// ===== DOM =====
+// ---------- DOM ----------
 const speedEl = document.getElementById("speed");
 const peakEl = document.getElementById("peak");
 const distanceEl = document.getElementById("distance");
 const durationEl = document.getElementById("duration");
 
-const totalBrakeEl = document.getElementById("totalBrakes");
+const totalEventEl = document.getElementById("totalBrakes");
+const normalEl = document.getElementById("normalBrakes");
+const hardEl = document.getElementById("totalHardBrakes");
 const avgDecelEl = document.getElementById("avgDecel");
 const meanDistanceEl = document.getElementById("meanDistance");
 const maxPeakEl = document.getElementById("maxPeak");
-const hardBrakeEl = document.getElementById("totalHardBrakes");
 
-// ===== Chart =====
-const ctx = document.getElementById("speedChart").getContext("2d");
-const chart = new Chart(ctx, {
-  type: "line",
-  data: {
-    labels: [],
-    datasets: [{
-      label: "Deceleration (m/s²)",
-      data: [],
-      borderWidth: 2,
-      borderColor: "#4f8cff",
-      tension: 0.25
-    }]
-  },
-  options: {
-    responsive: true,
-    animation: false,
-    scales: {
-      y: { beginAtZero: true }
-    }
-  }
-});
-
-// ======================================
-// START
-// ======================================
-
+// ---------- START ----------
 async function startRide(){
 
   if (typeof DeviceMotionEvent.requestPermission === "function") {
@@ -69,16 +56,18 @@ async function startRide(){
   }
 
   velocity = 0;
-  braking = false;
   lastTime = Date.now();
+  braking = false;
 
   window.addEventListener("devicemotion", handleMotion);
 }
 
-// ======================================
-// MOTION
-// ======================================
+// ---------- STOP ----------
+function stopRide(){
+  window.removeEventListener("devicemotion", handleMotion);
+}
 
+// ---------- MOTION ----------
 function handleMotion(event){
 
   const now = Date.now();
@@ -89,92 +78,97 @@ function handleMotion(event){
   let accel = event.acceleration?.y;
   if(accel == null) return;
 
-  // Deadzone กันสั่น
+  // Deadzone กันสั่นเล็ก ๆ
   if(Math.abs(accel) < 0.15) accel = 0;
 
-  // ตัดค่าหลุด
-  if(Math.abs(accel) > MAX_DECEL_LIMIT) return;
+  // กันค่าหลุด
+  if(Math.abs(accel) > MAX_ACCEL_LIMIT) return;
 
-  velocity += accel * dt;
+  // Low Pass Filter
+  filteredAccel = alpha * accel + (1 - alpha) * filteredAccel;
 
+  // integrate velocity
+  velocity += filteredAccel * dt;
   if(Math.abs(velocity) < 0.05) velocity = 0;
 
-  speedEl.innerText = Math.abs(velocity * 3.6).toFixed(1);
+  const speedKmh = Math.abs(velocity * 3.6);
+  speedEl.innerText = speedKmh.toFixed(1);
 
-  // ===== เริ่ม Brake =====
-  if(accel < BRAKE_START_THRESHOLD && !braking){
+  // -------------------------
+  // Detect brake start
+  // -------------------------
+  if(filteredAccel < START_THRESHOLD && speedKmh > MIN_SPEED){
+    brakeCounter++;
+  }else{
+    brakeCounter = 0;
+  }
 
+  if(brakeCounter > MIN_SAMPLES && !braking){
     braking = true;
     brakeStartTime = now;
     brakeDistance = 0;
     peakDecel = 0;
     brakeSamples = 0;
-
-    chart.data.labels = [];
-    chart.data.datasets[0].data = [];
-    chart.update();
   }
 
-  // ===== ระหว่าง Brake =====
+  // -------------------------
+  // During braking
+  // -------------------------
   if(braking){
 
     brakeSamples++;
-
     brakeDistance += Math.abs(velocity) * dt;
 
-    const decel = Math.abs(accel);
+    const decel = Math.abs(filteredAccel);
 
     if(decel > peakDecel){
       peakDecel = decel;
     }
 
-    chart.data.labels.push("");
-    chart.data.datasets[0].data.push(decel);
-    chart.update();
+    // End condition
+    if(filteredAccel > END_THRESHOLD){
 
-    // ===== จบ Brake =====
-    if(accel > BRAKE_END_THRESHOLD){
-
-      braking = false;
-
-      const duration = (Date.now() - brakeStartTime) / 1000;
-
-      // กัน event หลอก
-      if(brakeSamples < 5) return;
-
-      totalBrakeEvents++;
-      totalPeakSum += peakDecel;
-      totalDistanceSum += brakeDistance;
-
-      if(peakDecel > maxPeakRecorded){
-        maxPeakRecorded = peakDecel;
-      }
-
-      // ===== HARD BRAKE =====
-      if(peakDecel >= HARD_BRAKE_THRESHOLD){
-        totalHardBrakes++;
-        alert("⚠️ HARD BRAKE DETECTED!");
-      }
-
-      // ===== Update Card =====
-      peakEl.innerText = peakDecel.toFixed(2);
-      distanceEl.innerText = brakeDistance.toFixed(2);
-      durationEl.innerText = duration.toFixed(2);
-
-      // ===== Summary =====
-      totalBrakeEl.innerText = totalBrakeEvents;
-      avgDecelEl.innerText = (totalPeakSum / totalBrakeEvents).toFixed(2);
-      meanDistanceEl.innerText = (totalDistanceSum / totalBrakeEvents).toFixed(2);
-      maxPeakEl.innerText = maxPeakRecorded.toFixed(2);
-      hardBrakeEl.innerText = totalHardBrakes;
+      finalizeBrake(now);
     }
   }
+
+  prevFiltered = filteredAccel;
 }
 
-// ======================================
-// STOP
-// ======================================
+// ---------- FINALIZE ----------
+function finalizeBrake(now){
 
-function stopRide(){
-  window.removeEventListener("devicemotion", handleMotion);
+  braking = false;
+
+  if(brakeSamples < MIN_SAMPLES) return;
+
+  const duration = (now - brakeStartTime) / 1000;
+
+  totalEvents++;
+  totalPeak += peakDecel;
+  totalDistance += brakeDistance;
+
+  if(peakDecel > maxPeak){
+    maxPeak = peakDecel;
+  }
+
+  // ----- Classify -----
+  if(peakDecel >= HARD_THRESHOLD){
+    hardBrakes++;
+    alert("⚠️ HARD BRAKE DETECTED!");
+  }else{
+    normalBrakes++;
+  }
+
+  // ----- Update cards -----
+  peakEl.innerText = peakDecel.toFixed(2);
+  distanceEl.innerText = brakeDistance.toFixed(2);
+  durationEl.innerText = duration.toFixed(2);
+
+  totalEventEl.innerText = totalEvents;
+  normalEl.innerText = normalBrakes;
+  hardEl.innerText = hardBrakes;
+  avgDecelEl.innerText = (totalPeak / totalEvents).toFixed(2);
+  meanDistanceEl.innerText = (totalDistance / totalEvents).toFixed(2);
+  maxPeakEl.innerText = maxPeak.toFixed(2);
 }
