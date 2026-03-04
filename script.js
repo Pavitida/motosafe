@@ -1,5 +1,5 @@
 // ======================================
-// MotoSafe Pro - 2 Level Brake + Dual Color Chart
+// MotoSafe Pro - 2 Level Brake (Instant Hard Detect)
 // ======================================
 
 // ---------------- STATE ----------------
@@ -24,13 +24,13 @@ let totalPeak = 0;
 let maxPeak = 0;
 
 // ---------------- THRESHOLDS ----------------
-const START_THRESHOLD = -1.2;
-const HARD_THRESHOLD = -3.5;
-const END_THRESHOLD = -0.3;
-const MIN_DURATION = 0.25;
-const DEADZONE = 0.15;
-const MIN_SPEED = 3;
-const MAX_ACCEL_LIMIT = 15;
+const START_THRESHOLD = -1.5;   // เริ่มถือว่าเบรก
+const HARD_THRESHOLD = -4.2;    // เบรกแรงจริง = แดงทันที
+const END_THRESHOLD = -0.2;
+
+const MIN_DURATION = 0.2;       // กัน event สั้นหลอก
+const DEADZONE = 0.12;
+const MAX_ACCEL_LIMIT = 12;
 
 // ---------------- DOM ----------------
 const speedEl = document.getElementById("speed");
@@ -118,9 +118,13 @@ function handleMotion(event) {
   let accel = event.acceleration?.y;
   if (accel == null) return;
 
+  // กันสั่นเล็ก ๆ
   if (Math.abs(accel) < DEADZONE) accel = 0;
+
+  // กันค่ากระชากหลุด
   if (Math.abs(accel) > MAX_ACCEL_LIMIT) return;
 
+  // smoothing
   filteredAccel = alpha * accel + (1 - alpha) * filteredAccel;
 
   if (filteredAccel !== 0) {
@@ -133,9 +137,7 @@ function handleMotion(event) {
   speedEl.innerText = speedKmh.toFixed(1);
 
   // ---------------- START BRAKE ----------------
-  if (!braking &&
-      filteredAccel < START_THRESHOLD &&
-      speedKmh > MIN_SPEED) {
+  if (!braking && filteredAccel <= START_THRESHOLD) {
 
     braking = true;
     brakeStartTime = now;
@@ -154,9 +156,11 @@ function handleMotion(event) {
     brakeDistance += Math.abs(velocity) * dt;
 
     const decel = Math.abs(filteredAccel);
+
     if (decel > peakDecel) peakDecel = decel;
 
-    if (decel >= Math.abs(HARD_THRESHOLD)) {
+    // 🔥 เบรกแรง = แดงทันที
+    if (filteredAccel <= HARD_THRESHOLD) {
       currentType = "hard";
     }
 
