@@ -1,5 +1,7 @@
 // ======================================
-// MotoSafe Pro - 2 Level Brake (Instant Hard Detect)
+// MotoSafe Pro - 3 Level Deceleration Detection
+// Coast | Normal Brake | Hard Brake
+// Based on dv/dt (physics based)
 // ======================================
 
 // ---------------- STATE ----------------
@@ -14,7 +16,7 @@ let brakeStartTime = 0;
 let brakeDistance = 0;
 let peakDecel = 0;
 
-let currentType = "normal"; // normal | hard
+let currentType = "coast"; // coast | normal | hard
 
 // ---------------- SUMMARY ----------------
 let totalEvents = 0;
@@ -24,11 +26,14 @@ let totalPeak = 0;
 let maxPeak = 0;
 
 // ---------------- THRESHOLDS ----------------
-const START_THRESHOLD = -1.5;   // เริ่มถือว่าเบรก
-const HARD_THRESHOLD = -4.2;    // เบรกแรงจริง = แดงทันที
+// dv/dt thresholds (m/s²)
+const COAST_THRESHOLD = -0.6;     // เริ่มชะลอ
+const NORMAL_THRESHOLD = -1.6;    // เบรกปกติ
+const HARD_THRESHOLD = -3.8;      // เบรกฉุกเฉิน
+
 const END_THRESHOLD = -0.2;
 
-const MIN_DURATION = 0.2;       // กัน event สั้นหลอก
+const MIN_DURATION = 0.25;
 const DEADZONE = 0.12;
 const MAX_ACCEL_LIMIT = 12;
 
@@ -48,7 +53,7 @@ const chart = new Chart(ctx, {
     labels: [],
     datasets: [
       {
-        label: "Normal Brake",
+        label: "Coast / Normal",
         data: [],
         borderColor: "blue",
         borderWidth: 2,
@@ -118,50 +123,53 @@ function handleMotion(event) {
   let accel = event.acceleration?.y;
   if (accel == null) return;
 
-  // กันสั่นเล็ก ๆ
   if (Math.abs(accel) < DEADZONE) accel = 0;
-
-  // กันค่ากระชากหลุด
   if (Math.abs(accel) > MAX_ACCEL_LIMIT) return;
 
   // smoothing
   filteredAccel = alpha * accel + (1 - alpha) * filteredAccel;
 
-  if (filteredAccel !== 0) {
-    velocity += filteredAccel * dt;
-  }
+  // integrate to get velocity
+  velocity += filteredAccel * dt;
 
   if (Math.abs(velocity) < 0.05) velocity = 0;
 
   const speedKmh = Math.abs(velocity * 3.6);
   speedEl.innerText = speedKmh.toFixed(1);
 
-  // ---------------- START BRAKE ----------------
-  if (!braking && filteredAccel <= START_THRESHOLD) {
+  // ---------------- START DECEL ----------------
+  if (!braking && filteredAccel <= COAST_THRESHOLD) {
 
     braking = true;
     brakeStartTime = now;
     brakeDistance = 0;
     peakDecel = 0;
-    currentType = "normal";
+    currentType = "coast";
 
     chart.data.labels = [];
     chart.data.datasets[0].data = [];
     chart.data.datasets[1].data = [];
   }
 
-  // ---------------- DURING BRAKE ----------------
+  // ---------------- DURING DECEL ----------------
   if (braking) {
 
     brakeDistance += Math.abs(velocity) * dt;
 
-    const decel = Math.abs(filteredAccel);
+    const decel = -filteredAccel; // dv/dt
 
     if (decel > peakDecel) peakDecel = decel;
 
-    // 🔥 เบรกแรง = แดงทันที
-    if (filteredAccel <= HARD_THRESHOLD) {
+    // classify level
+    if (decel >= Math.abs(HARD_THRESHOLD)) {
       currentType = "hard";
+    }
+    else if (decel >= Math.abs(NORMAL_THRESHOLD)) {
+      if (currentType !== "hard")
+        currentType = "normal";
+    }
+    else {
+      currentType = "coast";
     }
 
     chart.data.labels.push("");
@@ -218,7 +226,7 @@ function updateSummary() {
 
   summaryEl.innerHTML = `
     <h3>Summary</h3>
-    <p>Total Brake Events: ${totalEvents}</p>
+    <p>Total Deceleration Events: ${totalEvents}</p>
     <p>Hard Brakes: ${hardEvents}</p>
     <p>Average Peak: ${avgPeak.toFixed(2)} m/s²</p>
     <p>Mean Distance: ${meanDistance.toFixed(2)} m</p>
