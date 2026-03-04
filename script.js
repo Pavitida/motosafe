@@ -1,5 +1,5 @@
 // ======================================
-// MotoSafe Pro - Clean Stable Final
+// MotoSafe Pro - Real Motorcycle Version
 // ======================================
 
 let braking = false;
@@ -15,7 +15,10 @@ let totalPeakSum = 0;
 let totalDistanceSum = 0;
 let maxPeakRecorded = 0;
 
-const BRAKE_THRESHOLD = 1.5;
+let zeroOffset = 0;
+
+const BRAKE_THRESHOLD = 2.0;      // เริ่มจับเบรก
+const MAX_REAL_DECEL = 10;        // เกินนี้ตัดทิ้ง (ฟิสิกส์จริง)
 
 // ===== DOM =====
 const speedEl = document.getElementById("speed");
@@ -52,10 +55,6 @@ const chart = new Chart(ctx, {
   }
 });
 
-// ===== Low-pass filter =====
-let filteredAccel = 0;
-const alpha = 0.2;
-
 // ======================================
 // START
 // ======================================
@@ -70,10 +69,10 @@ async function startRide(){
     }
   }
 
-  // 🔥 RESET ทุกอย่าง
   velocity = 0;
-  filteredAccel = 0;
   braking = false;
+  peakDecel = 0;
+  zeroOffset = 0;
 
   speedEl.innerText = "0.0";
   peakEl.innerText = "0.00";
@@ -94,29 +93,45 @@ function handleMotion(event){
   const now = Date.now();
   const dt = (now - lastTime) / 1000;
   lastTime = now;
-
   if(dt <= 0) return;
 
-  const rawAccel = event.accelerationIncludingGravity?.y;
-  if(rawAccel == null) return;
+  // ✅ ใช้ acceleration แท้ (ไม่มี gravity)
+  let accel = event.acceleration?.y;
+  if(accel == null) return;
 
-  // Smooth ค่า
-  filteredAccel = alpha * rawAccel + (1 - alpha) * filteredAccel;
+  // 🔥 Calibrate ค่าศูนย์ตอนแรก
+  if(zeroOffset === 0){
+    zeroOffset = accel;
+  }
 
-  // กัน noise เล็ก ๆ ไม่ให้ drift
-  if(Math.abs(filteredAccel) < 0.1) return;
+  accel = accel - zeroOffset;
 
-  velocity += filteredAccel * dt;
+  // 🔥 Deadzone กันสั่นตอนนิ่ง
+  if(Math.abs(accel) < 0.2){
+    accel = 0;
+  }
 
-  // กันค่าหลุด
-  if(Math.abs(velocity) > 50) velocity = 0;
+  // 🔥 ตัดค่าหลุดเกินจริง
+  if(Math.abs(accel) > MAX_REAL_DECEL){
+    return;
+  }
+
+  velocity += accel * dt;
+
+  // กัน drift ตอนหยุด
+  if(Math.abs(accel) === 0){
+    velocity *= 0.98;
+  }
+
+  if(Math.abs(velocity) < 0.05){
+    velocity = 0;
+  }
 
   const speedKMH = Math.abs(velocity * 3.6);
   speedEl.innerText = speedKMH.toFixed(1);
 
-  // ===== เริ่ม Brake Event =====
-  if(filteredAccel < -BRAKE_THRESHOLD && !braking){
-
+  // ===== เริ่ม Brake =====
+  if(accel < -BRAKE_THRESHOLD && !braking){
     braking = true;
     brakeStartTime = now;
     brakeDistance = 0;
@@ -127,12 +142,11 @@ function handleMotion(event){
     chart.update();
   }
 
-  // ===== ระหว่าง Brake =====
   if(braking){
 
     brakeDistance += Math.abs(velocity) * dt;
 
-    const decel = Math.abs(filteredAccel);
+    const decel = Math.abs(accel);
 
     if(decel > peakDecel){
       peakDecel = decel;
@@ -142,8 +156,7 @@ function handleMotion(event){
     chart.data.datasets[0].data.push(decel);
     chart.update();
 
-    // ===== จบ Brake =====
-    if(Math.abs(velocity) < 0.5){
+    if(Math.abs(velocity) === 0){
 
       braking = false;
 
@@ -157,12 +170,10 @@ function handleMotion(event){
 
       const duration = (Date.now() - brakeStartTime) / 1000;
 
-      // ===== Update Card =====
       peakEl.innerText = peakDecel.toFixed(2);
       distanceEl.innerText = brakeDistance.toFixed(2);
       durationEl.innerText = duration.toFixed(2);
 
-      // ===== Update Summary =====
       totalBrakeEl.innerText = totalBrakeEvents;
       avgDecelEl.innerText = (totalPeakSum / totalBrakeEvents).toFixed(2);
       meanDistanceEl.innerText = (totalDistanceSum / totalBrakeEvents).toFixed(2);
