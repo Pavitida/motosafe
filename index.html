@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>MotoSafe Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
-  <meta name="theme-color" content="#203a43" />
+<meta charset="UTF-8" />
+<title>MotoSafe Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="style.css" />
+<meta name="theme-color" content="#203a43" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -17,32 +18,32 @@
 
 <div class="container">
 
-  <div class="card">
-    <h2>Speed (km/h)</h2>
-    <div id="speed" class="value">0</div>
-  </div>
+<div class="card">
+<h2>Speed (km/h)</h2>
+<div id="speed" class="value">0</div>
+</div>
 
-  <div class="card">
-    <h2>Peak Decel (m/s²)</h2>
-    <div id="peak" class="value">0</div>
-  </div>
+<div class="card">
+<h2>Peak Decel (m/s²)</h2>
+<div id="peak" class="value">0</div>
+</div>
 
-  <div class="card">
-    <h2>Brake Distance (m)</h2>
-    <div id="distance" class="value">0</div>
-  </div>
+<div class="card">
+<h2>Brake Distance (m)</h2>
+<div id="distance" class="value">0</div>
+</div>
 
-  <div class="card">
-    <h2>Duration (s)</h2>
-    <div id="duration" class="value">0</div>
-  </div>
+<div class="card">
+<h2>Duration (s)</h2>
+<div id="duration" class="value">0</div>
+</div>
 
 </div>
 
 
 <div class="buttons">
-  <button onclick="startRide()">Start</button>
-  <button onclick="stopRide()">Stop</button>
+<button onclick="startRide()">Start</button>
+<button onclick="stopRide()">Stop</button>
 </div>
 
 <br>
@@ -53,26 +54,26 @@
 
 <canvas id="speedChart"></canvas>
 
+
 <div id="summary"></div>
-  <div class="card">
+
+<div class="card">
 <h2>Brake Events</h2>
 <div id="brakeLog"></div>
 </div>
+
 
 <div class="card">
 <h2>Driver Risk</h2>
 <div id="riskScore">0</div>
 </div>
-  
 
-
-<!-- 🔥 เพิ่ม Risk Analysis (เพิ่มอย่างเดียว) -->
 
 <div style="margin-top:30px">
 
 <h2>Driving Risk Analysis</h2>
 
-<p>Total Brakes: <span id="totalBrake">0</span></p>
+<p>Total Brakes: <span id="totalBrakes">0</span></p>
 <p>Hard Brakes: <span id="hardBrake">0</span></p>
 <p>Hard Brake Ratio: <span id="hardRatio">0%</span></p>
 <p>Risk Level: <span id="riskLevel">-</span></p>
