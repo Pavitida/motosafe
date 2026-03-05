@@ -56,3 +56,46 @@ canvas{
   margin:20px;
   padding:10px;
 }
+/* ===== MotoSafe Pro UI Upgrade (ADD ONLY) ===== */
+
+.container{
+  max-width:900px;
+  margin:auto;
+}
+
+.card{
+  backdrop-filter: blur(8px);
+  box-shadow:0 10px 25px rgba(0,0,0,0.3);
+  transition:0.25s;
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 14px 35px rgba(0,0,0,0.4);
+}
+
+.value{
+  font-weight:bold;
+  letter-spacing:1px;
+}
+
+button{
+  transition:0.2s;
+  box-shadow:0 6px 15px rgba(0,0,0,0.3);
+}
+
+button:active{
+  transform:scale(0.95);
+}
+
+#startBtn{
+  background:linear-gradient(135deg,#00c853,#43e97b);
+}
+
+#stopBtn{
+  background:linear-gradient(135deg,#ff512f,#dd2476);
+}
+
+canvas{
+  max-width:90%;
+}
