@@ -1,152 +1,269 @@
-let speed = 0
+let watching = false
+
 let lastSpeed = 0
-let lastTime = Date.now()
+let lastTime = 0
 
-let hardBrakeCount = 0
-let normalBrakeCount = 0
-let slowDownCount = 0
+let peakDecel = 0
+let brakeDistance = 0
+let brakeStart = null
 
-let tracking = false
+let totalBrakes = 0
+let hardBrakes = 0
 
-let speedData = []
-let timeData = []
+let speedHistory = []
+let timeHistory = []
 
-const ctx = document.getElementById("speedChart").getContext("2d")
+let rideStart = null
 
-const chart = new Chart(ctx,{
-type:'line',
+let chart
+
+function initChart(){
+
+const ctx = document.getElementById("speedChart")
+
+chart = new Chart(ctx,{
+type:"line",
 data:{
-labels:timeData,
+labels:[],
 datasets:[{
-label:'Speed (km/h)',
-data:speedData,
-borderWidth:3,
+label:"Speed km/h",
+data:[],
+borderWidth:2,
 tension:0.3
 }]
 },
 options:{
 responsive:true,
-plugins:{
-legend:{display:false}
-},
 scales:{
-y:{
-beginAtZero:true
-}
+y:{beginAtZero:true}
 }
 }
 })
 
-function startTracking(){
+}
 
-tracking = true
+initChart()
 
-navigator.geolocation.watchPosition(function(position){
 
-if(!tracking) return
+function startRide(){
 
-let gpsSpeed = position.coords.speed
+watching = true
+rideStart = Date.now()
 
-if(gpsSpeed == null) return
+navigator.geolocation.watchPosition(updateSpeed)
 
-speed = gpsSpeed * 3.6
+}
+
+
+function stopRide(){
+
+watching = false
+
+analyzeRisk()
+
+}
+
+
+function updateSpeed(position){
+
+if(!watching) return
+
+const speedMS = position.coords.speed || 0
+const speed = speedMS * 3.6
+
+const now = Date.now()
 
 document.getElementById("speed").innerText = speed.toFixed(1)
 
-detectBrake(speed)
+if(lastTime !== 0){
 
-updateGraph(speed)
-
-},{
-enableHighAccuracy:true
-})
-
-}
-
-function stopTracking(){
-tracking = false
-}
-
-function detectBrake(currentSpeed){
-
-let now = Date.now()
 let dt = (now-lastTime)/1000
 
-if(dt <= 0) return
+let dv = speed-lastSpeed
 
-let accel = (currentSpeed-lastSpeed)/dt
+let accel = dv/dt
+
 let decel = -accel
 
-/* ignore noise */
-if(Math.abs(decel) < 0.5){
-lastSpeed = currentSpeed
+
+if(decel > peakDecel){
+
+peakDecel = decel
+
+document.getElementById("peak").innerText = decel.toFixed(2)
+
+}
+
+
+detectBrake(speed,decel,dt)
+
+}
+
+
+lastSpeed = speed
 lastTime = now
+
+updateChart(speed)
+
+updateDuration()
+
+}
+
+
+function detectBrake(speed,decel,dt){
+
+if(speed <= 1){
+
+brakeStart = null
 return
-}
-
-/* HARD BRAKE */
-if(decel > 6){
-hardBrakeCount++
-}
-
-/* NORMAL BRAKE */
-else if(decel > 3){
-normalBrakeCount++
-}
-
-/* SLOW DOWN */
-else if(decel > 1){
-slowDownCount++
-}
-
-updateBrakeUI()
-
-lastSpeed = currentSpeed
-lastTime = now
 
 }
 
-function updateBrakeUI(){
 
-document.getElementById("hardBrake").innerText = hardBrakeCount
-document.getElementById("normalBrake").innerText = normalBrakeCount
-document.getElementById("slowDown").innerText = slowDownCount
+if(decel > 1){
 
-let total = hardBrakeCount + normalBrakeCount + slowDownCount
+if(brakeStart === null){
 
-document.getElementById("totalBrakes").innerText = total
+brakeStart = speed
+brakeDistance = 0
 
-if(total>0){
+}
 
-let ratio = (hardBrakeCount/total)*100
+brakeDistance += speed * dt / 3.6
 
-document.getElementById("hardBrakeRatio").innerText = ratio.toFixed(1)+"%"
 
-if(ratio < 20)
-document.getElementById("riskLevel").innerText = "SAFE"
+}else{
 
-else if(ratio < 40)
-document.getElementById("riskLevel").innerText = "MEDIUM"
+if(brakeStart !== null){
 
-else
-document.getElementById("riskLevel").innerText = "RISKY"
+logBrakeEvent()
+
+}
+
+brakeStart = null
 
 }
 
 }
 
-function updateGraph(speed){
+
+function logBrakeEvent(){
+
+totalBrakes++
+
+let type = "Normal Brake"
+
+if(peakDecel > 5){
+
+type = "HARD BRAKE"
+
+hardBrakes++
+
+}
+else if(peakDecel < 1.5){
+
+type = "Slow Down"
+
+}
+
+
+document.getElementById("brakeLog").innerHTML +=
+
+`<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>`
+
+
+document.getElementById("distance").innerText = brakeDistance.toFixed(1)
+
+document.getElementById("totalBrakes").innerText = totalBrakes
+document.getElementById("hardBrake").innerText = hardBrakes
+
+peakDecel = 0
+
+}
+
+
+function updateDuration(){
+
+let duration = (Date.now()-rideStart)/1000
+
+document.getElementById("duration").innerText = duration.toFixed(0)
+
+}
+
+
+function updateChart(speed){
 
 let time = new Date().toLocaleTimeString()
 
-timeData.push(time)
-speedData.push(speed)
+chart.data.labels.push(time)
 
-if(timeData.length > 20){
-timeData.shift()
-speedData.shift()
+chart.data.datasets[0].data.push(speed)
+
+if(chart.data.labels.length > 20){
+
+chart.data.labels.shift()
+chart.data.datasets[0].data.shift()
+
 }
 
 chart.update()
+
+}
+
+
+function analyzeRisk(){
+
+let ratio = 0
+
+if(totalBrakes > 0){
+
+ratio = (hardBrakes/totalBrakes)*100
+
+}
+
+document.getElementById("hardRatio").innerText = ratio.toFixed(1)+"%"
+
+let level = "SAFE"
+
+if(ratio > 40){
+
+level = "DANGEROUS"
+
+}
+else if(ratio > 20){
+
+level = "RISKY"
+
+}
+
+document.getElementById("riskLevel").innerText = level
+
+}
+
+
+function exportCSV(){
+
+let csv = "speed\n"
+
+chart.data.datasets[0].data.forEach(s=>{
+csv += s+"\n"
+})
+
+let blob = new Blob([csv])
+
+let a = document.createElement("a")
+
+a.href = URL.createObjectURL(blob)
+
+a.download = "ride.csv"
+
+a.click()
+
+}
+
+
+function clearData(){
+
+location.reload()
 
 }
