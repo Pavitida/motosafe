@@ -1,346 +1,235 @@
-// ======================================
-// MotoSafe Pro - Motion Based Detection
-// ======================================
-
-// STATE
-
-let velocity = 0
-let lastTime = 0
-
-let filteredAccel = 0
-const alpha = 0.25
-
-let braking = false
-let moving = false
-
-let brakeStartTime = 0
-let brakeDistance = 0
+let speed = 0
+let gpsSpeed = 0
 let peakDecel = 0
+let duration = 0
+let distance = 0
 
-let currentType = "normal"
+let running = false
+let startTime = 0
 
-// 🔥 เพิ่มเก็บข้อมูล
-let rideData = []
+let speeds=[]
+let times=[]
+let brakeEvents=[]
 
+let hardBrakeCount=0
+let normalBrakeCount=0
+let slowCount=0
 
-// SUMMARY
-
-let totalEvents = 0
-let hardEvents = 0
-let totalDistance = 0
-let totalPeak = 0
-let maxPeak = 0
-
-
-
-// THRESHOLDS
-
-const COAST_THRESHOLD = -0.6
-const NORMAL_THRESHOLD = -1.6
-const HARD_THRESHOLD = -3.8
-
-const END_THRESHOLD = -0.2
-
-const MIN_DURATION = 0.25
-const DEADZONE = 0.12
-const MAX_ACCEL_LIMIT = 12
-const STOP_SPEED = 0.3
-
-
-
-// DOM
+let lastAcc=0
 
 const speedEl = document.getElementById("speed")
 const peakEl = document.getElementById("peak")
 const distanceEl = document.getElementById("distance")
 const durationEl = document.getElementById("duration")
-const summaryEl = document.getElementById("summary")
 
-// 🔥 risk UI
-const totalBrakeEl=document.getElementById("totalBrake")
-const hardBrakeEl=document.getElementById("hardBrake")
-const hardRatioEl=document.getElementById("hardRatio")
-const riskLevelEl=document.getElementById("riskLevel")
+const brakeLog = document.getElementById("brakeLog")
+const summary = document.getElementById("summary")
+const riskScoreEl = document.getElementById("riskScore")
 
+let ctx = document.getElementById("speedChart").getContext("2d")
 
-
-// CHART
-
-const ctx=document.getElementById("speedChart").getContext("2d")
-
-const chart=new Chart(ctx,{
+let chart = new Chart(ctx,{
 type:"line",
 data:{
 labels:[],
 datasets:[
 {
-label:"Normal Brake",
+label:"Speed",
 data:[],
 borderColor:"blue",
-borderWidth:2,
+borderWidth:3,
 tension:0.3
 },
 {
 label:"Hard Brake",
 data:[],
 borderColor:"red",
-borderWidth:2,
-tension:0.3
+pointRadius:6,
+showLine:false
 }
 ]
-},
-options:{
-responsive:true,
-animation:false
 }
 })
 
-
-
-
-// START
-
 async function startRide(){
 
+if(running) return
+
 if(typeof DeviceMotionEvent.requestPermission==="function"){
-const permission=await DeviceMotionEvent.requestPermission()
-if(permission!=="granted")return
+let permission = await DeviceMotionEvent.requestPermission()
+if(permission!=="granted"){
+alert("Sensor permission denied")
+return
+}
 }
 
-velocity=0
-braking=false
-moving=false
-lastTime=Date.now()
+navigator.geolocation.watchPosition(updateGPS)
+
+running=true
+startTime=Date.now()
 
 window.addEventListener("devicemotion",handleMotion)
 
 }
 
-
-
-// STOP
-
 function stopRide(){
+
+running=false
 window.removeEventListener("devicemotion",handleMotion)
+
+summary.innerHTML=
+`Ride Summary <br>
+Hard Brake: ${hardBrakeCount} <br>
+Normal Brake: ${normalBrakeCount} <br>
+Slow Down: ${slowCount}`
+
+calculateRisk()
+
 }
 
+function updateGPS(position){
 
+let sp = position.coords.speed
 
+if(sp!==null){
 
-// MOTION
+gpsSpeed = sp
+speed = sp
+
+let kmh = sp*3.6
+
+speedEl.innerText = kmh.toFixed(1)
+
+}
+
+}
 
 function handleMotion(event){
 
-const now=Date.now()
-const dt=(now-lastTime)/1000
-lastTime=now
-if(dt<=0)return
+if(!running) return
 
-let accel=event.acceleration?.y
-if(accel==null)return
+let acc = event.accelerationIncludingGravity.y
 
-if(Math.abs(accel)<DEADZONE)accel=0
-if(Math.abs(accel)>MAX_ACCEL_LIMIT)return
+let filtered = (acc + lastAcc)/2
+lastAcc = filtered
 
-filteredAccel=alpha*accel+(1-alpha)*filteredAccel
+let decel = -filtered
 
-velocity+=filteredAccel*dt
-
-
-
-if(Math.abs(velocity)>STOP_SPEED){
-moving=true
-}else{
-velocity=0
-moving=false
+if(decel > peakDecel){
+peakDecel = decel
+peakEl.innerText = peakDecel.toFixed(2)
 }
 
-const speedKmh=Math.abs(velocity*3.6)
-speedEl.innerText=speedKmh.toFixed(1)
+let now = Date.now()
 
-if(!moving)return
+duration = (now-startTime)/1000
+durationEl.innerText = duration.toFixed(1)
 
+// วิเคราะห์เบรค
+detectBrake(decel)
 
+speeds.push(speed*3.6)
+times.push(duration)
 
-// START BRAKE
-
-if(!braking && filteredAccel<COAST_THRESHOLD){
-
-braking=true
-brakeStartTime=now
-brakeDistance=0
-peakDecel=0
-currentType="normal"
-
-chart.data.labels=[]
-chart.data.datasets[0].data=[]
-chart.data.datasets[1].data=[]
-
-}
-
-
-
-// DURING BRAKE
-
-if(braking){
-
-brakeDistance+=Math.abs(velocity)*dt
-
-const decel=-filteredAccel
-
-if(decel>peakDecel)peakDecel=decel
-
-if(decel>=Math.abs(HARD_THRESHOLD)){
-currentType="hard"
-}
-
-chart.data.labels.push("")
-
-if(currentType==="hard"){
-chart.data.datasets[0].data.push(null)
-chart.data.datasets[1].data.push(decel)
-}else{
-chart.data.datasets[0].data.push(decel)
-chart.data.datasets[1].data.push(null)
-}
-
+chart.data.labels = times
+chart.data.datasets[0].data = speeds
 chart.update()
 
-if(filteredAccel>END_THRESHOLD){
-finalizeBrake(now)
+}
+
+function detectBrake(decel){
+
+if(speed < 1) return
+
+// ชะลอ
+if(decel > 0.5 && decel < 2){
+
+slowCount++
+
+}
+
+// เบรคปกติ
+else if(decel >=2 && decel <5){
+
+normalBrakeCount++
+
+logBrake("Normal Brake",decel)
+
+}
+
+// เบรคแรง
+else if(decel >=5){
+
+hardBrakeCount++
+
+logBrake("HARD BRAKE",decel)
+
+markHardBrake()
+
 }
 
 }
 
-}
+function logBrake(type,decel){
 
+let time = new Date().toLocaleTimeString()
 
+brakeLog.innerHTML +=
+`<div>${time} | ${type} | ${decel.toFixed(2)} m/s²</div>`
 
-// FINALIZE
-
-function finalizeBrake(now){
-
-braking=false
-
-const duration=(now-brakeStartTime)/1000
-if(duration<MIN_DURATION)return
-
-totalEvents++
-totalDistance+=brakeDistance
-totalPeak+=peakDecel
-
-if(peakDecel>maxPeak)maxPeak=peakDecel
-
-if(currentType==="hard"){
-hardEvents++
-alert("⚠️ HARD BRAKE DETECTED")
-}
-
-peakEl.innerText=peakDecel.toFixed(2)
-distanceEl.innerText=brakeDistance.toFixed(2)
-durationEl.innerText=duration.toFixed(2)
-
-
-
-// 🔥 เก็บข้อมูล
-rideData.push({
-peak:peakDecel,
-distance:brakeDistance,
-duration:duration,
-type:currentType
+brakeEvents.push({
+time:time,
+type:type,
+force:decel
 })
 
-updateSummary()
-updateRisk()
+}
+
+function markHardBrake(){
+
+let data = new Array(times.length).fill(null)
+data[data.length-1] = speed*3.6
+
+chart.data.datasets[1].data = data
+chart.update()
 
 }
 
+function calculateRisk(){
 
+let score = 100
 
-// SUMMARY
+score -= hardBrakeCount * 10
+score -= normalBrakeCount * 3
 
-function updateSummary(){
+if(score <0) score = 0
 
-if(!summaryEl)return
-
-const avgPeak=totalEvents?(totalPeak/totalEvents):0
-
-summaryEl.innerHTML=`
-<h3>Summary</h3>
-<p>Total Brake Events: ${totalEvents}</p>
-<p>Hard Brakes: ${hardEvents}</p>
-<p>Average Peak: ${avgPeak.toFixed(2)} m/s²</p>
-<p>Max Peak: ${maxPeak.toFixed(2)} m/s²</p>
-`
-}
-
-
-
-// 🔥 RISK ANALYSIS
-
-function updateRisk(){
-
-let total=rideData.length
-let hard=rideData.filter(e=>e.type==="hard").length
-
-let ratio=total?hard/total:0
-
-totalBrakeEl.innerText=total
-hardBrakeEl.innerText=hard
-hardRatioEl.innerText=(ratio*100).toFixed(1)+"%"
-
-let risk="Safe Rider"
-
-if(ratio>0.4)risk="Dangerous Rider"
-else if(ratio>0.2)risk="Moderate Risk"
-
-riskLevelEl.innerText=risk
+riskScoreEl.innerText = score
 
 }
-
-
-
-// EXPORT CSV
 
 function exportCSV(){
 
-let csv="Peak,Distance,Duration,Type\n"
+let csv="time,type,force\n"
 
-rideData.forEach(e=>{
-csv+=`${e.peak},${e.distance},${e.duration},${e.type}\n`
+brakeEvents.forEach(e=>{
+csv += `${e.time},${e.type},${e.force}\n`
 })
 
-const blob=new Blob([csv])
-const url=URL.createObjectURL(blob)
+let blob = new Blob([csv],{type:"text/csv"})
+let url = URL.createObjectURL(blob)
 
-const a=document.createElement("a")
+let a = document.createElement("a")
 a.href=url
-a.download="motosafe_data.csv"
+a.download="brake_data.csv"
 a.click()
 
 }
 
-
-
-// CLEAR
-
 function clearData(){
 
-rideData=[]
-
-totalEvents=0
-hardEvents=0
-totalDistance=0
-totalPeak=0
-maxPeak=0
-
-chart.data.labels=[]
-chart.data.datasets[0].data=[]
-chart.data.datasets[1].data=[]
-
-chart.update()
-
-updateSummary()
-updateRisk()
+brakeEvents=[]
+brakeLog.innerHTML=""
+riskScoreEl.innerText="0"
 
 }
