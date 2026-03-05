@@ -1,245 +1,157 @@
-// ======================================
-// MotoSafe Pro - Motion Based Detection
-// Detect only when vehicle is moving
-// ======================================
+let watchId;
 
-// ---------------- STATE ----------------
-let velocity = 0;
+let speed = 0;
+let lastSpeed = 0;
 let lastTime = 0;
 
-let filteredAccel = 0;
-const alpha = 0.25;
-
 let braking = false;
-let moving = false;
-
 let brakeStartTime = 0;
-let brakeDistance = 0;
+let brakeStartSpeed = 0;
+
 let peakDecel = 0;
+let brakeDistance = 0;
 
-let currentType = "coast"; // coast | normal | hard
+let speedData = [];
+let timeData = [];
 
-// ---------------- SUMMARY ----------------
-let totalEvents = 0;
-let hardEvents = 0;
-let totalDistance = 0;
-let totalPeak = 0;
-let maxPeak = 0;
+const speedEl = document.getElementById("speed");
+const peakEl = document.getElementById("peak");
+const distanceEl = document.getElementById("distance");
+const durationEl = document.getElementById("duration");
 
-// ---------------- THRESHOLDS ----------------
-const COAST_THRESHOLD = -0.6
-const NORMAL_THRESHOLD = -1.6
-const HARD_THRESHOLD = -3.8
+const ctx = document.getElementById("speedChart").getContext("2d");
 
-const END_THRESHOLD = -0.2
+const speedChart = new Chart(ctx,{
+    type:"line",
+    data:{
+        labels:timeData,
+        datasets:[{
+            label:"Speed (km/h)",
+            data:speedData,
+            fill:false,
+            tension:0.2
+        }]
+    }
+});
 
-const MIN_DURATION = 0.25
-const DEADZONE = 0.12
-const MAX_ACCEL_LIMIT = 12
-const STOP_SPEED = 0.3
+function startRide(){
 
-// ---------------- DOM ----------------
-const speedEl = document.getElementById("speed")
-const peakEl = document.getElementById("peak")
-const distanceEl = document.getElementById("distance")
-const durationEl = document.getElementById("duration")
-const summaryEl = document.getElementById("summary")
+    if(!navigator.geolocation){
+        alert("GPS not supported");
+        return;
+    }
 
-// ---------------- CHART ----------------
-const ctx = document.getElementById("speedChart").getContext("2d")
+    watchId = navigator.geolocation.watchPosition(updateSpeed,error,{
+        enableHighAccuracy:true,
+        maximumAge:0,
+        timeout:5000
+    });
 
-const chart = new Chart(ctx,{
-type:"line",
-data:{
-labels:[],
-datasets:[
-{
-label:"Normal Brake / Coast",
-data:[],
-borderColor:"blue",
-borderWidth:2,
-tension:0.3
-},
-{
-label:"Hard Brake",
-data:[],
-borderColor:"red",
-borderWidth:2,
-tension:0.3
-}
-]
-},
-options:{
-responsive:true,
-animation:false,
-scales:{
-y:{
-beginAtZero:true,
-title:{
-display:true,
-text:"Deceleration (m/s²)"
-}
-}
-}
-}
-})
-
-// ---------------- START ----------------
-async function startRide(){
-
-if(typeof DeviceMotionEvent.requestPermission==="function"){
-const permission=await DeviceMotionEvent.requestPermission()
-if(permission!=="granted") return
 }
 
-velocity=0
-braking=false
-moving=false
-lastTime=Date.now()
-
-chart.data.labels=[]
-chart.data.datasets[0].data=[]
-chart.data.datasets[1].data=[]
-chart.update()
-
-window.addEventListener("devicemotion",handleMotion)
-}
-
-// ---------------- STOP ----------------
 function stopRide(){
-window.removeEventListener("devicemotion",handleMotion)
-}
 
-// ---------------- MOTION ----------------
-function handleMotion(event){
-
-const now=Date.now()
-const dt=(now-lastTime)/1000
-lastTime=now
-if(dt<=0) return
-
-let accel=event.acceleration?.y
-if(accel==null) return
-
-if(Math.abs(accel)<DEADZONE) accel=0
-if(Math.abs(accel)>MAX_ACCEL_LIMIT) return
-
-filteredAccel=alpha*accel+(1-alpha)*filteredAccel
-
-velocity+=filteredAccel*dt
-
-// ตรวจว่ารถกำลังวิ่งไหม
-if(Math.abs(velocity)>STOP_SPEED){
-moving=true
-}else{
-velocity=0
-moving=false
-
-if(braking){
-finalizeBrake(now)
-}
-}
-
-const speedKmh=Math.abs(velocity*3.6)
-speedEl.innerText=speedKmh.toFixed(1)
-
-// ถ้าไม่วิ่งไม่ต้องจับ
-if(!moving) return
-
-// ---------------- START DECEL ----------------
-if(!braking && filteredAccel<COAST_THRESHOLD){
-
-braking=true
-brakeStartTime=now
-brakeDistance=0
-peakDecel=0
-currentType="coast"
-
-chart.data.labels=[]
-chart.data.datasets[0].data=[]
-chart.data.datasets[1].data=[]
-}
-
-// ---------------- DURING DECEL ----------------
-if(braking){
-
-brakeDistance+=Math.abs(velocity)*dt
-
-const decel=-filteredAccel
-
-if(decel>peakDecel) peakDecel=decel
-
-if(decel>=Math.abs(HARD_THRESHOLD)){
-currentType="hard"
-}
-else if(decel>=Math.abs(NORMAL_THRESHOLD)){
-if(currentType!=="hard")
-currentType="normal"
-}
-else{
-currentType="coast"
-}
-
-// -------- GRAPH --------
-chart.data.labels.push("")
-
-if(currentType==="hard"){
-chart.data.datasets[0].data.push(null)
-chart.data.datasets[1].data.push(decel)
-}else{
-chart.data.datasets[0].data.push(decel)
-chart.data.datasets[1].data.push(null)
-}
-
-chart.update()
-
-if(filteredAccel>END_THRESHOLD){
-finalizeBrake(now)
-}
+    navigator.geolocation.clearWatch(watchId);
 
 }
 
+function updateSpeed(position){
+
+    let now = Date.now();
+    let gpsSpeed = position.coords.speed;
+
+    if(gpsSpeed == null){
+        gpsSpeed = 0;
+    }
+
+    speed = gpsSpeed * 3.6;
+
+    speedEl.innerText = speed.toFixed(1);
+
+    timeData.push((now/1000).toFixed(0));
+    speedData.push(speed);
+
+    speedChart.update();
+
+    if(lastTime !== 0){
+
+        let dt = (now - lastTime)/1000;
+        let dv = speed - lastSpeed;
+
+        let accel = (dv/3.6)/dt;
+
+        if(accel < peakDecel){
+            peakDecel = accel;
+            peakEl.innerText = peakDecel.toFixed(2);
+        }
+
+        if(accel < -1.5 && !braking){
+
+            braking = true;
+            brakeStartTime = now;
+            brakeStartSpeed = lastSpeed;
+            peakDecel = accel;
+            brakeDistance = 0;
+
+        }
+
+        if(braking){
+
+            brakeDistance += (speed/3.6)*dt;
+
+            distanceEl.innerText = brakeDistance.toFixed(2);
+
+            let duration = (now - brakeStartTime)/1000;
+            durationEl.innerText = duration.toFixed(2);
+
+            if(speed < 2){
+
+                braking = false;
+
+            }
+
+        }
+
+    }
+
+    lastSpeed = speed;
+    lastTime = now;
+
 }
 
-// ---------------- FINALIZE ----------------
-function finalizeBrake(now){
+function error(err){
 
-braking=false
-
-const duration=(now-brakeStartTime)/1000
-if(duration<MIN_DURATION) return
-
-totalEvents++
-totalDistance+=brakeDistance
-totalPeak+=peakDecel
-
-if(peakDecel>maxPeak) maxPeak=peakDecel
-
-if(currentType==="hard"){
-hardEvents++
-alert("⚠️ HARD BRAKE DETECTED")
-}
-
-peakEl.innerText=peakDecel.toFixed(2)
-distanceEl.innerText=brakeDistance.toFixed(2)
-durationEl.innerText=duration.toFixed(2)
-
-updateSummary()
+    console.log(err);
 
 }
 
-// ---------------- SUMMARY ----------------
-function updateSummary(){
+function exportCSV(){
 
-if(!summaryEl) return
+    let csv = "time,speed\n";
 
-const avgPeak=totalEvents?(totalPeak/totalEvents):0
+    for(let i=0;i<speedData.length;i++){
 
-summaryEl.innerHTML=`
-<h3>Summary</h3>
-<p>Total Events: ${totalEvents}</p>
-<p>Hard Brakes: ${hardEvents}</p>
-<p>Average Peak: ${avgPeak.toFixed(2)} m/s²</p>
-<p>Max Peak: ${maxPeak.toFixed(2)} m/s²</p>
-`
+        csv += timeData[i]+","+speedData[i]+"\n";
+
+    }
+
+    let blob = new Blob([csv],{type:"text/csv"});
+    let url = URL.createObjectURL(blob);
+
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "motosafe_data.csv";
+    a.click();
+
+}
+
+function clearData(){
+
+    speedData = [];
+    timeData = [];
+
+    speedChart.data.labels = [];
+    speedChart.data.datasets[0].data = [];
+    speedChart.update();
+
 }
