@@ -1,63 +1,108 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>MotoSafe Pro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
-  <meta name="theme-color" content="#203a43" />
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8">
+<title>MotoSafe Timer</title>
 </head>
+
 <body>
 
-  <h1>🏍 MotoSafe Pro</h1>
+<h2>MotoSafe Riding Timer</h2>
 
-  <div class="container">
-    <div class="card">
-      <h2>Speed (km/h)</h2>
-      <div id="speed" class="value">0</div>
-    </div>
+<button onclick="startSensor()">Start Sensor</button>
 
-    <div class="card">
-      <h2>Peak Decel (m/s²)</h2>
-      <div id="peak" class="value">0</div>
-    </div>
+<p>Duration (s): <span id="duration">0</span></p>
 
-    <div class="card">
-      <h2>Brake Distance (m)</h2>
-      <div id="distance" class="value">0</div>
-    </div>
+<script>
 
-    <div class="card">
-      <h2>Duration (s)</h2>
-      <div id="duration" class="value">0</div>
-    </div>
-  </div>
-  <div class="buttons">
-    <button onclick="startRide()">Start</button>
-    <button onclick="stopRide()">Stop</button>
-  </div>
-<div id="summary"></div>
-<button onclick="exportCSV()">Export CSV</button>
-<button onclick="clearData()">Clear All Data</button>
-  </div>
+let startTime = null;
+let totalTime = 0;
+let moving = false;
 
-  <canvas id="speedChart"></canvas>
-  <div id="summary" style="margin:20px;"></div>
+const threshold = 1.2; 
+const stopDelay = 3000; 
 
-<div style="margin-bottom:30px;">
-  <button onclick="exportCSV()">Export CSV</button>
-</div>
+let lastMoveTime = 0;
 
-  <script src="script.js"></script>
+function startSensor(){
 
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
-    }
-  </script>
+if (typeof DeviceMotionEvent.requestPermission === "function") {
+
+DeviceMotionEvent.requestPermission().then(permissionState => {
+
+if (permissionState === "granted") {
+
+window.addEventListener("devicemotion", motionHandler);
+
+}
+
+});
+
+} else {
+
+window.addEventListener("devicemotion", motionHandler);
+
+}
+
+}
+
+function motionHandler(event){
+
+let ax = event.accelerationIncludingGravity.x || 0;
+let ay = event.accelerationIncludingGravity.y || 0;
+let az = event.accelerationIncludingGravity.z || 0;
+
+let magnitude = Math.sqrt(ax*ax + ay*ay + az*az);
+
+let now = Date.now();
+
+if(magnitude > threshold){
+
+lastMoveTime = now;
+
+if(!moving){
+
+moving = true;
+
+startTime = now;
+
+}
+
+}
+
+if(moving && now - lastMoveTime > stopDelay){
+
+moving = false;
+
+totalTime += now - startTime;
+
+startTime = null;
+
+}
+
+updateTimer();
+
+}
+
+function updateTimer(){
+
+let now = Date.now();
+
+let current = totalTime;
+
+if(moving && startTime){
+
+current += now - startTime;
+
+}
+
+document.getElementById("duration").innerText = Math.floor(current/1000);
+
+setTimeout(updateTimer,500);
+
+}
+
+</script>
 
 </body>
 </html>
