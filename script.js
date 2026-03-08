@@ -17,6 +17,7 @@ let rideStart=null
 let chart
 let decelChart
 let brakeChart
+let watchId
 
 window.onload=function(){
 
@@ -34,7 +35,14 @@ options:{responsive:true}
 
 brakeChart=new Chart(document.getElementById("brakeChart"),{
 type:"pie",
-data:{labels:["Slow","Normal","Hard"],datasets:[{data:[0,0,0]}]},
+data:{labels:["Slow","Normal","Hard"],datasets:datasets:[{
+data:[0,0,0],
+backgroundColor:[
+"#4dabf7",
+"#ffd43b",
+"#ff6b6b"
+]
+}]},
 options:{responsive:true}
 })
 
@@ -45,13 +53,17 @@ function startRide(){
 watching=true
 rideStart=Date.now()
 
-navigator.geolocation.watchPosition(updateSpeed)
+watchId = navigator.geolocation.watchPosition(
+updateSpeed,
+(err)=>{alert("GPS Error")}
+)
 
 }
 
 function stopRide(){
 
 watching=false
+navigator.geolocation.clearWatch(watchId)
 analyzeRisk()
 
 }
@@ -106,7 +118,7 @@ return
 
 }
 
-if(decel>1){
+if(decel>2){
 
 if(brakeStart===null){
 
