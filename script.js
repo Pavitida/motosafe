@@ -9,15 +9,16 @@ let brakeStart = null
 
 let totalBrakes = 0
 let hardBrakes = 0
-
-let speedHistory = []
-let timeHistory = []
+let slowBrakes = 0
+let normalBrakes = 0
 
 let rideStart = null
 
 let chart
+let decelChart
+let brakeChart
 
-function initChart(){
+function initCharts(){
 
 const ctx = document.getElementById("speedChart")
 
@@ -29,7 +30,9 @@ datasets:[{
 label:"Speed km/h",
 data:[],
 borderWidth:2,
-tension:0.3
+tension:0.3,
+pointRadius:4,
+pointBackgroundColor:[]
 }]
 },
 options:{
@@ -40,9 +43,42 @@ y:{beginAtZero:true}
 }
 })
 
+const decelCtx = document.getElementById("decelChart")
+
+decelChart = new Chart(decelCtx,{
+type:"line",
+data:{
+labels:[],
+datasets:[{
+label:"Deceleration m/s²",
+data:[],
+borderWidth:2,
+tension:0.3
+}]
+},
+options:{
+responsive:true,
+scales:{y:{beginAtZero:true}}
+}
+})
+
+
+const brakeCtx = document.getElementById("brakeChart")
+
+brakeChart = new Chart(brakeCtx,{
+type:"pie",
+data:{
+labels:["Slow","Normal","Hard"],
+datasets:[{
+data:[0,0,0]
+}]
+},
+options:{responsive:true}
+})
+
 }
 
-initChart()
+initCharts()
 
 
 function startRide(){
@@ -58,7 +94,6 @@ navigator.geolocation.watchPosition(updateSpeed)
 function stopRide(){
 
 watching = false
-
 analyzeRisk()
 
 }
@@ -78,33 +113,29 @@ document.getElementById("speed").innerText = speed.toFixed(1)
 if(lastTime !== 0){
 
 let dt = (now-lastTime)/1000
-
 let dv = speed-lastSpeed
 
 let accel = dv/dt
-
 let decel = -accel
 
+updateDecelChart(decel)
+checkCrash(decel)
 
 if(decel > peakDecel){
 
 peakDecel = decel
-
 document.getElementById("peak").innerText = decel.toFixed(2)
 
 }
-
 
 detectBrake(speed,decel,dt)
 
 }
 
-
 lastSpeed = speed
 lastTime = now
 
 updateChart(speed)
-
 updateDuration()
 
 }
@@ -119,7 +150,6 @@ return
 
 }
 
-
 if(decel > 1){
 
 if(brakeStart === null){
@@ -130,7 +160,6 @@ brakeDistance = 0
 }
 
 brakeDistance += speed * dt / 3.6
-
 
 }else{
 
@@ -156,26 +185,28 @@ let type = "Normal Brake"
 if(peakDecel > 5){
 
 type = "HARD BRAKE"
-
 hardBrakes++
 
-}
-else if(peakDecel < 1.5){
+}else if(peakDecel < 1.5){
 
 type = "Slow Down"
+slowBrakes++
+
+}else{
+
+normalBrakes++
 
 }
 
-
 document.getElementById("brakeLog").innerHTML +=
-
-`<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>`
-
+<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>
 
 document.getElementById("distance").innerText = brakeDistance.toFixed(1)
 
 document.getElementById("totalBrakes").innerText = totalBrakes
 document.getElementById("hardBrake").innerText = hardBrakes
+
+updateBrakeChart()
 
 peakDecel = 0
 
@@ -196,17 +227,71 @@ function updateChart(speed){
 let time = new Date().toLocaleTimeString()
 
 chart.data.labels.push(time)
-
 chart.data.datasets[0].data.push(speed)
+
+if(peakDecel > 5){
+
+chart.data.datasets[0].pointBackgroundColor.push("red")
+
+}else{
+
+chart.data.datasets[0].pointBackgroundColor.push("blue")
+
+}
 
 if(chart.data.labels.length > 20){
 
 chart.data.labels.shift()
 chart.data.datasets[0].data.shift()
+chart.data.datasets[0].pointBackgroundColor.shift()
 
 }
 
 chart.update()
+
+}
+
+
+function updateDecelChart(decel){
+
+let time = new Date().toLocaleTimeString()
+
+decelChart.data.labels.push(time)
+decelChart.data.datasets[0].data.push(decel)
+
+if(decelChart.data.labels.length > 20){
+
+decelChart.data.labels.shift()
+decelChart.data.datasets[0].data.shift()
+
+}
+
+decelChart.update()
+
+}
+
+
+function checkCrash(decel){
+
+if(decel > 12){
+
+document.getElementById("crashStatus").innerText =
+"🚨 Possible Crash Detected"
+
+}
+
+}
+
+
+function updateBrakeChart(){
+
+brakeChart.data.datasets[0].data = [
+slowBrakes,
+normalBrakes,
+hardBrakes
+]
+
+brakeChart.update()
 
 }
 
@@ -237,6 +322,16 @@ level = "RISKY"
 }
 
 document.getElementById("riskLevel").innerText = level
+
+
+let score = 100
+
+score -= hardBrakes * 10
+score -= normalBrakes * 3
+
+if(score < 0) score = 0
+
+document.getElementById("riskScore").innerText = score
 
 }
 
