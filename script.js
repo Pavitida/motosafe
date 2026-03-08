@@ -21,6 +21,10 @@ let brakeChart
 
 window.onload=function(){
 
+initCharts()
+
+showSection("dashboard")
+
 chart=new Chart(document.getElementById("speedChart"),{
 type:"line",
 data:{
@@ -322,5 +326,14 @@ a.click()
 function clearData(){
 
 location.reload()
+
+}
+function showSection(id){
+
+document.querySelectorAll(".section").forEach(sec=>{
+sec.classList.remove("active")
+})
+
+document.getElementById(id).classList.add("active")
 
 }
