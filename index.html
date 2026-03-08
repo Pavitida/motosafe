@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>MotoSafe Pro</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="manifest" href="manifest.json" />
-<link rel="stylesheet" href="style.css" />
-<meta name="theme-color" content="#203a43" />
+<link rel="stylesheet" href="style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -40,20 +38,17 @@
 
 </div>
 
-
 <div class="buttons">
 <button onclick="startRide()">Start</button>
 <button onclick="stopRide()">Stop</button>
 </div>
 
-<br>
-
 <button onclick="exportCSV()">Export CSV</button>
 <button onclick="clearData()">Clear All Data</button>
 
-
 <canvas id="speedChart"></canvas>
-  <h2>Deceleration Graph</h2>
+
+<h2>Deceleration Graph</h2>
 <canvas id="decelChart"></canvas>
 
 <h2>Brake Distribution</h2>
@@ -64,40 +59,27 @@
 <div id="crashStatus">No crash detected</div>
 </div>
 
-
-<div id="summary"></div>
-
 <div class="card">
 <h2>Brake Events</h2>
 <div id="brakeLog"></div>
 </div>
 
-
 <div class="card">
 <h2>Driver Risk</h2>
-<div id="riskScore">0</div>
+<div id="riskScore">100</div>
 </div>
 
-
 <div style="margin-top:30px">
-
 <h2>Driving Risk Analysis</h2>
 
 <p>Total Brakes: <span id="totalBrakes">0</span></p>
 <p>Hard Brakes: <span id="hardBrake">0</span></p>
 <p>Hard Brake Ratio: <span id="hardRatio">0%</span></p>
-<p>Risk Level: <span id="riskLevel">-</span></p>
+<p>Risk Level: <span id="riskLevel">SAFE</span></p>
 
 </div>
 
-
 <script src="script.js"></script>
-
-<script>
-if ("serviceWorker" in navigator) {
-navigator.serviceWorker.register("service-worker.js")
-}
-</script>
 
 </body>
 </html>
