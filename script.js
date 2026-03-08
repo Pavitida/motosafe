@@ -1,6 +1,9 @@
 let watching=false
 let watchId=null
 
+let maxSpeed = 0
+let totalDistance = 0
+
 let lastSpeed=0
 let lastTime=0
 
@@ -88,6 +91,16 @@ navigator.geolocation.clearWatch(watchId)
 
 analyzeRisk()
 
+let avgSpeed = calculateAverageSpeed()
+
+alert(
+"Ride Summary\n\n"+
+"Distance: "+totalDistance.toFixed(2)+" km\n"+
+"Max Speed: "+maxSpeed.toFixed(1)+" km/h\n"+
+"Average Speed: "+avgSpeed.toFixed(1)+" km/h\n"+
+"Hard Brakes: "+hardBrakes
+)
+
 }
 
 function updateSpeed(position){
@@ -101,6 +114,12 @@ const now=Date.now()
 
 document.getElementById("speed").innerText=speed.toFixed(1)
 
+if(speed > maxSpeed){
+maxSpeed = speed
+let el = document.getElementById("maxSpeed")
+if(el) el.innerText = maxSpeed.toFixed(1)
+}
+
 if(lastTime!==0){
 
 let dt=(now-lastTime)/1000
@@ -108,6 +127,11 @@ let dv=speed-lastSpeed
 
 let accel=dv/dt
 let decel=-accel
+
+totalDistance += speed * dt / 3600
+
+let distEl=document.getElementById("distanceRide")
+if(distEl) distEl.innerText=totalDistance.toFixed(2)
 
 updateDecelChart(decel)
 checkCrash(decel)
@@ -296,6 +320,18 @@ score-=normalBrakes*3
 if(score<0)score=0
 
 document.getElementById("riskScore").innerText=score
+
+}
+
+function calculateAverageSpeed(){
+
+let duration=(Date.now()-rideStart)/1000
+
+if(duration==0) return 0
+
+let avg=totalDistance/(duration/3600)
+
+return avg
 
 }
 
