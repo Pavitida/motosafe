@@ -1,42 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
-<title>MotoSafe Pro</title>
-
+<title>MotoSafe Pro</title> 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link rel="stylesheet" href="style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 </head>
-
 
 <body>
 
 <h1>🏍 MotoSafe Pro</h1>
 
 
-<div class="menu">
-
-<button onclick="showSection('dashboard')">Dashboard</button>
-
-<button onclick="showSection('graphs')">Graphs</button>
-
-<button onclick="showSection('brake')">Brake Analysis</button>
-
-<button onclick="showSection('summary')">Ride Summary</button>
-
-</div>
-
-
-
-<!-- DASHBOARD -->
-
-<div id="dashboard" class="section">
 
 <div class="container">
 
@@ -62,103 +40,48 @@
 
 </div>
 
-
 <div class="buttons">
-
 <button onclick="startRide()">Start</button>
-
 <button onclick="stopRide()">Stop</button>
-
 </div>
-
 
 <button onclick="exportCSV()">Export CSV</button>
-
 <button onclick="clearData()">Clear All Data</button>
-
-</div>
-
-
-
-<!-- GRAPHS -->
-
-<div id="graphs" class="section">
-
-<h2>Speed Graph</h2>
 
 <canvas id="speedChart"></canvas>
 
-
 <h2>Deceleration Graph</h2>
-
 <canvas id="decelChart"></canvas>
 
-</div>
-
-
-
-<!-- BRAKE ANALYSIS -->
-
-<div id="brake" class="section">
-
 <h2>Brake Distribution</h2>
-
 <canvas id="brakeChart"></canvas>
 
-
 <div class="card">
-
 <h2>Crash Detection</h2>
-
 <div id="crashStatus">No crash detected</div>
-
 </div>
 
-
 <div class="card">
-
 <h2>Brake Events</h2>
-
 <div id="brakeLog"></div>
-
 </div>
-
-</div>
-
-
-
-<!-- RIDE SUMMARY -->
-
-<div id="summary" class="section">
 
 <div class="card">
-
-<h2>Driver Risk Score</h2>
-
-<div id="riskScore" class="value">100</div>
-
+<h2>Driver Risk</h2>
+<div id="riskScore">100</div>
 </div>
 
-
-<div class="card">
-
+<div style="margin-top:30px">
 <h2>Driving Risk Analysis</h2>
 
 <p>Total Brakes: <span id="totalBrakes">0</span></p>
-
 <p>Hard Brakes: <span id="hardBrake">0</span></p>
-
 <p>Hard Brake Ratio: <span id="hardRatio">0%</span></p>
-
 <p>Risk Level: <span id="riskLevel">SAFE</span></p>
 
 </div>
 
-</div>
-
-
 <script src="script.js"></script>
 
 </body>
-
 </html>
