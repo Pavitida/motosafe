@@ -153,9 +153,9 @@ normalBrakes++
 
 }
 
-document.getElementById("brakeLog").innerHTML+=
+document.getElementById("brakeLog").innerHTML +=
 `<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>`
-
+  
 document.getElementById("distance").innerText=brakeDistance.toFixed(1)
 
 document.getElementById("totalBrakes").innerText=totalBrakes
