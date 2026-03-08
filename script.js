@@ -1,4 +1,5 @@
 let watching=false
+let watchId=null
 
 let lastSpeed=0
 let lastTime=0
@@ -17,32 +18,49 @@ let rideStart=null
 let chart
 let decelChart
 let brakeChart
-let watchId
 
 window.onload=function(){
 
 chart=new Chart(document.getElementById("speedChart"),{
 type:"line",
-data:{labels:[],datasets:[{label:"Speed km/h",data:[],borderWidth:2,tension:0.3}]},
+data:{
+labels:[],
+datasets:[{
+label:"Speed km/h",
+data:[],
+borderWidth:2,
+tension:0.3
+}]
+},
 options:{responsive:true}
 })
 
 decelChart=new Chart(document.getElementById("decelChart"),{
 type:"line",
-data:{labels:[],datasets:[{label:"Deceleration",data:[],borderWidth:2}]},
+data:{
+labels:[],
+datasets:[{
+label:"Deceleration",
+data:[],
+borderWidth:2
+}]
+},
 options:{responsive:true}
 })
 
 brakeChart=new Chart(document.getElementById("brakeChart"),{
 type:"pie",
-data:{labels:["Slow","Normal","Hard"],datasets:datasets:[{
+data:{
+labels:["Slow","Normal","Hard"],
+datasets:[{
 data:[0,0,0],
 backgroundColor:[
 "#4dabf7",
 "#ffd43b",
 "#ff6b6b"
 ]
-}]},
+}]
+},
 options:{responsive:true}
 })
 
@@ -53,7 +71,7 @@ function startRide(){
 watching=true
 rideStart=Date.now()
 
-watchId = navigator.geolocation.watchPosition(
+watchId=navigator.geolocation.watchPosition(
 updateSpeed,
 (err)=>{alert("GPS Error")}
 )
@@ -63,7 +81,11 @@ updateSpeed,
 function stopRide(){
 
 watching=false
+
+if(watchId!==null){
 navigator.geolocation.clearWatch(watchId)
+}
+
 analyzeRisk()
 
 }
@@ -165,9 +187,9 @@ normalBrakes++
 
 }
 
-document.getElementById("brakeLog").innerHTML +=
+document.getElementById("brakeLog").innerHTML+=
 `<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>`
-  
+
 document.getElementById("distance").innerText=brakeDistance.toFixed(1)
 
 document.getElementById("totalBrakes").innerText=totalBrakes
@@ -225,7 +247,7 @@ decelChart.update()
 
 function checkCrash(decel){
 
-if(decel>12){
+if(decel>15){
 
 document.getElementById("crashStatus").innerText="🚨 Possible Crash Detected"
 
@@ -250,9 +272,7 @@ function analyzeRisk(){
 let ratio=0
 
 if(totalBrakes>0){
-
 ratio=(hardBrakes/totalBrakes)*100
-
 }
 
 document.getElementById("hardRatio").innerText=ratio.toFixed(1)+"%"
@@ -261,7 +281,8 @@ let level="SAFE"
 
 if(ratio>40){
 level="DANGEROUS"
-}else if(ratio>20){
+}
+else if(ratio>20){
 level="RISKY"
 }
 
