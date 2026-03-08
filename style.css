@@ -133,3 +133,18 @@ button:active{
 canvas{
   max-width:90%;
 }
+.menu{
+  margin:20px;
+}
+
+.menu button{
+  margin:5px;
+}
+
+.section{
+  display:none;
+}
+
+.section.active{
+  display:block;
+}
