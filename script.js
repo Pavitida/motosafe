@@ -18,9 +18,19 @@ let normalBrakes=0
 
 let rideStart=null
 
+let dataset=[]
+
 let chart
 let decelChart
 let brakeChart
+
+function speak(text){
+let msg = new SpeechSynthesisUtterance(text)
+msg.volume = 1
+msg.rate = 1
+msg.pitch = 1
+speechSynthesis.speak(msg)
+}
 
 window.onload=function(){
 
@@ -76,7 +86,8 @@ rideStart=Date.now()
 
 watchId=navigator.geolocation.watchPosition(
 updateSpeed,
-(err)=>{alert("GPS Error")}
+(err)=>{alert("GPS Error")},
+{enableHighAccuracy:true}
 )
 
 }
@@ -114,6 +125,17 @@ const now=Date.now()
 
 document.getElementById("speed").innerText=speed.toFixed(1)
 
+if(speed>80){
+
+document.getElementById("speed").style.color="red"
+speak("Slow down")
+
+}else{
+
+document.getElementById("speed").style.color="black"
+
+}
+
 if(speed > maxSpeed){
 maxSpeed = speed
 let el = document.getElementById("maxSpeed")
@@ -144,6 +166,13 @@ document.getElementById("peak").innerText=decel.toFixed(2)
 }
 
 detectBrake(speed,decel,dt)
+
+dataset.push({
+time:new Date().toLocaleTimeString(),
+speed:speed,
+deceleration:decel,
+event:"normal"
+})
 
 }
 
@@ -200,6 +229,8 @@ if(peakDecel>5){
 type="HARD BRAKE"
 hardBrakes++
 
+speak("Hard brake detected")
+
 }else if(peakDecel<1.5){
 
 type="Slow Down"
@@ -218,6 +249,13 @@ document.getElementById("distance").innerText=brakeDistance.toFixed(1)
 
 document.getElementById("totalBrakes").innerText=totalBrakes
 document.getElementById("hardBrake").innerText=hardBrakes
+
+dataset.push({
+time:new Date().toLocaleTimeString(),
+speed:lastSpeed,
+deceleration:peakDecel,
+event:type
+})
 
 updateBrakeChart()
 
@@ -274,6 +312,8 @@ function checkCrash(decel){
 if(decel>15){
 
 document.getElementById("crashStatus").innerText="🚨 Possible Crash Detected"
+
+speak("Possible crash detected")
 
 }
 
@@ -337,10 +377,10 @@ return avg
 
 function exportCSV(){
 
-let csv="speed\n"
+let csv="time,speed,deceleration,event\n"
 
-chart.data.datasets[0].data.forEach(s=>{
-csv+=s+"\n"
+dataset.forEach(d=>{
+csv+=`${d.time},${d.speed},${d.deceleration},${d.event}\n`
 })
 
 let blob=new Blob([csv])
@@ -349,7 +389,7 @@ let a=document.createElement("a")
 
 a.href=URL.createObjectURL(blob)
 
-a.download="ride.csv"
+a.download="ride_dataset.csv"
 
 a.click()
 
