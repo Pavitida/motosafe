@@ -1,128 +1,109 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MotoSafe Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<title>MotoSafe</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <style>
 body{
+font-family:sans-serif;
 margin:0;
-font-family:Arial;
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-color:white;
-text-align:center;
-}
-
-.container{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:15px;
 padding:20px;
+background:#f5f6fa;
 }
 
 .card{
-background:rgba(255,255,255,0.1);
-padding:20px;
-border-radius:20px;
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
+background:white;
+padding:15px;
+margin-bottom:15px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,0.05);
 }
-
-.value{font-size:28px;}
 
 button{
-padding:12px 20px;
-margin:10px;
+padding:10px 15px;
 border:none;
-border-radius:12px;
-background:#4f8cff;
-color:white;
-font-size:16px;
+border-radius:8px;
+margin:5px;
+font-size:14px;
 }
 
-canvas{
-background:white;
-border-radius:15px;
-margin:15px;
-}
+.start{background:#51cf66;color:white;}
+.stop{background:#ff6b6b;color:white;}
+.export{background:#339af0;color:white;}
+.clear{background:#868e96;color:white;}
 
-#map{
-height:250px;
-margin:20px;
-border-radius:15px;
-}
+#map{height:300px;border-radius:10px;}
 
 #popup{
 position:fixed;
 top:20px;
 left:50%;
 transform:translateX(-50%);
-background:#ff4d4d;
-padding:15px 25px;
+padding:12px 20px;
 border-radius:12px;
-display:none;
+color:white;
 font-weight:bold;
+display:none;
+z-index:9999;
 }
 </style>
 </head>
 
 <body>
 
-<div id="popup">⚠️ HARD BRAKE DETECTED</div>
-
-<h1>🏍 MotoSafe Pro</h1>
-
-<div class="container">
+<h1>🏍 MotoSafe</h1>
 
 <div class="card">
-<h3>Speed</h3>
-<div id="speed" class="value">0</div>
+<button class="start" onclick="startRide()">Start</button>
+<button class="stop" onclick="stopRide()">Stop</button>
+<button class="export" onclick="exportCSV()">Export CSV</button>
+<button class="clear" onclick="clearData()">Clear</button>
 </div>
 
 <div class="card">
-<h3>Peak Decel</h3>
-<div id="peak" class="value">0</div>
+<p>Speed: <span id="speed">0</span> km/h</p>
+<p>Peak Decel: <span id="peak">0</span></p>
 </div>
 
 <div class="card">
-<h3>Brake Distance</h3>
-<div id="brakeDist" class="value">0</div>
-</div>
-
-<div class="card">
-<h3>AI Risk</h3>
-<div id="risk" class="value">100</div>
-</div>
-
-</div>
-
-<button onclick="startRide()">Start</button>
-<button onclick="stopRide()">Stop</button><br>
-
-<button onclick="exportCSV()">Export CSV</button>
-<button onclick="clearData()">Clear</button>
-
-<h2>Speed Graph</h2>
 <canvas id="speedChart"></canvas>
+</div>
 
-<h2>Deceleration Graph</h2>
-<canvas id="decelChart"></canvas>
-
-<h2>Map</h2>
-<div id="map"></div>
-
-<h2>Summary</h2>
 <div class="card">
+<canvas id="decelChart"></canvas>
+</div>
+
+<div class="card">
+<div id="map"></div>
+</div>
+
+<!-- 🔥 ANALYSIS -->
+<div class="card">
+<h2>🚀 Driving Analysis</h2>
+
 <p>Total Brakes: <span id="total">0</span></p>
 <p>Hard Brakes: <span id="hard">0</span></p>
+<p>Brake Distance: <span id="brakeDist">0</span> m</p>
+
+<p>AI Risk Score: <span id="risk">100</span></p>
+
 <p>Avg Decel: <span id="avg">0</span></p>
 <p>Max Decel: <span id="max">0</span></p>
+
+<p style="color:#51cf66">🟢 Slow</p>
+<p style="color:#ffd43b">🟡 Normal</p>
+<p style="color:#ff6b6b">🔴 Hard</p>
 </div>
+
+<!-- 🔴 POPUP -->
+<div id="popup">ALERT</div>
 
 <script src="script.js"></script>
 
