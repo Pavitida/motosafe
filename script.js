@@ -1,4 +1,3 @@
-// ================== STATE ==================
 let watching=false
 let watchId=null
 
@@ -11,8 +10,8 @@ let brakeDistance=0
 
 let totalBrakes=0
 let hardBrakes=0
-let normalBrakes=0   // ✅ เพิ่ม
-let slowBrakes=0     // ✅ เพิ่ม
+let normalBrakes=0
+let slowBrakes=0
 
 let dataset=[]
 
@@ -22,7 +21,8 @@ let decelChart
 let map
 let heatPoints=[]
 
-// ================== INIT ==================
+let rideStartTime=null   // ✅ เพิ่ม
+
 window.onload=function(){
 
 chart=new Chart(document.getElementById("speedChart"),{
@@ -40,33 +40,27 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 }
 
-// ================== START ==================
 function startRide(){
-
 navigator.geolocation.getCurrentPosition(()=>{
 watching=true
+rideStartTime=Date.now() // ✅
 watchId=navigator.geolocation.watchPosition(updateSpeed)
 })
-
 }
 
-// ================== STOP ==================
 function stopRide(){
 watching=false
 navigator.geolocation.clearWatch(watchId)
 }
 
-// ================== POPUP (อัปเกรด) ==================
 function showPopup(text,color){
 let p=document.getElementById("popup")
 p.innerText=text
 p.style.background=color
 p.style.display="block"
-
 setTimeout(()=>p.style.display="none",1500)
 }
 
-// ================== MAIN ==================
 function updateSpeed(pos){
 
 if(!watching)return
@@ -86,13 +80,15 @@ let dt=(now-lastTime)/1000
 if(dt===0)return
 
 let dv=speed-lastSpeed
+
+let acceleration = dv/dt       // ✅ เพิ่ม
 let decel=-(dv/dt)
 
 if(decel>peakDecel) peakDecel=decel
 
 document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-// ================== BRAKE PHASE ==================
+// ⛔ BRAKE PHASE
 if(decel>2){
 if(!brakeStart){
 brakeStart=now
@@ -106,7 +102,7 @@ brakeStart=null
 }
 }
 
-// ================== CHART ==================
+// 📊 CHART
 let t=new Date().toLocaleTimeString()
 
 chart.data.labels.push(t)
@@ -125,8 +121,17 @@ decelChart.data.datasets[0].data.shift()
 chart.update()
 decelChart.update()
 
-// ================== DATASET ==================
-dataset.push({time:t,speed,decel,lat,lng})
+// 📁 DATASET (ครบจริง)
+dataset.push({
+timestamp: now,                         // เวลาแบบ raw
+time: t,
+duration: ((now-rideStartTime)/1000),  // เวลาขี่
+speed: speed,
+acceleration: acceleration,
+deceleration: decel,
+lat: lat,
+lng: lng
+})
 
 }
 
@@ -135,7 +140,7 @@ lastTime=now
 
 }
 
-// ================== BRAKE LOGIC (อัปเกรดเต็ม) ==================
+// 🔥 BRAKE EVENT (เพิ่มข้อมูลเต็ม)
 function logBrake(lat,lng){
 
 totalBrakes++
@@ -162,38 +167,38 @@ slowBrakes++
 showPopup("🟢 SLOW DOWN","#51cf66")
 }
 
-// ================== MAP ==================
+// 📍 MAP
 L.circleMarker([lat,lng],{
 color:color,
 radius:8
 }).addTo(map).bindPopup(type)
 
-// heatmap เฉพาะ HARD
+// 🔥 heatmap เฉพาะ HARD
 if(type==="HARD"){
 heatPoints.push([lat,lng,1])
 L.heatLayer(heatPoints,{radius:25}).addTo(map)
 }
 
-// ================== UI ==================
+// 📊 UI
 document.getElementById("total").innerText=totalBrakes
 document.getElementById("hard").innerText=hardBrakes
 document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
 
-// ================== AI RISK ==================
+// 🧠 AI Risk
 let risk=100-(hardBrakes*10 + normalBrakes*5 + slowBrakes*2)
 if(risk<0) risk=0
 document.getElementById("risk").innerText=risk
 
-// ================== SAVE DATASET (PRO) ==================
+// 📁 DATASET (event level)
 dataset.push({
-time:new Date().toLocaleTimeString(),
-speed:lastSpeed,
-decel:peakDecel,
-lat:lat,
-lng:lng,
+timestamp: Date.now(),
+event:"brake",
 type:type,
 risk:risk,
-distance:brakeDistance
+peakDecel:peakDecel,
+distance:brakeDistance,
+lat:lat,
+lng:lng
 })
 
 updateSummary()
@@ -201,10 +206,9 @@ updateSummary()
 peakDecel=0
 }
 
-// ================== SUMMARY ==================
 function updateSummary(){
 
-let decels=dataset.map(d=>d.decel||0)
+let decels=dataset.map(d=>d.deceleration||0)
 
 let avg=decels.reduce((a,b)=>a+b,0)/decels.length || 0
 let max=Math.max(...decels,0)
@@ -214,24 +218,22 @@ document.getElementById("max").innerText=max.toFixed(2)
 
 }
 
-// ================== EXPORT CSV (อัปเกรด) ==================
 function exportCSV(){
 
-let csv="time,speed,decel,lat,lng,type,risk,distance\n"
+let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,peakDecel,distance\n"
 
 dataset.forEach(d=>{
-csv+=`${d.time},${d.speed},${d.decel},${d.lat},${d.lng},${d.type||""},${d.risk||""},${d.distance||""}\n`
+csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.peakDecel||""},${d.distance||""}\n`
 })
 
 let blob=new Blob([csv])
 let a=document.createElement("a")
 a.href=URL.createObjectURL(blob)
-a.download="ride_pro.csv"
+a.download="ride_full_dataset.csv"
 a.click()
 
 }
 
-// ================== CLEAR ==================
 function clearData(){
 location.reload()
 }
