@@ -11,7 +11,7 @@ let peakDecel=0
 let brakeDistance=0
 let brakeStart=null
 
-let totalBrakes=0
+let totalBrakes=0 
 let hardBrakes=0
 let slowBrakes=0
 let normalBrakes=0
