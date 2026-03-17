@@ -9,6 +9,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <style>
 body{
@@ -59,12 +60,27 @@ height:300px;
 margin:20px;
 border-radius:20px;
 }
+
+#popup{
+position:fixed;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+background:red;
+padding:15px 25px;
+border-radius:15px;
+display:none;
+z-index:999;
+font-weight:bold;
+}
 </style>
 </head>
 
 <body>
 
 <h1>🏍️ MotoSafe Pro</h1>
+
+<div id="popup">⚠️ HARD BRAKE</div>
 
 <div class="container">
 
@@ -97,7 +113,17 @@ border-radius:20px;
 <button onclick="clearData()">Clear</button>
 </div>
 
+<h2>📊 Speed</h2>
 <canvas id="speedChart"></canvas>
+
+<h2>📉 Deceleration</h2>
+<canvas id="decelChart"></canvas>
+
+<h2>🧠 Risk Level</h2>
+<div id="riskLevel">SAFE</div>
+
+<h2>⚠️ Brake Log</h2>
+<div id="brakeLog" style="max-height:150px;overflow:auto;"></div>
 
 <div id="map"></div>
 
