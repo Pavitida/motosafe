@@ -24,6 +24,12 @@ let chart
 let decelChart
 let brakeChart
 
+// 🔥 GPS + MAP
+let latitude = 13.7563
+let longitude = 100.5018
+let map
+let heatPoints = []
+
 function speak(text){
 let msg = new SpeechSynthesisUtterance(text)
 msg.volume = 1
@@ -77,6 +83,12 @@ backgroundColor:[
 options:{responsive:true}
 })
 
+// 🔥 INIT MAP
+map = L.map('map').setView([latitude, longitude], 15)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+.addTo(map)
+
 }
 
 function startRide(){
@@ -118,6 +130,10 @@ function updateSpeed(position){
 
 if(!watching)return
 
+// 🔥 GPS UPDATE
+latitude = position.coords.latitude
+longitude = position.coords.longitude
+
 const speedMS=position.coords.speed||0
 const speed=speedMS*3.6
 
@@ -126,14 +142,10 @@ const now=Date.now()
 document.getElementById("speed").innerText=speed.toFixed(1)
 
 if(speed>80){
-
 document.getElementById("speed").style.color="red"
 speak("Slow down")
-
 }else{
-
 document.getElementById("speed").style.color="black"
-
 }
 
 if(speed > maxSpeed){
@@ -159,19 +171,20 @@ updateDecelChart(decel)
 checkCrash(decel)
 
 if(decel>peakDecel){
-
 peakDecel=decel
 document.getElementById("peak").innerText=decel.toFixed(2)
-
 }
 
 detectBrake(speed,decel,dt)
 
+// 🔥 DATASET (เพิ่ม GPS)
 dataset.push({
 time:new Date().toLocaleTimeString(),
 speed:speed,
 deceleration:decel,
-event:"normal"
+event:"normal",
+lat: latitude,
+lng: longitude
 })
 
 }
@@ -187,19 +200,15 @@ updateDuration()
 function detectBrake(speed,decel,dt){
 
 if(speed<=1){
-
 brakeStart=null
 return
-
 }
 
 if(decel>2){
 
 if(brakeStart===null){
-
 brakeStart=speed
 brakeDistance=0
-
 }
 
 brakeDistance+=speed*dt/3.6
@@ -207,9 +216,7 @@ brakeDistance+=speed*dt/3.6
 }else{
 
 if(brakeStart!==null){
-
 logBrakeEvent()
-
 }
 
 brakeStart=null
@@ -225,37 +232,46 @@ totalBrakes++
 let type="Normal Brake"
 
 if(peakDecel>5){
-
 type="HARD BRAKE"
 hardBrakes++
-
 speak("Hard brake detected")
-
 }else if(peakDecel<1.5){
-
 type="Slow Down"
 slowBrakes++
-
 }else{
-
 normalBrakes++
-
 }
 
 document.getElementById("brakeLog").innerHTML+=
-`<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>`
+<p>${type} | ${peakDecel.toFixed(2)} m/s² | ${brakeDistance.toFixed(1)} m</p>
 
 document.getElementById("distance").innerText=brakeDistance.toFixed(1)
 
 document.getElementById("totalBrakes").innerText=totalBrakes
 document.getElementById("hardBrake").innerText=hardBrakes
 
+// 🔥 DATASET EVENT + GPS
 dataset.push({
 time:new Date().toLocaleTimeString(),
 speed:lastSpeed,
 deceleration:peakDecel,
-event:type
+event:type,
+lat: latitude,
+lng: longitude
 })
+
+// 🔥 MAP PLOT
+if(type==="HARD BRAKE"){
+
+L.marker([latitude, longitude])
+.addTo(map)
+.bindPopup("Hard Brake")
+
+heatPoints.push([latitude, longitude, 1])
+
+L.heatLayer(heatPoints,{radius:25}).addTo(map)
+
+}
 
 updateBrakeChart()
 
@@ -266,7 +282,6 @@ peakDecel=0
 function updateDuration(){
 
 let duration=(Date.now()-rideStart)/1000
-
 document.getElementById("duration").innerText=duration.toFixed(0)
 
 }
@@ -279,10 +294,8 @@ chart.data.labels.push(time)
 chart.data.datasets[0].data.push(speed)
 
 if(chart.data.labels.length>20){
-
 chart.data.labels.shift()
 chart.data.datasets[0].data.shift()
-
 }
 
 chart.update()
@@ -297,10 +310,8 @@ decelChart.data.labels.push(time)
 decelChart.data.datasets[0].data.push(decel)
 
 if(decelChart.data.labels.length>20){
-
 decelChart.data.labels.shift()
 decelChart.data.datasets[0].data.shift()
-
 }
 
 decelChart.update()
@@ -310,11 +321,8 @@ decelChart.update()
 function checkCrash(decel){
 
 if(decel>15){
-
 document.getElementById("crashStatus").innerText="🚨 Possible Crash Detected"
-
 speak("Possible crash detected")
-
 }
 
 }
@@ -366,37 +374,30 @@ document.getElementById("riskScore").innerText=score
 function calculateAverageSpeed(){
 
 let duration=(Date.now()-rideStart)/1000
-
 if(duration==0) return 0
 
 let avg=totalDistance/(duration/3600)
-
 return avg
 
 }
 
+// 🔥 FIX CSV
 function exportCSV(){
 
-let csv="time,speed,deceleration,event\n"
+let csv="time,speed,deceleration,event,lat,lng\n"
 
 dataset.forEach(d=>{
-csv+=`${d.time},${d.speed},${d.deceleration},${d.event}\n`
+csv+=`${d.time},${d.speed},${d.deceleration},${d.event},${d.lat},${d.lng}\n`
 })
 
 let blob=new Blob([csv])
-
 let a=document.createElement("a")
-
 a.href=URL.createObjectURL(blob)
-
 a.download="ride_dataset.csv"
-
 a.click()
 
 }
 
 function clearData(){
-
 location.reload()
-
 }
