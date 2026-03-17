@@ -7,14 +7,19 @@
 
 <link rel="stylesheet" href="style.css">
 
+<!-- Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- 🔥 MAP (Leaflet) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
 </head>
 
 <body>
 
 <h1>🏍 MotoSafe Pro</h1>
-
-
 
 <div class="container">
 
@@ -48,6 +53,7 @@
 <button onclick="exportCSV()">Export CSV</button>
 <button onclick="clearData()">Clear All Data</button>
 
+<h2>Speed Graph</h2>
 <canvas id="speedChart"></canvas>
 
 <h2>Deceleration Graph</h2>
@@ -91,6 +97,13 @@
 
 </div>
 
+<!-- 🔥 MAP SECTION -->
+<div style="margin-top:40px">
+<h2>Danger Map</h2>
+<div id="map" style="height:400px; border-radius:10px;"></div>
+</div>
+
+<!-- SCRIPT -->
 <script src="script.js"></script>
 
 </body>
