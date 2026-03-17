@@ -2,108 +2,105 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MotoSafe Pro</title> 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoSafe Pro</title>
 
-<link rel="stylesheet" href="style.css">
-
-<!-- Chart -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- 🔥 MAP (Leaflet) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
+}
+
+.container{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+padding:20px;
+max-width:900px;
+margin:auto;
+}
+
+.card{
+background:rgba(255,255,255,0.1);
+padding:20px;
+border-radius:20px;
+}
+
+.value{
+font-size:30px;
+}
+
+button{
+padding:12px 25px;
+margin:10px;
+border:none;
+border-radius:12px;
+background:#4f8cff;
+color:white;
+font-size:16px;
+}
+
+canvas{
+background:white;
+margin:20px;
+border-radius:20px;
+}
+
+#map{
+height:300px;
+margin:20px;
+border-radius:20px;
+}
+</style>
 </head>
 
 <body>
 
-<h1>🏍 MotoSafe Pro</h1>
+<h1>🏍️ MotoSafe Pro</h1>
 
 <div class="container">
 
 <div class="card">
-<h2>Speed (km/h)</h2>
+<h3>Speed</h3>
 <div id="speed" class="value">0</div>
 </div>
 
 <div class="card">
-<h2>Peak Decel (m/s²)</h2>
-<div id="peak" class="value">0</div>
+<h3>Max Speed</h3>
+<div id="maxSpeed" class="value">0</div>
 </div>
 
 <div class="card">
-<h2>Brake Distance (m)</h2>
-<div id="distance" class="value">0</div>
+<h3>Distance (km)</h3>
+<div id="distanceRide" class="value">0</div>
 </div>
 
 <div class="card">
-<h2>Duration (s)</h2>
+<h3>Duration (s)</h3>
 <div id="duration" class="value">0</div>
 </div>
 
 </div>
 
-<div class="buttons">
+<div>
 <button onclick="startRide()">Start</button>
-<button onclick="stopRide()">Stop</button>
+<button onclick="stopRide()">Stop</button><br>
+<button onclick="exportCSV()">Export CSV</button>
+<button onclick="clearData()">Clear</button>
 </div>
 
-<button onclick="exportCSV()">Export CSV</button>
-<button onclick="clearData()">Clear All Data</button>
-
-<h2>Speed Graph</h2>
 <canvas id="speedChart"></canvas>
 
-<h2>Deceleration Graph</h2>
-<canvas id="decelChart"></canvas>
+<div id="map"></div>
 
-<h2>Brake Distribution</h2>
-<canvas id="brakeChart"></canvas>
-
-<div class="card">
-<h2>Crash Detection</h2>
-<div id="crashStatus">No crash detected</div>
-</div>
-
-<div class="card">
-<h2>Brake Events</h2>
-<div id="brakeLog"></div>
-</div>
-
-<div class="card">
-<h2>Driver Risk</h2>
-<div id="riskScore">100</div>
-</div>
-
-<div class="card">
-<h2>Max Speed (km/h)</h2>
-<div id="maxSpeed" class="value">0</div>
-</div>
-
-<div class="card">
-<h2>Distance (km)</h2>
-<div id="distanceRide" class="value">0</div>
-</div>
-
-<div style="margin-top:30px">
-<h2>Driving Risk Analysis</h2>
-
-<p>Total Brakes: <span id="totalBrakes">0</span></p>
-<p>Hard Brakes: <span id="hardBrake">0</span></p>
-<p>Hard Brake Ratio: <span id="hardRatio">0%</span></p>
-<p>Risk Level: <span id="riskLevel">SAFE</span></p>
-
-</div>
-
-<!-- 🔥 MAP SECTION -->
-<div style="margin-top:40px">
-<h2>Danger Map</h2>
-<div id="map" style="height:400px; border-radius:10px;"></div>
-</div>
-
-<!-- SCRIPT -->
 <script src="script.js"></script>
 
 </body>
