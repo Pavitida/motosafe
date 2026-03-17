@@ -1,23 +1,9 @@
 let watching=false
 let watchId=null
 
-let maxSpeed = 0
-let totalDistance = 0
-
 let lastSpeed=0
 let lastTime=0
 
-let rideStart=null
-let dataset=[]
-
-let chart
-let decelChart
-let map
-
-let latitude = 13.7563
-let longitude = 100.5018
-
-// 🔥 new
 let peakDecel=0
 let brakeStart=null
 let brakeDistance=0
@@ -25,263 +11,163 @@ let brakeDistance=0
 let totalBrakes=0
 let hardBrakes=0
 
+let dataset=[]
+
+let chart
+let decelChart
+
+let map
 let heatPoints=[]
 
 window.onload=function(){
 
-// Speed Chart
 chart=new Chart(document.getElementById("speedChart"),{
 type:"line",
-data:{
-labels:[],
-datasets:[{
-label:"Speed km/h",
-data:[],
-borderWidth:2
-}]
-},
-options:{responsive:true}
+data:{labels:[],datasets:[{label:"Speed",data:[]}]}
 })
 
-// Decel Chart
 decelChart=new Chart(document.getElementById("decelChart"),{
 type:"line",
-data:{
-labels:[],
-datasets:[{
-label:"Deceleration",
-data:[],
-borderWidth:2
-}]
-},
-options:{responsive:true}
+data:{labels:[],datasets:[{label:"Decel",data:[]}]}
 })
 
-// Map
-map = L.map('map').setView([latitude, longitude], 15)
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-.addTo(map)
+map=L.map('map').setView([13.7563,100.5018],15)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 }
 
-// START
 function startRide(){
 
-alert("Start ทำงานแล้ว")
-
-if(!navigator.geolocation){
-alert("GPS not supported")
-return
-}
-
-navigator.geolocation.getCurrentPosition(
-(pos)=>{
-
-alert("GPS Started ✅")
-
+navigator.geolocation.getCurrentPosition(()=>{
 watching=true
-rideStart=Date.now()
-
-watchId = navigator.geolocation.watchPosition(
-updateSpeed,
-(err)=>alert("GPS Error: "+err.message),
-{
-enableHighAccuracy:true,
-maximumAge:0,
-timeout:10000
-}
-)
-
-},
-(err)=>{
-alert("Location permission denied ❌")
-}
-)
+watchId=navigator.geolocation.watchPosition(updateSpeed)
+})
 
 }
 
-// STOP
 function stopRide(){
-
 watching=false
-
-if(watchId!==null){
 navigator.geolocation.clearWatch(watchId)
 }
 
-alert("Stopped")
-
+function showPopup(){
+let p=document.getElementById("popup")
+p.style.display="block"
+setTimeout(()=>p.style.display="none",1500)
 }
 
-// UPDATE
-function updateSpeed(position){
+function updateSpeed(pos){
 
 if(!watching)return
 
-latitude = position.coords.latitude
-longitude = position.coords.longitude
+let lat=pos.coords.latitude
+let lng=pos.coords.longitude
+map.setView([lat,lng])
 
-map.setView([latitude, longitude])
-
-let speedMS = position.coords.speed || 0
-let speed = speedMS * 3.6
-
-let now = Date.now()
+let speed=(pos.coords.speed||0)*3.6
+let now=Date.now()
 
 document.getElementById("speed").innerText=speed.toFixed(1)
 
-if(speed > maxSpeed){
-maxSpeed = speed
-document.getElementById("maxSpeed").innerText=maxSpeed.toFixed(1)
-}
-
-if(lastTime!==0){
+if(lastTime){
 
 let dt=(now-lastTime)/1000
 let dv=speed-lastSpeed
+let decel=-(dv/dt)
 
-// distance
-totalDistance += speed * dt / 3600
-document.getElementById("distanceRide").innerText=totalDistance.toFixed(2)
+if(decel>peakDecel) peakDecel=decel
 
-// deceleration
-if(dt>0){
+document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-let decel = -(dv/dt)
+// brake phase
+if(decel>2){
+if(!brakeStart){
+brakeStart=now
+brakeDistance=0
+}
+brakeDistance+=speed*dt/3600
+}else{
+if(brakeStart){
+logBrake(lat,lng)
+brakeStart=null
+}
+}
 
-// graph
-decelChart.data.labels.push(new Date().toLocaleTimeString())
+// charts
+let t=new Date().toLocaleTimeString()
+
+chart.data.labels.push(t)
+chart.data.datasets[0].data.push(speed)
+
+decelChart.data.labels.push(t)
 decelChart.data.datasets[0].data.push(decel)
 
-if(decelChart.data.labels.length>20){
+if(chart.data.labels.length>20){
+chart.data.labels.shift()
+chart.data.datasets[0].data.shift()
 decelChart.data.labels.shift()
 decelChart.data.datasets[0].data.shift()
 }
 
+chart.update()
 decelChart.update()
 
-// brake detect
-if(decel>1){
-
-if(brakeStart===null){
-brakeStart=totalDistance
-peakDecel=decel
-}else{
-if(decel>peakDecel) peakDecel=decel
-}
-
-}else{
-
-if(brakeStart!==null){
-brakeDistance=totalDistance-brakeStart
-logBrakeEvent()
-brakeStart=null
-}
-
-}
-
-}
-
-// dataset
-dataset.push({
-time:new Date().toLocaleTimeString(),
-speed:speed,
-lat: latitude,
-lng: longitude
-})
-
-updateChart(speed)
+dataset.push({time:t,speed,decel,lat,lng})
 
 }
 
 lastSpeed=speed
 lastTime=now
 
-updateDuration()
-
 }
 
-// duration
-function updateDuration(){
-if(!rideStart)return
-let duration=(Date.now()-rideStart)/1000
-document.getElementById("duration").innerText=duration.toFixed(0)
-}
-
-// speed chart
-function updateChart(speed){
-
-let time=new Date().toLocaleTimeString()
-
-chart.data.labels.push(time)
-chart.data.datasets[0].data.push(speed)
-
-if(chart.data.labels.length>20){
-chart.data.labels.shift()
-chart.data.datasets[0].data.shift()
-}
-
-chart.update()
-
-}
-
-// 🔴 brake event
-function logBrakeEvent(){
+function logBrake(lat,lng){
 
 totalBrakes++
 
-let type="Normal"
-
 if(peakDecel>5){
-type="HARD"
 hardBrakes++
 showPopup()
-}else if(peakDecel<1.5){
-type="SOFT"
-}
 
-document.getElementById("brakeLog").innerHTML += 
-<p>${type} | ${peakDecel.toFixed(2)} m/s²</p>
+L.marker([lat,lng]).addTo(map).bindPopup("Hard Brake")
 
-// heatmap
-if(type==="HARD"){
-heatPoints.push([latitude, longitude, 1])
+heatPoints.push([lat,lng,1])
 L.heatLayer(heatPoints,{radius:25}).addTo(map)
 }
 
-// risk
-let ratio = hardBrakes / totalBrakes
+document.getElementById("total").innerText=totalBrakes
+document.getElementById("hard").innerText=hardBrakes
+document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
 
-if(ratio>0.5){
-document.getElementById("riskLevel").innerText="DANGEROUS"
-}else if(ratio>0.3){
-document.getElementById("riskLevel").innerText="WARNING"
-}else{
-document.getElementById("riskLevel").innerText="SAFE"
-}
+// AI risk
+let risk=100-(hardBrakes*10 + totalBrakes*2)
+if(risk<0) risk=0
+document.getElementById("risk").innerText=risk
+
+updateSummary()
 
 peakDecel=0
 
 }
 
-// popup
-function showPopup(){
-let popup=document.getElementById("popup")
-popup.style.display="block"
+function updateSummary(){
 
-setTimeout(()=>{
-popup.style.display="none"
-},1500)
+let decels=dataset.map(d=>d.decel||0)
+
+let avg=decels.reduce((a,b)=>a+b,0)/decels.length
+let max=Math.max(...decels)
+
+document.getElementById("avg").innerText=avg.toFixed(2)
+document.getElementById("max").innerText=max.toFixed(2)
+
 }
 
-// export
 function exportCSV(){
 
-let csv="time,speed,lat,lng\n"
+let csv="time,speed,decel,lat,lng\n"
 
 dataset.forEach(d=>{
-csv+=`${d.time},${d.speed},${d.lat},${d.lng}\n`
+csv+=`${d.time},${d.speed},${d.decel},${d.lat},${d.lng}\n`
 })
 
 let blob=new Blob([csv])
