@@ -6,7 +6,6 @@
 <title>MotoSafe Pro</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
@@ -23,24 +22,21 @@ text-align:center;
 .container{
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:20px;
+gap:15px;
 padding:20px;
-max-width:900px;
-margin:auto;
 }
 
 .card{
 background:rgba(255,255,255,0.1);
 padding:20px;
 border-radius:20px;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
 }
 
-.value{
-font-size:30px;
-}
+.value{font-size:28px;}
 
 button{
-padding:12px 25px;
+padding:12px 20px;
 margin:10px;
 border:none;
 border-radius:12px;
@@ -51,14 +47,14 @@ font-size:16px;
 
 canvas{
 background:white;
-margin:20px;
-border-radius:20px;
+border-radius:15px;
+margin:15px;
 }
 
 #map{
-height:300px;
+height:250px;
 margin:20px;
-border-radius:20px;
+border-radius:15px;
 }
 
 #popup{
@@ -66,11 +62,10 @@ position:fixed;
 top:20px;
 left:50%;
 transform:translateX(-50%);
-background:red;
+background:#ff4d4d;
 padding:15px 25px;
-border-radius:15px;
+border-radius:12px;
 display:none;
-z-index:999;
 font-weight:bold;
 }
 </style>
@@ -78,9 +73,9 @@ font-weight:bold;
 
 <body>
 
-<h1>🏍️ MotoSafe Pro</h1>
+<div id="popup">⚠️ HARD BRAKE DETECTED</div>
 
-<div id="popup">⚠️ HARD BRAKE</div>
+<h1>🏍 MotoSafe Pro</h1>
 
 <div class="container">
 
@@ -90,42 +85,44 @@ font-weight:bold;
 </div>
 
 <div class="card">
-<h3>Max Speed</h3>
-<div id="maxSpeed" class="value">0</div>
+<h3>Peak Decel</h3>
+<div id="peak" class="value">0</div>
 </div>
 
 <div class="card">
-<h3>Distance (km)</h3>
-<div id="distanceRide" class="value">0</div>
+<h3>Brake Distance</h3>
+<div id="brakeDist" class="value">0</div>
 </div>
 
 <div class="card">
-<h3>Duration (s)</h3>
-<div id="duration" class="value">0</div>
+<h3>AI Risk</h3>
+<div id="risk" class="value">100</div>
 </div>
 
 </div>
 
-<div>
 <button onclick="startRide()">Start</button>
 <button onclick="stopRide()">Stop</button><br>
+
 <button onclick="exportCSV()">Export CSV</button>
 <button onclick="clearData()">Clear</button>
-</div>
 
-<h2>📊 Speed</h2>
+<h2>Speed Graph</h2>
 <canvas id="speedChart"></canvas>
 
-<h2>📉 Deceleration</h2>
+<h2>Deceleration Graph</h2>
 <canvas id="decelChart"></canvas>
 
-<h2>🧠 Risk Level</h2>
-<div id="riskLevel">SAFE</div>
-
-<h2>⚠️ Brake Log</h2>
-<div id="brakeLog" style="max-height:150px;overflow:auto;"></div>
-
+<h2>Map</h2>
 <div id="map"></div>
+
+<h2>Summary</h2>
+<div class="card">
+<p>Total Brakes: <span id="total">0</span></p>
+<p>Hard Brakes: <span id="hard">0</span></p>
+<p>Avg Decel: <span id="avg">0</span></p>
+<p>Max Decel: <span id="max">0</span></p>
+</div>
 
 <script src="script.js"></script>
 
