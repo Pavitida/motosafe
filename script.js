@@ -32,9 +32,6 @@ let heatPoints = []
 
 function speak(text){
 let msg = new SpeechSynthesisUtterance(text)
-msg.volume = 1
-msg.rate = 1
-msg.pitch = 1
 speechSynthesis.speak(msg)
 }
 
@@ -42,28 +39,13 @@ window.onload=function(){
 
 chart=new Chart(document.getElementById("speedChart"),{
 type:"line",
-data:{
-labels:[],
-datasets:[{
-label:"Speed km/h",
-data:[],
-borderWidth:2,
-tension:0.3
-}]
-},
+data:{labels:[],datasets:[{label:"Speed km/h",data:[],borderWidth:2,tension:0.3}]},
 options:{responsive:true}
 })
 
 decelChart=new Chart(document.getElementById("decelChart"),{
 type:"line",
-data:{
-labels:[],
-datasets:[{
-label:"Deceleration",
-data:[],
-borderWidth:2
-}]
-},
+data:{labels:[],datasets:[{label:"Deceleration",data:[],borderWidth:2}]},
 options:{responsive:true}
 })
 
@@ -73,33 +55,52 @@ data:{
 labels:["Slow","Normal","Hard"],
 datasets:[{
 data:[0,0,0],
-backgroundColor:[
-"#4dabf7",
-"#ffd43b",
-"#ff6b6b"
-]
+backgroundColor:["#4dabf7","#ffd43b","#ff6b6b"]
 }]
 },
 options:{responsive:true}
 })
 
-// 🔥 INIT MAP
+// 🔥 MAP
 map = L.map('map').setView([latitude, longitude], 15)
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-.addTo(map)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 }
 
+// ✅ FIX: START ให้ GPS ทำงานแน่นอน
 function startRide(){
+
+console.log("Start clicked")
+
+if(!navigator.geolocation){
+alert("Geolocation not supported")
+return
+}
+
+navigator.geolocation.getCurrentPosition(
+(pos)=>{
+
+alert("GPS Started ✅ (ลองเดิน)")
 
 watching=true
 rideStart=Date.now()
 
-watchId=navigator.geolocation.watchPosition(
+watchId = navigator.geolocation.watchPosition(
 updateSpeed,
-(err)=>{alert("GPS Error")},
-{enableHighAccuracy:true}
+(err)=>{
+alert("GPS Error: "+err.message)
+},
+{
+enableHighAccuracy:true,
+maximumAge:0,
+timeout:5000
+}
+)
+
+},
+(err)=>{
+alert("Location permission denied ❌")
+}
 )
 
 }
@@ -128,13 +129,17 @@ alert(
 
 function updateSpeed(position){
 
+console.log("GPS update", position.coords)
+
 if(!watching)return
 
-// 🔥 GPS UPDATE
 latitude = position.coords.latitude
 longitude = position.coords.longitude
 
-const speedMS=position.coords.speed||0
+// 🔥 move map
+map.setView([latitude, longitude])
+
+const speedMS=position.coords.speed || 0
 const speed=speedMS*3.6
 
 const now=Date.now()
@@ -157,6 +162,8 @@ if(el) el.innerText = maxSpeed.toFixed(1)
 if(lastTime!==0){
 
 let dt=(now-lastTime)/1000
+if(dt===0) return
+
 let dv=speed-lastSpeed
 
 let accel=dv/dt
@@ -177,7 +184,7 @@ document.getElementById("peak").innerText=decel.toFixed(2)
 
 detectBrake(speed,decel,dt)
 
-// 🔥 DATASET (เพิ่ม GPS)
+// dataset
 dataset.push({
 time:new Date().toLocaleTimeString(),
 speed:speed,
@@ -250,7 +257,6 @@ document.getElementById("distance").innerText=brakeDistance.toFixed(1)
 document.getElementById("totalBrakes").innerText=totalBrakes
 document.getElementById("hardBrake").innerText=hardBrakes
 
-// 🔥 DATASET EVENT + GPS
 dataset.push({
 time:new Date().toLocaleTimeString(),
 speed:lastSpeed,
@@ -260,15 +266,12 @@ lat: latitude,
 lng: longitude
 })
 
-// 🔥 MAP PLOT
+// 🔥 MAP จุดเบรกแรง
 if(type==="HARD BRAKE"){
 
-L.marker([latitude, longitude])
-.addTo(map)
-.bindPopup("Hard Brake")
+L.marker([latitude, longitude]).addTo(map).bindPopup("Hard Brake")
 
 heatPoints.push([latitude, longitude, 1])
-
 L.heatLayer(heatPoints,{radius:25}).addTo(map)
 
 }
@@ -280,10 +283,8 @@ peakDecel=0
 }
 
 function updateDuration(){
-
 let duration=(Date.now()-rideStart)/1000
 document.getElementById("duration").innerText=duration.toFixed(0)
-
 }
 
 function updateChart(speed){
@@ -361,7 +362,6 @@ level="RISKY"
 document.getElementById("riskLevel").innerText=level
 
 let score=100
-
 score-=hardBrakes*10
 score-=normalBrakes*3
 
@@ -376,12 +376,10 @@ function calculateAverageSpeed(){
 let duration=(Date.now()-rideStart)/1000
 if(duration==0) return 0
 
-let avg=totalDistance/(duration/3600)
-return avg
+return totalDistance/(duration/3600)
 
 }
 
-// 🔥 FIX CSV
 function exportCSV(){
 
 let csv="time,speed,deceleration,event,lat,lng\n"
