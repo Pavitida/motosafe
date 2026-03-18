@@ -1,145 +1,209 @@
-/* ================== BASE (ของคุณ) ================== */
-body{
-font-family:sans-serif;
+/* ================= BASE ================= */
+*{
 margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+transition:0.25s;
+}
+
+body{
 padding:20px;
-background:#f5f6fa;
+background:radial-gradient(circle at top,#1e3c72,#0f2027 60%);
+color:white;
 }
 
+/* ================= HEADER ================= */
+h1{
+text-align:center;
+font-size:34px;
+font-weight:700;
+letter-spacing:1px;
+margin-bottom:25px;
+}
+
+/* ================= CARD ================= */
 .card{
-background:white;
-padding:15px;
-margin-bottom:15px;
-border-radius:12px;
-box-shadow:0 4px 10px rgba(0,0,0,0.05);
+background:rgba(255,255,255,0.08);
+border-radius:18px;
+padding:18px;
+margin-bottom:18px;
+
+backdrop-filter:blur(12px);
+border:1px solid rgba(255,255,255,0.1);
+
+box-shadow:
+0 8px 25px rgba(0,0,0,0.3),
+inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
+/* hover floating */
+.card:hover{
+transform:translateY(-6px) scale(1.01);
+box-shadow:
+0 20px 45px rgba(0,0,0,0.5);
+}
+
+/* ================= BUTTON ================= */
 button{
-padding:10px 15px;
 border:none;
-border-radius:8px;
-margin:5px;
+border-radius:12px;
+padding:12px 18px;
 font-size:14px;
+font-weight:600;
+color:white;
+cursor:pointer;
+
+box-shadow:0 8px 18px rgba(0,0,0,0.3);
 }
 
-.start{background:#51cf66;color:white;}
-.stop{background:#ff6b6b;color:white;}
-.export{background:#339af0;color:white;}
-.clear{background:#868e96;color:white;}
+/* glow effect */
+button:hover{
+transform:translateY(-2px);
+filter:brightness(1.1);
+}
 
-#map{height:300px;border-radius:10px;}
+/* click */
+button:active{
+transform:scale(0.95);
+}
 
+/* gradients */
+.start{
+background:linear-gradient(135deg,#00c853,#69f0ae);
+}
+
+.stop{
+background:linear-gradient(135deg,#ff1744,#ff6b6b);
+}
+
+.export{
+background:linear-gradient(135deg,#2979ff,#82b1ff);
+}
+
+.clear{
+background:linear-gradient(135deg,#757575,#bdbdbd);
+}
+
+/* ================= DATA TEXT ================= */
+p{
+font-size:15px;
+margin:6px 0;
+opacity:0.9;
+}
+
+span{
+font-weight:bold;
+font-size:16px;
+}
+
+/* highlight numbers */
+#speed{
+font-size:22px;
+color:#69f0ae;
+}
+
+#peak{
+color:#ffd43b;
+}
+
+#risk{
+font-size:22px;
+font-weight:bold;
+}
+
+/* dynamic risk colors (ใช้กับ JS ได้) */
+.risk-high{color:#69f0ae;}
+.risk-mid{color:#ffd43b;}
+.risk-low{color:#ff6b6b;}
+
+/* ================= CHART ================= */
+canvas{
+background:white;
+border-radius:16px;
+padding:10px;
+
+box-shadow:
+0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* ================= MAP ================= */
+#map{
+height:320px;
+border-radius:16px;
+
+box-shadow:
+0 10px 30px rgba(0,0,0,0.5),
+inset 0 0 20px rgba(0,0,0,0.2);
+}
+
+/* ================= POPUP ================= */
 #popup{
 position:fixed;
 top:20px;
 left:50%;
 transform:translateX(-50%);
-padding:12px 20px;
-border-radius:12px;
-color:white;
-font-weight:bold;
-display:none;
+
+padding:14px 24px;
+border-radius:16px;
+
+font-weight:600;
+font-size:14px;
+
+backdrop-filter:blur(10px);
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+
+animation:slideDown 0.3s ease;
 z-index:9999;
 }
 
-/* ================== 🔥 ADD: PRO UI ================== */
-
-/* Smooth */
-*{
-transition:0.25s;
+/* animation */
+@keyframes slideDown{
+from{
+opacity:0;
+transform:translate(-50%,-30px);
+}
+to{
+opacity:1;
+transform:translate(-50%,0);
+}
 }
 
-/* Background Gradient */
+/* ================= GRID FEEL ================= */
+.card:nth-child(1){
+background:linear-gradient(135deg,rgba(0,200,83,0.2),rgba(0,0,0,0.2));
+}
+
+.card:nth-child(2){
+background:linear-gradient(135deg,rgba(255,214,59,0.2),rgba(0,0,0,0.2));
+}
+
+.card:nth-child(3){
+background:linear-gradient(135deg,rgba(255,107,107,0.2),rgba(0,0,0,0.2));
+}
+
+.card:nth-child(4){
+background:linear-gradient(135deg,rgba(41,121,255,0.2),rgba(0,0,0,0.2));
+}
+
+/* ================= MOBILE ================= */
+@media(max-width:600px){
+
 body{
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-color:white;
-}
-
-/* Card Glass Effect */
-.card{
-background:rgba(255,255,255,0.08);
-backdrop-filter:blur(10px);
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
-
-/* Hover ลอย */
-.card:hover{
-transform:translateY(-5px);
-box-shadow:0 20px 40px rgba(0,0,0,0.4);
-}
-
-/* Header */
-h1{
-text-align:center;
-font-size:32px;
-margin-bottom:20px;
-}
-
-/* Button Pro */
-button{
-color:white;
-font-weight:bold;
-box-shadow:0 6px 15px rgba(0,0,0,0.3);
-cursor:pointer;
-}
-
-button:active{
-transform:scale(0.95);
-}
-
-/* Gradient Buttons */
-.start{
-background:linear-gradient(135deg,#00c853,#43e97b);
-}
-
-.stop{
-background:linear-gradient(135deg,#ff512f,#dd2476);
-}
-
-.export{
-background:linear-gradient(135deg,#339af0,#5f9cff);
-}
-
-.clear{
-background:linear-gradient(135deg,#868e96,#adb5bd);
-}
-
-/* Charts */
-canvas{
-background:white;
-border-radius:15px;
 padding:10px;
 }
 
-/* Map Glow */
-#map{
-box-shadow:0 10px 25px rgba(0,0,0,0.4);
+h1{
+font-size:26px;
 }
 
-/* Popup Animation */
-#popup{
-animation:fadeIn 0.3s ease;
+button{
+width:100%;
+margin:6px 0;
 }
 
-@keyframes fadeIn{
-from{opacity:0; transform:translate(-50%,-20px);}
-to{opacity:1; transform:translate(-50%,0);}
+.card{
+padding:15px;
 }
 
-/* ================== 🔥 RISK COLOR ================== */
-
-#risk{
-font-weight:bold;
-}
-
-.risk-high{
-color:#51cf66;
-}
-
-.risk-mid{
-color:#ffd43b;
-}
-
-.risk-low{
-color:#ff6b6b;
 }
