@@ -1,135 +1,145 @@
+/* ================== BASE (ของคุณ) ================== */
 body{
+font-family:sans-serif;
 margin:0;
-font-family:Arial, Helvetica, sans-serif;
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-color:white;
-text-align:center;
-}
-
-h1{
-margin-top:30px;
-font-size:32px;
-}
-
-.container{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:20px;
 padding:20px;
-max-width:900px;
-margin:auto;
+background:#f5f6fa;
 }
 
 .card{
-background:rgba(255,255,255,0.08);
-padding:25px;
-border-radius:20px;
-backdrop-filter:blur(8px);
-box-shadow:0 10px 25px rgba(0,0,0,0.3);
-}
-
-.card h2{
-margin:0;
-font-size:18px;
-opacity:0.8;
-}
-
-.value{
-font-size:32px;
-margin-top:10px;
-font-weight:bold;
-}
-
-.buttons{
-margin:20px;
+background:white;
+padding:15px;
+margin-bottom:15px;
+border-radius:12px;
+box-shadow:0 4px 10px rgba(0,0,0,0.05);
 }
 
 button{
-padding:12px 25px;
+padding:10px 15px;
 border:none;
+border-radius:8px;
+margin:5px;
+font-size:14px;
+}
+
+.start{background:#51cf66;color:white;}
+.stop{background:#ff6b6b;color:white;}
+.export{background:#339af0;color:white;}
+.clear{background:#868e96;color:white;}
+
+#map{height:300px;border-radius:10px;}
+
+#popup{
+position:fixed;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+padding:12px 20px;
 border-radius:12px;
-margin:10px;
-font-size:16px;
-cursor:pointer;
-background:#4f8cff;
 color:white;
+font-weight:bold;
+display:none;
+z-index:9999;
+}
+
+/* ================== 🔥 ADD: PRO UI ================== */
+
+/* Smooth */
+*{
+transition:0.25s;
+}
+
+/* Background Gradient */
+body{
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+}
+
+/* Card Glass Effect */
+.card{
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(10px);
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* Hover ลอย */
+.card:hover{
+transform:translateY(-5px);
+box-shadow:0 20px 40px rgba(0,0,0,0.4);
+}
+
+/* Header */
+h1{
+text-align:center;
+font-size:32px;
+margin-bottom:20px;
+}
+
+/* Button Pro */
+button{
+color:white;
+font-weight:bold;
 box-shadow:0 6px 15px rgba(0,0,0,0.3);
+cursor:pointer;
 }
 
 button:active{
 transform:scale(0.95);
 }
 
+/* Gradient Buttons */
+.start{
+background:linear-gradient(135deg,#00c853,#43e97b);
+}
+
+.stop{
+background:linear-gradient(135deg,#ff512f,#dd2476);
+}
+
+.export{
+background:linear-gradient(135deg,#339af0,#5f9cff);
+}
+
+.clear{
+background:linear-gradient(135deg,#868e96,#adb5bd);
+}
+
+/* Charts */
 canvas{
-width:90%;
-height:250px;
 background:white;
-border-radius:20px;
-margin:20px auto;
+border-radius:15px;
 padding:10px;
-display:block;
-}
-.buttons{
-  margin:20px;
 }
 
-button{
-  padding:12px 25px;
-  border:none;
-  border-radius:12px;
-  margin:10px;
-  font-size:16px;
-  cursor:pointer;
-  background:#4f8cff;
-  color:white;
+/* Map Glow */
+#map{
+box-shadow:0 10px 25px rgba(0,0,0,0.4);
 }
 
-canvas{
-  background:white;
-  border-radius:20px;
-  margin:20px;
-  padding:10px;
-}
-/* ===== MotoSafe Pro UI Upgrade (ADD ONLY) ===== */
-
-.container{
-  max-width:900px;
-  margin:auto;
+/* Popup Animation */
+#popup{
+animation:fadeIn 0.3s ease;
 }
 
-.card{
-  backdrop-filter: blur(8px);
-  box-shadow:0 10px 25px rgba(0,0,0,0.3);
-  transition:0.25s;
+@keyframes fadeIn{
+from{opacity:0; transform:translate(-50%,-20px);}
+to{opacity:1; transform:translate(-50%,0);}
 }
 
-.card:hover{
-  transform:translateY(-4px);
-  box-shadow:0 14px 35px rgba(0,0,0,0.4);
+/* ================== 🔥 RISK COLOR ================== */
+
+#risk{
+font-weight:bold;
 }
 
-.value{
-  font-weight:bold;
-  letter-spacing:1px;
+.risk-high{
+color:#51cf66;
 }
 
-button{
-  transition:0.2s;
-  box-shadow:0 6px 15px rgba(0,0,0,0.3);
+.risk-mid{
+color:#ffd43b;
 }
 
-button:active{
-  transform:scale(0.95);
-}
-
-#startBtn{
-  background:linear-gradient(135deg,#00c853,#43e97b);
-}
-
-#stopBtn{
-  background:linear-gradient(135deg,#ff512f,#dd2476);
-}
-
-canvas{
-  max-width:90%;
+.risk-low{
+color:#ff6b6b;
 }
