@@ -1,3 +1,4 @@
+// ================== YOUR ORIGINAL CODE ==================
 let watching=false
 let watchId=null
 
@@ -21,8 +22,20 @@ let decelChart
 let map
 let heatPoints=[]
 
-let rideStartTime=null   // ✅ เพิ่ม
+let rideStartTime=null
 
+// ================== ✅ ADD: SENSOR REAL ==================
+let accelY=0
+let smoothAccel=0
+
+window.addEventListener("devicemotion",(e)=>{
+if(e.accelerationIncludingGravity){
+accelY=e.accelerationIncludingGravity.y||0
+smoothAccel = smoothAccel*0.8 + accelY*0.2
+}
+})
+
+// ================== INIT ==================
 window.onload=function(){
 
 chart=new Chart(document.getElementById("speedChart"),{
@@ -40,19 +53,29 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 }
 
+// ================== START ==================
 function startRide(){
-navigator.geolocation.getCurrentPosition(()=>{
-watching=true
-rideStartTime=Date.now() // ✅
-watchId=navigator.geolocation.watchPosition(updateSpeed)
-})
+
+// ✅ iPhone sensor permission
+if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+DeviceMotionEvent.requestPermission()
 }
 
+navigator.geolocation.getCurrentPosition(()=>{
+watching=true
+rideStartTime=Date.now()
+watchId=navigator.geolocation.watchPosition(updateSpeed)
+})
+
+}
+
+// ================== STOP ==================
 function stopRide(){
 watching=false
 navigator.geolocation.clearWatch(watchId)
 }
 
+// ================== POPUP ==================
 function showPopup(text,color){
 let p=document.getElementById("popup")
 p.innerText=text
@@ -61,6 +84,7 @@ p.style.display="block"
 setTimeout(()=>p.style.display="none",1500)
 }
 
+// ================== UPDATE ==================
 function updateSpeed(pos){
 
 if(!watching)return
@@ -81,14 +105,23 @@ if(dt===0)return
 
 let dv=speed-lastSpeed
 
-let acceleration = dv/dt       // ✅ เพิ่ม
-let decel=-(dv/dt)
+let acceleration = dv/dt
+
+// ================== ✅ ADD: SMART DECEL ==================
+// ใช้ sensor ถ้ามี / fallback gps
+let sensorDecel = -smoothAccel
+let gpsDecel = -(dv/dt)
+
+// fusion (เอาที่แรงกว่า)
+let decel = Math.max(sensorDecel, gpsDecel)
+
+// =======================================================
 
 if(decel>peakDecel) peakDecel=decel
 
 document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-// ⛔ BRAKE PHASE
+// ================== BRAKE PHASE ==================
 if(decel>2){
 if(!brakeStart){
 brakeStart=now
@@ -102,7 +135,7 @@ brakeStart=null
 }
 }
 
-// 📊 CHART
+// ================== CHART ==================
 let t=new Date().toLocaleTimeString()
 
 chart.data.labels.push(t)
@@ -121,11 +154,11 @@ decelChart.data.datasets[0].data.shift()
 chart.update()
 decelChart.update()
 
-// 📁 DATASET (ครบจริง)
+// ================== DATASET ==================
 dataset.push({
-timestamp: now,                         // เวลาแบบ raw
+timestamp: now,
 time: t,
-duration: ((now-rideStartTime)/1000),  // เวลาขี่
+duration: ((now-rideStartTime)/1000),
 speed: speed,
 acceleration: acceleration,
 deceleration: decel,
@@ -140,7 +173,7 @@ lastTime=now
 
 }
 
-// 🔥 BRAKE EVENT (เพิ่มข้อมูลเต็ม)
+// ================== BRAKE EVENT ==================
 function logBrake(lat,lng){
 
 totalBrakes++
@@ -167,29 +200,34 @@ slowBrakes++
 showPopup("🟢 SLOW DOWN","#51cf66")
 }
 
-// 📍 MAP
+// ================== MAP ==================
 L.circleMarker([lat,lng],{
 color:color,
 radius:8
 }).addTo(map).bindPopup(type)
 
-// 🔥 heatmap เฉพาะ HARD
+// 🔥 heatmap HARD ONLY
 if(type==="HARD"){
 heatPoints.push([lat,lng,1])
 L.heatLayer(heatPoints,{radius:25}).addTo(map)
 }
 
-// 📊 UI
+// ================== UI ==================
 document.getElementById("total").innerText=totalBrakes
 document.getElementById("hard").innerText=hardBrakes
 document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
 
-// 🧠 AI Risk
-let risk=100-(hardBrakes*10 + normalBrakes*5 + slowBrakes*2)
-if(risk<0) risk=0
-document.getElementById("risk").innerText=risk
+// ================== ✅ ADD: AI PRO ==================
+let risk=100
+risk -= hardBrakes*12
+risk -= normalBrakes*6
+risk -= slowBrakes*2
+risk -= peakDecel*2
 
-// 📁 DATASET (event level)
+if(risk<0) risk=0
+document.getElementById("risk").innerText=Math.round(risk)
+
+// ================== DATASET EVENT ==================
 dataset.push({
 timestamp: Date.now(),
 event:"brake",
@@ -206,6 +244,7 @@ updateSummary()
 peakDecel=0
 }
 
+// ================== SUMMARY ==================
 function updateSummary(){
 
 let decels=dataset.map(d=>d.deceleration||0)
@@ -218,6 +257,7 @@ document.getElementById("max").innerText=max.toFixed(2)
 
 }
 
+// ================== CSV ==================
 function exportCSV(){
 
 let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,peakDecel,distance\n"
@@ -234,6 +274,7 @@ a.click()
 
 }
 
+// ================== CLEAR ==================
 function clearData(){
 location.reload()
 }
