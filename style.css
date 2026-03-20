@@ -140,3 +140,16 @@ height: 250px;
 border-radius: 25px;
 filter: invert(90%) hue-rotate(180deg) brightness(0.7); /* แผนที่สีมุกขรึมๆ */
 }css
+/* เอฟเฟกต์ออร่าฟุ้งกระจายเวลา "กด" */
+button:active, .card:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 30px rgba(165, 216, 255, 0.8), 
+                0 0 60px rgba(165, 216, 255, 0.4); /* ฟุ้งแบบนางฟ้า */
+    border-color: #ffffff;
+    transition: 0.1s;
+}
+
+/* ทำให้ตัวเลขความเร็วมีแสงนวลตลอดเวลา */
+#speed {
+    text-shadow: 0 0 20px rgba(165, 216, 255, 0.6);
+}
