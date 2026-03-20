@@ -4,6 +4,7 @@
   --ice-blue: #a5d8ff;
   --angel-pink: #ffc9c9;
   --pearl-gold: #fff3bf;
+  --light-pearl: #f1f3f5; /* 🤍 สีใหม่: ขาวมุกสะอาดตา */
   --bg-deep: #0d0e12;
   --card-bg: rgba(255, 255, 255, 0.04);
   --glass-blur: blur(25px);
@@ -22,6 +23,7 @@ body {
     radial-gradient(circle at 80% 80%, rgba(255, 201, 201, 0.1) 0%, transparent 40%),
     linear-gradient(180deg, #0d0e12 0%, #1a1c24 100%);
   background-attachment: fixed;
+  overflow-x: hidden; /* ป้องกัน scrollbar แนวนอน */
 }
 
 /* ✨ เพิ่มละอองดาวฟุ้งๆ */
@@ -31,7 +33,7 @@ body::after {
   inset: 0;
   background-image: radial-gradient(circle at center, #fff 0.5px, transparent 0.5px);
   background-size: 50px 50px;
-  opacity: 0.2;
+  opacity: 0.15; /* ลดความเข้มดาวลงนิดนึงให้ดูละมุนขึ้น */
   pointer-events: none;
   z-index: -1;
 }
@@ -41,10 +43,11 @@ header h1 {
   font-size: 28px;
   letter-spacing: 4px;
   text-align: center;
-  background: linear-gradient(120deg, #fff 0%, var(--ice-blue) 50%, #fff 100%);
+  /* ปรับแสง Gradient ให้ดูนุ่มขึ้น */
+  background: linear-gradient(120deg, #fff 0%, var(--ice-blue) 30%, #fff 70%, #fff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 10px rgba(165, 216, 255, 0.5));
+  filter: drop-shadow(0 0 10px rgba(165, 216, 255, 0.4));
   margin: 25px 0;
 }
 
@@ -57,15 +60,17 @@ header h1 {
   border: 1px solid var(--border-angel);
   padding: 22px;
   margin-bottom: 18px;
-  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
 }
 
+/* ⭐ ปรับปรุง: เพิ่ม Box-Shadow ให้เรืองแสงเมื่อกด */
 .card:active {
-  transform: scale(0.96);
+  transform: scale(0.97); /* ลดขนาดลงเบาๆ */
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--ice-blue);
-  box-shadow: 0 0 25px rgba(165, 216, 255, 0.2);
+  /* เพิ่ม Box-Shadow เพื่อเอฟเฟกต์เรืองแสง (Aura Press) */
+  box-shadow: 0 0 25px rgba(165, 216, 255, 0.3);
 }
 
 /* ================= SPEED DISPLAY (FIXED) ================= */
@@ -74,7 +79,8 @@ header h1 {
   font-weight: 200 !important;
   line-height: 1 !important;
   display: block;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(165, 216, 255, 0.3);
+  /* เพิ่มความฟุ้งให้ดู Angelic ขึ้น */
+  text-shadow: 0 0 15px rgba(255, 255, 255, 0.7), 0 0 40px rgba(165, 216, 255, 0.3);
   margin: 10px 0;
 }
 
@@ -83,6 +89,11 @@ header h1 {
   opacity: 0.6;
   letter-spacing: 2px;
   text-transform: uppercase;
+}
+
+/* ⭐ เพิ่ม: การจัดระเบียบตัวเลข Stat Section ให้ตรงกลางช่อง */
+.card .stats-grid {
+    text-align: center;
 }
 
 /* ================= BUTTONS WITH EMOJIS ================= */
@@ -104,7 +115,8 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: 0.3s;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
 .start { border-color: #a5d8ff; color: #a5d8ff; }
@@ -112,12 +124,27 @@ button {
 .export { border-color: #d0bfff; color: #d0bfff; }
 .clear { border-color: #ced4da; color: #ced4da; }
 
-button:active { transform: translateY(2px); opacity: 0.7; }
+/* ⭐ ปรับปรุง: เพิ่ม Box-Shadow และสีให้เรืองแสงเมื่อกดปุ่ม */
+button:active {
+  transform: translateY(2px); /* ปุ่มยุบตัวเบาๆ */
+  opacity: 1; /* ห้ามโปร่งแสงตอนกด */
+  background: rgba(255, 255, 255, 0.1); /* สีสว่างขึ้นนิดนึง */
+  box-shadow: 0 0 15px rgba(165, 216, 255, 0.3);
+}
 
 /* ================= MAP & CHART ================= */
 #map {
   height: 280px;
   border-radius: 25px;
   border: 1px solid var(--border-angel);
-  filter: grayscale(1) invert(1) opacity(0.7); /* แผนที่โทนมินิมอล */
+  /* ⭐ ปรับปรุง: แก้ปัญหาแผนที่มืด -> ปรับให้เป็น 'สว่างมุก (Light Pearl Theme)' */
+  /* ถอด filter: grayscale(1) invert(1) opacity(0.7) ออก */
+  filter: sepia(0.2) contrast(1.1) brightness(0.9); /* ให้โทนสีมุกละมุน Grayscale เบาๆ */
+  background-color: var(--light-pearl); /* พื้นหลังขาวมุกสะอาดตา */
+}
+
+/* เพิ่มเติม: ทำให้กราฟความเร็วดูละมุนขึ้น */
+canvas {
+  margin-top: 10px;
+  filter: drop-shadow(0 0 10px rgba(165, 216, 255, 0.2));
 }
