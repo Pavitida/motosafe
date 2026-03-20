@@ -1,53 +1,106 @@
-<header>
-    <h1>MOTOSAFE</h1>
-</header>
+/* ================= LUXURY ANGELIC CONFIG ================= */
+:root {
+  --glam-white: #ffffff;
+  --ice-blue: #c2e4ff;  /* สีฟ้าไอซ์บลูจางๆ ดูแพง */
+  --soft-rose: #fce4ec; /* ชมพูอ่อนแบบนวลตา */
+  --bg-deep: #0a0b12;   /* พื้นหลังมืดสนิทเพื่อให้ Aura เด่น */
+  --card-bg: rgba(255, 255, 255, 0.03);
+  --border-angel: rgba(255, 255, 255, 0.08);
+}
 
-<div id="popup"></div>
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--bg-deep);
+  color: var(--glam-white);
+  font-family: 'Prompt', -apple-system, sans-serif;
+  /* พื้นหลัง Aura นุ่มๆ ที่มุมจอ */
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(194, 228, 255, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(252, 228, 236, 0.06) 0%, transparent 40%);
+  background-attachment: fixed;
+}
 
-<div class="card interactive">
-    <div class="button-group">
-        <button class="start" onclick="startRide()">START</button>
-        <button class="stop" onclick="stopRide()">STOP</button>
-        <button class="export" onclick="exportCSV()">EXPORT</button>
-        <button class="clear" onclick="clearData()">CLEAR</button>
-    </div>
-</div>
+/* หัวข้อ: เรียบแต่หรู (No Emoji) */
+header h1 {
+  font-size: 24px;
+  font-weight: 200;
+  letter-spacing: 8px; /* เว้นระยะตัวอักษรให้ดู High-end */
+  text-align: center;
+  color: var(--glam-white);
+  text-transform: uppercase;
+  margin: 40px 0;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+}
 
-<div class="card interactive">
-    <div class="hero-container">
-        <div class="speed-unit">SPEEDOMETER</div>
-        <span id="speed">0.0</span>
-        <div class="speed-unit">KM/H</div>
-    </div>
-    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
-    <div class="stats-grid stats-center">
-        <div class="stat-item" style="text-align: center;">
-            <div class="risk-label">PEAK DECEL</div>
-            <div id="peak" class="stat-value">0</div>
-        </div>
-        <div class="stat-item" style="text-align: center;">
-            <div class="risk-label">RISK LEVEL</div>
-            <div id="risk" class="stat-value">100</div>
-        </div>
-    </div>
-    <div style="text-align: center; margin-top: 15px;">
-        <span class="speed-unit">RIDING STYLE:</span> 
-        <b id="style" style="color: #c2e4ff; letter-spacing: 2px;">SAFE</b>
-    </div>
-</div>
+/* การ์ด: กระจกใสแบบหนา */
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--border-angel);
+  border-radius: 32px;
+  padding: 28px;
+  margin-bottom: 20px;
+  transition: all 0.4s ease;
+}
 
-<div class="card interactive">
-    <div class="stats-grid" style="text-align: center; font-size: 13px;">
-        <div>Total Brakes: <span id="total">0</span></div>
-        <div>Hard Brakes: <span id="hard">0</span></div>
-        <div>Brake Dist: <span id="brakeDist">0</span> km</div>
-        <div>Avg Decel: <span id="avg">0</span></div>
-    </div>
-    <div style="margin-top: 12px; opacity: 0.6; text-align: center; font-size: 12px;">
-        Max Decel: <span id="max">0</span>
-    </div>
-</div>
+/* เอฟเฟกต์ตอนกด (Interactive) */
+.card:active {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.06);
+}
 
-<div class="card interactive"><canvas id="speedChart"></canvas></div>
-<div class="card interactive"><canvas id="decelChart"></canvas></div>
-<div class="card interactive"><div id="map" style="height: 300px;"></div></div>
+/* ความเร็ว: ออร่าทรงกลม (แบบในรูปที่น้องชอบ) */
+.hero-container {
+  position: relative;
+  padding: 40px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* วงแสงหลังตัวเลข */
+.hero-container::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  background: var(--ice-blue);
+  filter: blur(60px);
+  opacity: 0.15;
+  border-radius: 50%;
+  z-index: 0;
+}
+
+#speed {
+  font-size: 110px !important;
+  font-weight: 100 !important; /* บางเบาแบบหรูหรา */
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 0 20px rgba(255,255,255,0.4);
+}
+
+/* ปุ่ม: Minimalist Lux */
+button {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-angel);
+  color: var(--glam-white);
+  border-radius: 20px;
+  height: 50px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: 0.3s;
+}
+
+.start { border-color: var(--ice-blue) !important; color: var(--ice-blue) !important; }
+.stop { border-color: var(--soft-rose) !important; color: var(--soft-rose) !important; }
+
+/* แผนที่โทนสว่างมุก */
+#map {
+  filter: grayscale(1) invert(0.9) brightness(0.9);
+  border-radius: 24px;
+}
