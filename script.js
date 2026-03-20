@@ -21,6 +21,7 @@ let decelChart
 
 let map
 let heatPoints=[]
+let heatLayer=null
 
 let rideStartTime=null
 
@@ -53,6 +54,9 @@ data:{labels:[],datasets:[{label:"Decel",data:[]}]}
 
 map=L.map('map').setView([13.7563,100.5018],15)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+
+// 🔥 create heat layer once
+heatLayer = L.heatLayer(heatPoints,{radius:25}).addTo(map)
 
 }
 
@@ -124,7 +128,7 @@ decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 let isPothole = (decel > 6 && dt < 0.15)
 if(decel < 1.5 && !isPothole) return
 
-// ================= 🧠 ADD LABEL =================
+// ================= LABEL =================
 let label="CRUISE"
 if(decel > 5) label="HARD_BRAKE"
 else if(decel > 2) label="BRAKE"
@@ -165,7 +169,7 @@ event:"pothole",
 decel:decel,
 lat:lat,
 lng:lng,
-label:"POTHOLE" // 🔥 ADD
+label:"POTHOLE"
 })
 }
 
@@ -198,7 +202,7 @@ acceleration: acceleration,
 deceleration: decel,
 lat: lat,
 lng: lng,
-label: label // 🔥 ADD
+label: label
 })
 
 }
@@ -239,12 +243,13 @@ color:color,
 radius:8
 }).addTo(map).bindPopup(type)
 
+// 🔥 update heatmap (no duplicate layer)
 if(type==="HARD"){
 heatPoints.push([lat,lng,1])
-L.heatLayer(heatPoints,{radius:25}).addTo(map)
+heatLayer.setLatLngs(heatPoints)
 }
 
-// ================= AI BEHAVIOR =================
+// ================= RISK =================
 let risk=100
 risk -= hardBrakes*12
 risk -= normalBrakes*6
@@ -252,16 +257,17 @@ risk -= slowBrakes*2
 risk -= peakDecel*2
 
 if(risk<0) risk=0
-document.getElementById("risk").innerText=Math.round(risk)
 
-// 🔥 ADD COLOR CLASS
 let riskEl=document.getElementById("risk")
-riskEl.className=""
-if(risk>70) riskEl.classList.add("risk-high")
-else if(risk>40) riskEl.classList.add("risk-mid")
-else riskEl.classList.add("risk-low")
+riskEl.innerText=Math.round(risk)
 
-// driving style
+// 🔥 USE NEW CSS CLASS
+riskEl.className=""
+if(risk>70) riskEl.classList.add("status-safe")
+else if(risk>40) riskEl.classList.add("status-warning")
+else riskEl.classList.add("status-danger")
+
+// ================= STYLE =================
 let style="SAFE"
 if(risk<70) style="NORMAL"
 if(risk<40) style="AGGRESSIVE"
@@ -279,7 +285,7 @@ peakDecel:peakDecel,
 distance:brakeDistance,
 lat:lat,
 lng:lng,
-label:type // 🔥 ADD
+label:type
 })
 
 // ================= UI =================
@@ -290,6 +296,17 @@ document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
 updateSummary()
 
 peakDecel=0
+}
+
+// ================= SUMMARY =================
+function updateSummary(){
+let decels = dataset.map(d=>d.deceleration||0).filter(v=>v>0)
+
+let avg = decels.reduce((a,b)=>a+b,0)/decels.length || 0
+let max = Math.max(...decels,0)
+
+document.getElementById("avg").innerText=avg.toFixed(2)
+document.getElementById("max").innerText=max.toFixed(2)
 }
 
 // ================= CSV =================
