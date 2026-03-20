@@ -1,4 +1,4 @@
-// ================== YOUR ORIGINAL CODE ==================
+// ================= ORIGINAL =================
 let watching=false
 let watchId=null
 
@@ -24,7 +24,7 @@ let heatPoints=[]
 
 let rideStartTime=null
 
-// ================== ✅ ADD: SENSOR REAL ==================
+// ================= ADD: SENSOR =================
 let accelY=0
 let smoothAccel=0
 
@@ -35,7 +35,10 @@ smoothAccel = smoothAccel*0.8 + accelY*0.2
 }
 })
 
-// ================== INIT ==================
+// ================= ADD: BUFFER =================
+let decelBuffer=[]
+
+// ================= INIT =================
 window.onload=function(){
 
 chart=new Chart(document.getElementById("speedChart"),{
@@ -53,10 +56,9 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 }
 
-// ================== START ==================
+// ================= START =================
 function startRide(){
 
-// ✅ iPhone sensor permission
 if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
 DeviceMotionEvent.requestPermission()
 }
@@ -69,13 +71,13 @@ watchId=navigator.geolocation.watchPosition(updateSpeed)
 
 }
 
-// ================== STOP ==================
+// ================= STOP =================
 function stopRide(){
 watching=false
 navigator.geolocation.clearWatch(watchId)
 }
 
-// ================== POPUP ==================
+// ================= POPUP =================
 function showPopup(text,color){
 let p=document.getElementById("popup")
 p.innerText=text
@@ -84,7 +86,7 @@ p.style.display="block"
 setTimeout(()=>p.style.display="none",1500)
 }
 
-// ================== UPDATE ==================
+// ================= UPDATE =================
 function updateSpeed(pos){
 
 if(!watching)return
@@ -104,24 +106,36 @@ let dt=(now-lastTime)/1000
 if(dt===0)return
 
 let dv=speed-lastSpeed
-
 let acceleration = dv/dt
 
-// ================== ✅ ADD: SMART DECEL ==================
-// ใช้ sensor ถ้ามี / fallback gps
+// ================= 🔥 SMART DECEL =================
 let sensorDecel = -smoothAccel
 let gpsDecel = -(dv/dt)
-
-// fusion (เอาที่แรงกว่า)
 let decel = Math.max(sensorDecel, gpsDecel)
 
-// =======================================================
+// ===== FILTER 1 =====
+if(speed < 8) return
 
+// ===== FILTER 2 =====
+if(Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return
+
+// ===== FILTER 3 (smooth) =====
+decelBuffer.push(decel)
+if(decelBuffer.length > 5) decelBuffer.shift()
+decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
+
+// ===== FILTER 4 (pothole detect) =====
+let isPothole = (decel > 6 && dt < 0.15)
+
+// ===== FILTER 5 =====
+if(decel < 1.5 && !isPothole) return
+
+// ================= PEAK =================
 if(decel>peakDecel) peakDecel=decel
-
 document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-// ================== BRAKE PHASE ==================
+// ================= BRAKE =================
+if(!isPothole){
 if(decel>2){
 if(!brakeStart){
 brakeStart=now
@@ -134,8 +148,27 @@ logBrake(lat,lng)
 brakeStart=null
 }
 }
+}
 
-// ================== CHART ==================
+// ================= 🕳 POTHOLE =================
+if(isPothole){
+showPopup("🕳 POTHOLE","#845ef7")
+
+L.circleMarker([lat,lng],{
+color:"purple",
+radius:6
+}).addTo(map).bindPopup("POTHOLE")
+
+dataset.push({
+timestamp:now,
+event:"pothole",
+decel:decel,
+lat:lat,
+lng:lng
+})
+}
+
+// ================= CHART =================
 let t=new Date().toLocaleTimeString()
 
 chart.data.labels.push(t)
@@ -154,7 +187,7 @@ decelChart.data.datasets[0].data.shift()
 chart.update()
 decelChart.update()
 
-// ================== DATASET ==================
+// ================= DATASET =================
 dataset.push({
 timestamp: now,
 time: t,
@@ -173,7 +206,7 @@ lastTime=now
 
 }
 
-// ================== BRAKE EVENT ==================
+// ================= BRAKE EVENT =================
 function logBrake(lat,lng){
 
 totalBrakes++
@@ -194,30 +227,22 @@ normalBrakes++
 showPopup("🟡 NORMAL BRAKE","#ffd43b")
 }
 else{
-type="SLOW"
-color="green"
 slowBrakes++
-showPopup("🟢 SLOW DOWN","#51cf66")
+showPopup("🟢 SLOW","#51cf66")
 }
 
-// ================== MAP ==================
+// ================= MAP =================
 L.circleMarker([lat,lng],{
 color:color,
 radius:8
 }).addTo(map).bindPopup(type)
 
-// 🔥 heatmap HARD ONLY
 if(type==="HARD"){
 heatPoints.push([lat,lng,1])
 L.heatLayer(heatPoints,{radius:25}).addTo(map)
 }
 
-// ================== UI ==================
-document.getElementById("total").innerText=totalBrakes
-document.getElementById("hard").innerText=hardBrakes
-document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
-
-// ================== ✅ ADD: AI PRO ==================
+// ================= AI BEHAVIOR =================
 let risk=100
 risk -= hardBrakes*12
 risk -= normalBrakes*6
@@ -227,24 +252,37 @@ risk -= peakDecel*2
 if(risk<0) risk=0
 document.getElementById("risk").innerText=Math.round(risk)
 
-// ================== DATASET EVENT ==================
+// driving style
+let style="SAFE"
+if(risk<70) style="NORMAL"
+if(risk<40) style="AGGRESSIVE"
+
+document.getElementById("style").innerText=style
+
+// ================= DATASET =================
 dataset.push({
 timestamp: Date.now(),
 event:"brake",
 type:type,
 risk:risk,
+style:style,
 peakDecel:peakDecel,
 distance:brakeDistance,
 lat:lat,
 lng:lng
 })
 
+// ================= UI =================
+document.getElementById("total").innerText=totalBrakes
+document.getElementById("hard").innerText=hardBrakes
+document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
+
 updateSummary()
 
 peakDecel=0
 }
 
-// ================== SUMMARY ==================
+// ================= SUMMARY =================
 function updateSummary(){
 
 let decels=dataset.map(d=>d.deceleration||0)
@@ -257,24 +295,24 @@ document.getElementById("max").innerText=max.toFixed(2)
 
 }
 
-// ================== CSV ==================
+// ================= CSV =================
 function exportCSV(){
 
-let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,peakDecel,distance\n"
+let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,style,peakDecel,distance\n"
 
 dataset.forEach(d=>{
-csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.peakDecel||""},${d.distance||""}\n`
+csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""}\n`
 })
 
 let blob=new Blob([csv])
 let a=document.createElement("a")
 a.href=URL.createObjectURL(blob)
-a.download="ride_full_dataset.csv"
+a.download="ride_full_ai_dataset.csv"
 a.click()
 
 }
 
-// ================== CLEAR ==================
+// ================= CLEAR =================
 function clearData(){
 location.reload()
 }
