@@ -1,265 +1,57 @@
-/* ================= CONFIG & VARIABLES ================= */
-:root {
-  --neon-green: #69f0ae;
-  --neon-blue: #4dabf7;
-  --neon-yellow: #ffd43b;
-  --neon-red: #ff6b6b;
-  --bg-dark: #000000;
-  --card-bg: rgba(255, 255, 255, 0.06);
-  --glass-blur: blur(16px);
-  --border-light: rgba(255, 255, 255, 0.12);
+body{
+font-family:-apple-system,BlinkMacSystemFont;
+margin:0;
+padding:20px;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+color:white;
 }
 
-/* ================= GLOBAL ================= */
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
+.card{
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(12px);
+padding:16px;
+border-radius:16px;
+margin-bottom:15px;
+box-shadow:0 10px 30px rgba(0,0,0,0.3);
 }
 
-html {
-  scroll-behavior: smooth;
+button{
+padding:12px;
+border:none;
+border-radius:12px;
+margin:5px;
+font-weight:600;
+color:white;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Prompt', 'Inter', sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: var(--bg-dark);
-  color: #ffffff;
-  line-height: 1.5;
+.start{background:#00c853;}
+.stop{background:#ff1744;}
+.export{background:#2979ff;}
+.clear{background:#757575;}
+
+#map{
+height:250px;
+border-radius:12px;
 }
 
-/* Ambient Glow */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: 
-    radial-gradient(circle at 10% 20%, rgba(105, 240, 174, 0.05), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(77, 171, 247, 0.05), transparent 40%);
-  z-index: -1;
+#popup{
+position:fixed;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+padding:12px 20px;
+border-radius:10px;
+color:white;
+display:none;
+z-index:999;
+font-weight:bold;
 }
 
-/* ================= TYPO ================= */
-h1 {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+#risk{
+font-size:32px;
+font-weight:800;
 }
 
-/* ================= CARD ================= */
-.card {
-  position: relative;
-  background: var(--card-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  padding: 20px;
-  border-radius: 24px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border-light);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-}
-
-/* subtle glow */
-.card::before {
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius:24px;
-  background:linear-gradient(120deg,
-    rgba(105,240,174,0.15),
-    rgba(77,171,247,0.15),
-    transparent);
-  opacity:0;
-  transition:0.3s;
-  z-index:-1;
-}
-
-.card:hover::before {
-  opacity:1;
-}
-
-/* ================= HERO ================= */
-.hero-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.speed-display {
-  text-align: left;
-}
-
-#speed {
-  font-size: 64px;
-  font-weight: 900;
-  color: var(--neon-green);
-  line-height: 1;
-  text-shadow: 0 0 20px rgba(105, 240, 174, 0.5);
-}
-
-.unit {
-  font-size: 16px;
-  opacity: 0.6;
-}
-
-/* Risk */
-#risk-container {
-  text-align: right;
-}
-
-#risk {
-  font-size: 40px;
-  font-weight: 800;
-}
-
-/* Style badge */
-#style {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 100px;
-  background: rgba(255,255,255,0.1);
-  letter-spacing: 1px;
-}
-
-/* STATUS COLORS */
-.status-safe {
-  color: var(--neon-green);
-  text-shadow: 0 0 15px var(--neon-green);
-}
-
-.status-warning {
-  color: var(--neon-yellow);
-  text-shadow: 0 0 15px var(--neon-yellow);
-}
-
-.status-danger {
-  color: var(--neon-red);
-  text-shadow: 0 0 15px var(--neon-red);
-  animation: pulse-red 1s infinite;
-}
-
-/* ================= GRID ================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.stat-item {
-  background: rgba(255,255,255,0.03);
-  padding: 12px;
-  border-radius: 16px;
-}
-
-.stat-label {
-  font-size: 11px;
-  opacity: 0.5;
-  text-transform: uppercase;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: 800;
-}
-
-/* ================= BUTTON ================= */
-.button-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-
-  position: sticky;
-  bottom: 10px;
-
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
-  padding: 10px;
-  border-radius: 20px;
-}
-
-button {
-  padding: 18px;
-  border: none;
-  border-radius: 18px;
-  font-weight: 800;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-button:active {
-  transform: scale(0.95);
-}
-
-/* button colors */
-.start { background: var(--neon-green); color: #003d2b; }
-.stop { background: var(--neon-red); color: #fff; }
-.export { background: var(--neon-blue); color: #fff; font-size: 13px; }
-.clear { background: #333; color: #bbb; font-size: 13px; }
-
-/* ================= CHART ================= */
-.chart-container {
-  background: rgba(255,255,255,0.02);
-  border-radius: 20px;
-  padding: 10px;
-}
-
-canvas {
-  max-width: 100%;
-  filter: drop-shadow(0 0 10px rgba(77,171,247,0.2));
-}
-
-/* ================= MAP ================= */
-#map {
-  height: 250px;
-  border-radius: 20px;
-  border: 1px solid var(--border-light);
-
-  /* FIX แล้ว (ไม่เพี้ยน marker) */
-  filter: grayscale(0.4) brightness(0.85);
-}
-
-/* ================= POPUP ================= */
-#popup {
-  background: rgba(0,0,0,0.75);
-  border: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
-}
-
-/* ================= ANIMATION ================= */
-@keyframes pulse-red {
-  0% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
-  100% { opacity: 0.5; transform: scale(0.9); }
-}
-
-/* recording dot */
-.recording-pulse {
-  width: 10px;
-  height: 10px;
-  background: var(--neon-red);
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 8px;
-  box-shadow: 0 0 10px var(--neon-red);
-  animation: pulse-red 1.2s infinite;
-}
-
-/* risky card */
-.is-risky {
-  border-color: var(--neon-red);
-  animation: warning-bg 1s infinite;
-}
-
-@keyframes warning-bg {
-  0% { background: var(--card-bg); }
-  50% { background: rgba(255,107,107,0.15); }
-  100% { background: var(--card-bg); }
-}
+.risk-high{color:#69f0ae;}
+.risk-mid{color:#ffd43b;}
+.risk-low{color:#ff6b6b;}
