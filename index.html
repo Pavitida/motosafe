@@ -3,69 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MotoSafe 🪽</title>
+    <title>MotoSafe AI</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet.leaf.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 </head>
 <body>
 
     <header>
-        <h1>✧ *ੈ✩ MotoSafe 🪽 ࿐</h1>
-    </header>
+        <h1>MOTOSAFE</h1> </header>
 
     <div id="popup"></div>
 
-    <div class="card interactive-card" onclick="console.log('Button Grid Clicked')">
-        <div class="button-group">
-            <button class="start" onclick="startRide()">⚡ Start 🪽</button>
-            <button class="stop" onclick="stopRide()">Stop ໒꒱</button>
-            <button class="export" onclick="exportCSV()">Export ✩₊˚</button>
-            <button class="clear" onclick="clearData()">Clear ִֶָ</button>
+    <div class="card interactive"> <div class="button-group">
+            <button class="start" onclick="startRide()">Start</button>
+            <button class="stop" onclick="stopRide()">Stop</button>
+            <button class="export" onclick="exportCSV()">Export CSV</button>
+            <button class="clear" onclick="clearData()">Clear</button>
         </div>
     </div>
 
-    <div class="card interactive-card" onclick="console.log('Main Display Clicked')">
+    <div class="card interactive">
         <div class="hero-container">
-            <div class="speed-label">𓂃 ࣪ ִֶָ SPEEDOMETER</div>
+            <div class="speed-unit">Current Speed</div>
             <span id="speed">0.0</span>
-            <div class="speed-label">KM/H</div>
+            <div class="speed-unit">km/h</div>
         </div>
-        
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
         <div class="stats-grid">
             <div class="stat-item">
-                <div class="sub-label">PEAK DECEL</div>
+                <div class="risk-label">PEAK DECEL</div>
                 <div id="peak" class="stat-value">0</div>
             </div>
             <div class="stat-item">
-                <div class="sub-label">RISK LEVEL</div>
+                <div class="risk-label">RISK LEVEL</div>
                 <div id="risk" class="stat-value">100</div>
             </div>
         </div>
-
-        <div style="text-align: center; margin-top: 15px; font-size: 13px;">
-            <span style="opacity: 0.7;">STYLE:</span> 
-            <b id="style" style="color: #a5d8ff;">✨ SAFE 🪽</b>
+        <div style="text-align: center; margin-top: 15px;">
+            <span class="speed-unit">Style:</span> 
+            <b id="style" style="color: #c2e4ff; letter-spacing: 1px;">SAFE</b>
         </div>
     </div>
 
-    <div class="card interactive-card" onclick="console.log('Brake Stats Clicked')">
-        <div class="stats-grid" style="font-size: 13px; gap: 8px; opacity: 0.9;">
+    <div class="card interactive">
+        <div class="stats-grid">
             <div>Total Brakes: <span id="total">0</span></div>
-            <div>⚠️ Hard Brakes: <span id="hard">0</span></div>
+            <div>Hard Brakes: <span id="hard">0</span></div>
             <div>Brake Dist: <span id="brakeDist">0</span> km</div>
-            <div>📉 Avg Decel: <span id="avg">0</span></div>
+            <div>Avg Decel: <span id="avg">0</span></div>
         </div>
-        <div style="margin-top: 8px; font-size: 11px; opacity: 0.6;">
+        <div style="margin-top: 10px; opacity: 0.8;">
             Max Decel: <span id="max">0</span>
         </div>
     </div>
 
-    <div class="card interactive-card"><canvas id="speedChart"></canvas></div>
-    <div class="card interactive-card"><canvas id="decelChart"></canvas></div>
-    <div class="card interactive-card"><div id="map" style="height: 280px;"></div></div>
+    <div class="card interactive"><canvas id="speedChart"></canvas></div>
+    <div class="card interactive"><canvas id="decelChart"></canvas></div>
+    <div class="card interactive"><div id="map" style="height: 300px;"></div></div>
 
     <script src="script.js"></script>
 </body>
