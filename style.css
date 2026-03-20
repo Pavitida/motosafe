@@ -1,63 +1,53 @@
-/* ================= ULTIMATE ANGELIC THEME ================= */
-:root {
-  --glam-white: #f8f9fa;
-  --ice-blue: #a5d8ff;
-  --angel-pink: #ffc9c9;
-  --deep-space: #0a0b10; /* พื้นหลังเข้มลึกแบบรูปที่ 2 */
-  --card-bg: rgba(255, 255, 255, 0.04);
-  --border-angel: rgba(255, 255, 255, 0.12);
-}
+<header>
+    <h1>MOTOSAFE</h1>
+</header>
 
-body {
-  background-color: var(--deep-space);
-  /* พื้นหลังออร่า Nebula ฟุ้งๆ */
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(165, 216, 255, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(255, 201, 201, 0.08) 0%, transparent 40%);
-  background-attachment: fixed;
-}
+<div id="popup"></div>
 
-/* หัวข้อแบบพรีเมียม */
-header h1 {
-  font-size: 26px;
-  letter-spacing: 4px;
-  background: linear-gradient(120deg, #fff, var(--ice-blue), var(--angel-pink));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.4));
-  margin: 30px 0;
-  text-align: center;
-}
+<div class="card interactive">
+    <div class="button-group">
+        <button class="start" onclick="startRide()">START</button>
+        <button class="stop" onclick="stopRide()">STOP</button>
+        <button class="export" onclick="exportCSV()">EXPORT</button>
+        <button class="clear" onclick="clearData()">CLEAR</button>
+    </div>
+</div>
 
-/* เอฟเฟกต์การกด Card */
-.card.interactive {
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
+<div class="card interactive">
+    <div class="hero-container">
+        <div class="speed-unit">SPEEDOMETER</div>
+        <span id="speed">0.0</span>
+        <div class="speed-unit">KM/H</div>
+    </div>
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
+    <div class="stats-grid stats-center">
+        <div class="stat-item" style="text-align: center;">
+            <div class="risk-label">PEAK DECEL</div>
+            <div id="peak" class="stat-value">0</div>
+        </div>
+        <div class="stat-item" style="text-align: center;">
+            <div class="risk-label">RISK LEVEL</div>
+            <div id="risk" class="stat-value">100</div>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 15px;">
+        <span class="speed-unit">RIDING STYLE:</span> 
+        <b id="style" style="color: #c2e4ff; letter-spacing: 2px;">SAFE</b>
+    </div>
+</div>
 
-.card.interactive:active {
-  transform: scale(0.97); /* กดแล้วยุบ */
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--ice-blue);
-  box-shadow: 0 0 30px rgba(165, 216, 255, 0.2);
-}
+<div class="card interactive">
+    <div class="stats-grid" style="text-align: center; font-size: 13px;">
+        <div>Total Brakes: <span id="total">0</span></div>
+        <div>Hard Brakes: <span id="hard">0</span></div>
+        <div>Brake Dist: <span id="brakeDist">0</span> km</div>
+        <div>Avg Decel: <span id="avg">0</span></div>
+    </div>
+    <div style="margin-top: 12px; opacity: 0.6; text-align: center; font-size: 12px;">
+        Max Decel: <span id="max">0</span>
+    </div>
+</div>
 
-/* แก้ไข Speed ให้ตัวเลขสวยไม่ขาด */
-#speed {
-  font-size: 110px !important;
-  font-weight: 200;
-  line-height: 1;
-  text-shadow: 0 0 30px rgba(165, 216, 255, 0.5);
-  color: #fff;
-}
-
-/* ปรับปุ่มให้สีสดขึ้นตาม Emoji */
-button {
-  transition: 0.3s;
-  border: 1px solid var(--border-angel);
-}
-
-button:active { transform: translateY(3px); }
-
-.start { border-color: #63e6be !important; color: #63e6be !important; }
-.stop { border-color: #ff8787 !important; color: #ff8787 !important; }
+<div class="card interactive"><canvas id="speedChart"></canvas></div>
+<div class="card interactive"><canvas id="decelChart"></canvas></div>
+<div class="card interactive"><div id="map" style="height: 300px;"></div></div>
