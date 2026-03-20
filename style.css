@@ -1,160 +1,191 @@
-/* ================= ANGELIC PRO FIXED CONFIG ================= */
+/* ================= ANGELIC PEARL PRO CONFIG ================= */
 :root {
-  --glam-white: #ffffff;
-  --ice-blue: #a5d8ff;
-  --angel-pink: #ffc9c9;
-  --soft-gold: #fcc419;
-  --bg-deep: #0a0b10;
-  --card-bg: rgba(255, 255, 255, 0.04);
+  --glam-white: #f8f9fa; /* สีขาวมุกละมุน */
+  --ice-blue: #a5d8ff;  /* สีฟ้าไอซ์บลูจางๆ */
+  --soft-yellow: #fff3bf; /* สีเหลืองอ่อนๆ */
+  --angel-pink: #ffc9c9;  /* สีชมพูพาสเทล */
+  --bg-deep: #111111;  /* พื้นหลังเทาเข้มให้นุ่มนวล */
+  --card-bg: rgba(255, 255, 255, 0.06); /* โปร่งแสงแต่ไม่มืด */
   --glass-blur: blur(20px);
   --border-angel: rgba(255, 255, 255, 0.15);
-  --neon-glow: 0 0 25px rgba(165, 216, 255, 0.4);
 }
 
-/* ================= BACKGROUND MAGIC ================= */
+/* ================= GLOBAL & BACKGROUND ================= */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-  font-family: 'Prompt', -apple-system, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Prompt', 'Inter', sans-serif;
+  margin: 0;
+  padding: 16px;
   background: var(--bg-deep);
   color: var(--glam-white);
-  margin: 0;
-  padding: 15px;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(165,216,255,0.08), transparent 30%),
-    radial-gradient(circle at 85% 85%, rgba(255,201,201,0.08), transparent 30%);
 }
 
-/* Moving Pixel Stars */
+/* Background Aura จางๆ แบบมุก (ห้ามแก้) */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(165,216,255,0.08), transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(255,201,201,0.08), transparent 40%);
+  z-index: -2;
+}
+
+/* Glitter จางๆ แบบมุก (ห้ามแก้) */
 body::after {
   content: "";
   position: fixed;
-  inset: -100px;
-  background-image: 
-    radial-gradient(circle at 20% 30%, #fff 1.5px, transparent 1.5px),
-    radial-gradient(circle at 80% 70%, var(--angel-pink) 2px, transparent 2px),
-    radial-gradient(circle at 40% 50%, var(--soft-gold) 1.5px, transparent 1.5px);
-  background-size: 100px 100px;
-  animation: sparkleFloat 20s linear infinite;
-  opacity: 0.3;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgba(165,216,255,0.6), transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, rgba(255,201,201,0.5), transparent);
+  animation: sparkleMove 30s linear infinite;
   z-index: -1;
 }
 
-@keyframes sparkleFloat {
+@keyframes sparkleMove {
   from { transform: translateY(0); }
   to { transform: translateY(-500px); }
 }
 
-/* ================= THE GLASS CARDS ================= */
+/* ================= THE PEARL CARD ================= */
 .card {
+  position: relative;
   background: var(--card-bg);
   backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  padding: 24px;
   border-radius: 28px;
   border: 1px solid var(--border-angel);
-  padding: 22px;
-  margin-bottom: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  position: relative;
+  margin-bottom: 16px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3), 0 0 15px rgba(165,216,255,0.1);
+  transition: transform 0.3s ease;
 }
 
-/* ================= SPEED HERO FIX (แก้ตัวเลขขาด) ================= */
-.speed-box {
+/* ================= THE TRUE HERO FIX (แก้ตัวเลขขาด) ================= */
+.hero-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  position: relative;
   padding: 20px 0;
 }
 
+/* ⭐ FIX ตัวเลขความเร็วที่ขาด */
 #speed {
-  font-size: 110px !important; /* ขนาดใหญ่พิเศษแบบในรูปแม่ */
-  font-weight: 100 !important; /* บางเบาแบบหรูหรา */
-  line-height: 1.1 !important;  /* แก้บัคตัวเลขขาด: ใช้ 1.1 เพื่อให้ตัวเลขอยู่กลาง */
-  letter-spacing: -3px;
-  color: #fff;
-  text-shadow: var(--neon-glow);
-  display: block;
+  font-size: 90px !important; /* ใหญ่สะใจแต่ยังดูแพง */
+  font-weight: 200 !important; /* บางเบาแบบหรูหรา */
+  line-height: 1 !important;   /* ✅ บังคับให้ตัวเลขแสดงเต็มพื้นที่ (ห้ามแก้) */
+  display: block;              /* แยกบรรทัดชัดเจน */
   margin: 10px 0;
-}
-
-/* เพิ่มปีกนางฟ้าลอยข้างตัวเลข */
-#speed::after {
-  content: " 👼";
-  font-size: 24px;
-  filter: drop-shadow(0 0 8px var(--ice-blue));
-  position: absolute;
-  top: 10px;
-  animation: angelFloat 3s infinite ease-in-out;
+  color: var(--glam-white);
+  /* แสงฟุ้งแบบมุก (TEXT-SHADOW หรูๆ) */
+  text-shadow:
+    0 0 20px rgba(248,249,250,0.8),
+    0 0 40px rgba(165,216,255,0.4);
+  animation: angelFloat 4s ease-in-out infinite; /* ลอยเบาๆ */
 }
 
 @keyframes angelFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(8deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
-/* ================= GLOWING BUTTONS GRID (ตามรูป) ================= */
+.speed-unit {
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+/* ================= RISK SECTION ================= */
+#risk {
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--glam-white);
+}
+
+.risk-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* ================= STATUS & GRID ================= */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.stat-item {
+  background: rgba(255,255,255,0.03);
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--glam-white);
+}
+
+/* ================= GLOWING BUTTONS (LAYOUT จากรูป 2) ================= */
 .button-group {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* แบ่ง 2 คอลัมน์แบบรูป 2 */
   gap: 12px;
 }
 
 button {
-  height: 50px;
+  padding: 16px;
   border-radius: 18px;
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1px;
-  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--border-angel);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   cursor: pointer;
+  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  background: transparent;
 }
-
-button:active { transform: scale(0.92); }
 
 .start {
-  border-color: var(--ice-blue);
-  background: rgba(165, 216, 255, 0.1);
+  border: 1px solid var(--glam-white);
+  color: var(--glam-white);
 }
 .start:hover {
-  background: var(--ice-blue);
-  color: black;
-  box-shadow: 0 0 20px var(--ice-blue);
+  background: var(--glam-white);
+  color: #000;
+  box-shadow: 0 0 20px var(--glam-white);
 }
 
 .stop {
-  border-color: var(--angel-pink);
+  border: 1px solid var(--angel-pink);
   color: var(--angel-pink);
-  background: rgba(255, 201, 201, 0.1);
 }
 .stop:hover {
   background: var(--angel-pink);
-  color: black;
+  color: #000;
   box-shadow: 0 0 20px var(--angel-pink);
 }
 
-/* ================= MAP & CHART ================= */
+/* ================= MAP (โทนสีหรู) ================= */
 #map {
-  height: 250px;
+  height: 220px;
   border-radius: 24px;
   border: 1px solid var(--border-angel);
-  /* ทำแผนที่ให้โทนสีหรู (Silver-Pear Tone) */
-  filter: invert(90%) hue-rotate(180deg) brightness(0.8) contrast(1.2);
+  /* ✅ ทำแผนที่ให้ดูละมุนขึ้นแบบ Invert-Silver */
+  filter: brightness(0.8) contrast(1.2) grayscale(0.5) invert(0.9) hue-rotate(180deg);
 }
 
-.stat-value {
-  font-size: 24px;
-  font-weight: 300;
-  color: var(--ice-blue);
-}
-
-/* Chart ให้ดูฟุ้งๆ */
+/* ================= CHART ================= */
 canvas {
-  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.2));
+  filter: drop-shadow(0 0 10px rgba(165, 216, 255, 0.2));
   margin-top: 10px;
 }
