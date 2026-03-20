@@ -1,157 +1,63 @@
-/* ================= LUXURY ANGELIC CONFIG ================= */
+/* ================= ULTIMATE ANGELIC THEME ================= */
 :root {
-  --glam-white: #ffffff;
-  --ice-blue: #c2e4ff;  /* สีฟ้าไอซ์บลูจางๆ ดูแพง */
-  --soft-rose: #fce4ec; /* ชมพูอ่อนแบบนวลตา */
-  --bg-deep: #0a0b12;   /* พื้นหลังมืดสนิทเพื่อให้ Aura เด่น */
+  --glam-white: #f8f9fa;
+  --ice-blue: #a5d8ff;
+  --angel-pink: #ffc9c9;
+  --deep-space: #0a0b10; /* พื้นหลังเข้มลึกแบบรูปที่ 2 */
   --card-bg: rgba(255, 255, 255, 0.04);
-  --glass-blur: blur(25px);
-  --border-angel: rgba(255, 255, 255, 0.1);
+  --border-angel: rgba(255, 255, 255, 0.12);
 }
 
-/* ================= BACKGROUND MAGIC ================= */
 body {
-  margin: 0;
-  padding: 16px;
-  background: var(--bg-deep);
-  color: var(--glam-white);
-  font-family: 'Prompt', -apple-system, sans-serif;
-  /* พื้นหลัง Aura นุ่มๆ ที่มุมจอแบบที่น้องชอบ */
+  background-color: var(--deep-space);
+  /* พื้นหลังออร่า Nebula ฟุ้งๆ */
   background-image: 
-    radial-gradient(circle at 10% 10%, rgba(194, 228, 255, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 90% 90%, rgba(252, 228, 236, 0.08) 0%, transparent 40%);
+    radial-gradient(circle at 10% 20%, rgba(165, 216, 255, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255, 201, 201, 0.08) 0%, transparent 40%);
   background-attachment: fixed;
-  overflow-x: hidden;
 }
 
-/* ================= HEADER: MINIMAL LUX ================= */
+/* หัวข้อแบบพรีเมียม */
 header h1 {
-  font-size: 22px;
-  font-weight: 200;
-  letter-spacing: 10px; /* เว้นระยะตัวอักษรให้ดู High-end */
+  font-size: 26px;
+  letter-spacing: 4px;
+  background: linear-gradient(120deg, #fff, var(--ice-blue), var(--angel-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.4));
+  margin: 30px 0;
   text-align: center;
-  color: var(--glam-white);
-  text-transform: uppercase;
-  margin: 40px 0;
-  opacity: 0.9;
-  filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
 }
 
-/* ================= CARDS: DEEP GLASS ================= */
-.card {
-  background: var(--card-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--border-angel);
-  border-radius: 30px;
-  padding: 25px;
-  margin-bottom: 20px;
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+/* เอฟเฟกต์การกด Card */
+.card.interactive {
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* เอฟเฟกต์ตอนกด (Interactive) */
 .card.interactive:active {
-  transform: scale(0.98);
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(194, 228, 255, 0.3);
+  transform: scale(0.97); /* กดแล้วยุบ */
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--ice-blue);
+  box-shadow: 0 0 30px rgba(165, 216, 255, 0.2);
 }
 
-/* ================= SPEED HERO: AURA FOCUS ================= */
-.hero-container {
-  position: relative;
-  padding: 30px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-/* วงแสงหลังตัวเลขความเร็ว */
-.hero-container::before {
-  content: "";
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 160px;
-  height: 160px;
-  background: var(--ice-blue);
-  filter: blur(60px);
-  opacity: 0.15;
-  border-radius: 50%;
-  z-index: 0;
-}
-
+/* แก้ไข Speed ให้ตัวเลขสวยไม่ขาด */
 #speed {
   font-size: 110px !important;
-  font-weight: 100 !important; /* บางเบาแบบพรีเมียม */
+  font-weight: 200;
   line-height: 1;
-  position: relative;
-  z-index: 1;
+  text-shadow: 0 0 30px rgba(165, 216, 255, 0.5);
   color: #fff;
-  text-shadow: 0 0 20px rgba(255,255,255,0.4);
 }
 
-.speed-unit {
-  font-size: 11px;
-  letter-spacing: 3px;
-  opacity: 0.5;
-  text-transform: uppercase;
-  margin-top: 5px;
-}
-
-/* ================= BUTTONS: CLEAN & NEON ================= */
-.button-group {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
+/* ปรับปุ่มให้สีสดขึ้นตาม Emoji */
 button {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border-angel);
-  color: var(--glam-white);
-  border-radius: 18px;
-  height: 52px;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 2px;
-  text-transform: uppercase;
   transition: 0.3s;
-  cursor: pointer;
-}
-
-.start { border-color: var(--ice-blue) !important; color: var(--ice-blue) !important; }
-.stop { border-color: var(--soft-rose) !important; color: var(--soft-rose) !important; }
-
-button:active { transform: translateY(2px); opacity: 0.8; }
-
-/* ================= STATS & GRID ================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.risk-label {
-  font-size: 9px;
-  letter-spacing: 1px;
-  opacity: 0.4;
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 300;
-}
-
-/* ================= MAP & CANVAS ================= */
-#map {
-  filter: grayscale(1) invert(0.9) brightness(0.9) contrast(1.1); /* แผนที่สีมุกสะอาดตา */
-  border-radius: 25px;
   border: 1px solid var(--border-angel);
 }
 
-canvas {
-  margin-top: 10px;
-  filter: drop-shadow(0 0 10px rgba(194, 228, 255, 0.1));
-}
+button:active { transform: translateY(3px); }
+
+.start { border-color: #63e6be !important; color: #63e6be !important; }
+.stop { border-color: #ff8787 !important; color: #ff8787 !important; }
