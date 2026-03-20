@@ -1,4 +1,4 @@
-/* ================= MAGIC ANGELIC CONFIG ================= */
+/* ================= ANGELIC PRO FIXED CONFIG ================= */
 :root {
   --glam-white: #ffffff;
   --ice-blue: #a5d8ff;
@@ -8,7 +8,7 @@
   --card-bg: rgba(255, 255, 255, 0.04);
   --glass-blur: blur(20px);
   --border-angel: rgba(255, 255, 255, 0.15);
-  --neon-glow: 0 0 25px rgba(165, 216, 255, 0.5);
+  --neon-glow: 0 0 25px rgba(165, 216, 255, 0.4);
 }
 
 /* ================= BACKGROUND MAGIC ================= */
@@ -20,8 +20,28 @@ body {
   padding: 15px;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(165,216,255,0.1), transparent 30%),
-    radial-gradient(circle at 90% 80%, rgba(255,201,201,0.1), transparent 30%);
+    radial-gradient(circle at 15% 15%, rgba(165,216,255,0.08), transparent 30%),
+    radial-gradient(circle at 85% 85%, rgba(255,201,201,0.08), transparent 30%);
+}
+
+/* Moving Pixel Stars */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -100px;
+  background-image: 
+    radial-gradient(circle at 20% 30%, #fff 1.5px, transparent 1.5px),
+    radial-gradient(circle at 80% 70%, var(--angel-pink) 2px, transparent 2px),
+    radial-gradient(circle at 40% 50%, var(--soft-gold) 1.5px, transparent 1.5px);
+  background-size: 100px 100px;
+  animation: sparkleFloat 20s linear infinite;
+  opacity: 0.3;
+  z-index: -1;
+}
+
+@keyframes sparkleFloat {
+  from { transform: translateY(0); }
+  to { transform: translateY(-500px); }
 }
 
 /* ================= THE GLASS CARDS ================= */
@@ -29,14 +49,15 @@ body {
   background: var(--card-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border-radius: 24px;
+  border-radius: 28px;
   border: 1px solid var(--border-angel);
-  padding: 20px;
-  margin-bottom: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  padding: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  position: relative;
 }
 
-/* ================= HERO SPEED DISPLAY ================= */
+/* ================= SPEED HERO FIX (แก้ตัวเลขขาด) ================= */
 .speed-box {
   text-align: center;
   position: relative;
@@ -44,86 +65,96 @@ body {
 }
 
 #speed {
-  font-size: 110px !important; /* ขนาดใหญ่แบบในรูปแม่ */
-  font-weight: 200 !important;
-  line-height: 0.85 !important; /* แก้ตัวเลขขาด */
+  font-size: 110px !important; /* ขนาดใหญ่พิเศษแบบในรูปแม่ */
+  font-weight: 100 !important; /* บางเบาแบบหรูหรา */
+  line-height: 1.1 !important;  /* แก้บัคตัวเลขขาด: ใช้ 1.1 เพื่อให้ตัวเลขอยู่กลาง */
   letter-spacing: -3px;
   color: #fff;
   text-shadow: var(--neon-glow);
-  margin: 5px 0;
+  display: block;
+  margin: 10px 0;
 }
 
-/* เพิ่มปีกนางฟ้าข้างตัวเลข */
+/* เพิ่มปีกนางฟ้าลอยข้างตัวเลข */
 #speed::after {
   content: " 👼";
   font-size: 24px;
   filter: drop-shadow(0 0 8px var(--ice-blue));
   position: absolute;
   top: 10px;
-  animation: wingFloat 3s infinite ease-in-out;
+  animation: angelFloat 3s infinite ease-in-out;
 }
 
-@keyframes wingFloat {
+@keyframes angelFloat {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-10px) rotate(5deg); }
+  50% { transform: translateY(-10px) rotate(8deg); }
 }
 
-/* ================= GLAM EMOJI & ICONS ================= */
-.glam-icon {
-  display: inline-block;
-  filter: drop-shadow(0 0 8px var(--soft-gold));
-  font-size: 20px;
-  vertical-align: middle;
-}
-
-/* ================= BUTTONS GRID (ตามรูป) ================= */
-.button-grid {
+/* ================= GLOWING BUTTONS GRID (ตามรูป) ================= */
+.button-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
 button {
   height: 50px;
-  border-radius: 15px;
+  border-radius: 18px;
   font-weight: 600;
+  font-size: 13px;
   text-transform: uppercase;
-  border: 1px solid var(--border-angel);
+  letter-spacing: 1px;
+  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border-angel);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
 }
 
 button:active { transform: scale(0.92); }
 
-.btn-start { border-color: var(--ice-blue); background: rgba(165, 216, 255, 0.1); }
-.btn-stop { border-color: var(--angel-pink); background: rgba(255, 201, 201, 0.1); color: var(--angel-pink); }
+.start {
+  border-color: var(--ice-blue);
+  background: rgba(165, 216, 255, 0.1);
+}
+.start:hover {
+  background: var(--ice-blue);
+  color: black;
+  box-shadow: 0 0 20px var(--ice-blue);
+}
+
+.stop {
+  border-color: var(--angel-pink);
+  color: var(--angel-pink);
+  background: rgba(255, 201, 201, 0.1);
+}
+.stop:hover {
+  background: var(--angel-pink);
+  color: black;
+  box-shadow: 0 0 20px var(--angel-pink);
+}
 
 /* ================= MAP & CHART ================= */
 #map {
   height: 250px;
-  border-radius: 20px;
+  border-radius: 24px;
   border: 1px solid var(--border-angel);
-  /* แผนที่โทนสีหรูแบบในรูป */
-  filter: invert(90%) hue-rotate(180deg) brightness(0.7) contrast(1.2);
+  /* ทำแผนที่ให้โทนสีหรู (Silver-Pear Tone) */
+  filter: invert(90%) hue-rotate(180deg) brightness(0.8) contrast(1.2);
 }
 
-.risk-gauge-text {
-  font-size: 40px;
-  font-weight: 800;
-  color: var(--soft-gold);
-  text-shadow: 0 0 15px var(--soft-gold);
+.stat-value {
+  font-size: 24px;
+  font-weight: 300;
+  color: var(--ice-blue);
 }
 
-.style-badge {
-  background: rgba(165, 216, 255, 0.1);
-  padding: 5px 15px;
-  border-radius: 50px;
-  border: 1px solid rgba(165, 216, 255, 0.3);
-  color: #d1ffcd;
-  font-weight: bold;
+/* Chart ให้ดูฟุ้งๆ */
+canvas {
+  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.2));
+  margin-top: 10px;
 }
