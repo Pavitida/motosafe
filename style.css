@@ -1,13 +1,14 @@
-/* ================= CONFIG & VARIABLES ================= */
+/* ================= ANGELIC CONFIG ================= */
 :root {
-  --neon-green: #69f0ae;
-  --neon-blue: #4dabf7;
-  --neon-yellow: #ffd43b;
-  --neon-red: #ff6b6b;
-  --bg-dark: #000000;
-  --card-bg: rgba(255, 255, 255, 0.06);
-  --glass-blur: blur(16px);
-  --border-light: rgba(255, 255, 255, 0.12);
+  --glam-white: #f8f9fa;
+  --ice-blue: #a5d8ff;
+  --gold-glam: #fcc419;
+  --angel-pink: #ffc9c9;
+
+  --bg-deep: #111111;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(20px);
+  --border-angel: rgba(255, 255, 255, 0.15);
 }
 
 /* ================= GLOBAL ================= */
@@ -16,598 +17,201 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Prompt', 'Inter', sans-serif;
   margin: 0;
   padding: 20px;
-  background: var(--bg-dark);
-  color: #ffffff;
-  line-height: 1.5;
+  background: var(--bg-deep);
+  color: var(--glam-white);
 }
 
-/* Ambient Glow */
+/* Ambient Glow (นางฟ้าฟุ้งๆ) */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: 
-    radial-gradient(circle at 10% 20%, rgba(105, 240, 174, 0.05), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(77, 171, 247, 0.05), transparent 40%);
-  z-index: -1;
-}
-
-/* ================= TYPO ================= */
-h1 {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ================= CARD ================= */
-.card {
-  position: relative;
-  background: var(--card-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  padding: 20px;
-  border-radius: 24px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border-light);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-}
-
-/* subtle glow */
-.card::before {
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius:24px;
-  background:linear-gradient(120deg,
-    rgba(105,240,174,0.15),
-    rgba(77,171,247,0.15),
-    transparent);
-  opacity:0;
-  transition:0.3s;
-  z-index:-1;
-}
-
-.card:hover::before {
-  opacity:1;
-}
-
-/* ================= HERO ================= */
-.hero-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.speed-display {
-  text-align: left;
-}
-
-#speed {
-  font-size: 64px;
-  font-weight: 900;
-  color: var(--neon-green);
-  line-height: 1;
-  text-shadow: 0 0 20px rgba(105, 240, 174, 0.5);
-}
-
-.unit {
-  font-size: 16px;
-  opacity: 0.6;
-}
-
-/* Risk */
-#risk-container {
-  text-align: right;
-}
-
-#risk {
-  font-size: 40px;
-  font-weight: 800;
-}
-
-/* Style badge */
-#style {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 100px;
-  background: rgba(255,255,255,0.1);
-  letter-spacing: 1px;
-}
-
-/* STATUS COLORS */
-.status-safe {
-  color: var(--neon-green);
-  text-shadow: 0 0 15px var(--neon-green);
-}
-
-.status-warning {
-  color: var(--neon-yellow);
-  text-shadow: 0 0 15px var(--neon-yellow);
-}
-
-.status-danger {
-  color: var(--neon-red);
-  text-shadow: 0 0 15px var(--neon-red);
-  animation: pulse-red 1s infinite;
-}
-
-/* ================= GRID ================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.stat-item {
-  background: rgba(255,255,255,0.03);
-  padding: 12px;
-  border-radius: 16px;
-}
-
-.stat-label {
-  font-size: 11px;
-  opacity: 0.5;
-  text-transform: uppercase;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: 800;
-}
-
-/* ================= BUTTON ================= */
-.button-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-
-  position: sticky;
-  bottom: 10px;
-
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
-  padding: 10px;
-  border-radius: 20px;
-}
-
-button {
-  padding: 18px;
-  border: none;
-  border-radius: 18px;
-  font-weight: 800;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-button:active {
-  transform: scale(0.95);
-}
-
-/* button colors */
-.start { background: var(--neon-green); color: #003d2b; }
-.stop { background: var(--neon-red); color: #fff; }
-.export { background: var(--neon-blue); color: #fff; font-size: 13px; }
-.clear { background: #333; color: #bbb; font-size: 13px; }
-
-/* ================= CHART ================= */
-.chart-container {
-  background: rgba(255,255,255,0.02);
-  border-radius: 20px;
-  padding: 10px;
-}
-
-canvas {
-  max-width: 100%;
-  filter: drop-shadow(0 0 10px rgba(77,171,247,0.2));
-}
-
-/* ================= MAP ================= */
-#map {
-  height: 250px;
-  border-radius: 20px;
-  border: 1px solid var(--border-light);
-
-  /* FIX แล้ว (ไม่เพี้ยน marker) */
-  filter: grayscale(0.4) brightness(0.85);
-}
-
-/* ================= POPUP ================= */
-#popup {
-  background: rgba(0,0,0,0.75);
-  border: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
-}
-
-/* ================= ANIMATION ================= */
-@keyframes pulse-red {
-  0% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
-  100% { opacity: 0.5; transform: scale(0.9); }
-}
-
-/* recording dot */
-.recording-pulse {
-  width: 10px;
-  height: 10px;
-  background: var(--neon-red);
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 8px;
-  box-shadow: 0 0 10px var(--neon-red);
-  animation: pulse-red 1.2s infinite;
-}
-
-/* risky card */
-.is-risky {
-  border-color: var(--neon-red);
-  animation: warning-bg 1s infinite;
-}
-
-@keyframes warning-bg {
-  0% { background: var(--card-bg); }
-  50% { background: rgba(255,107,107,0.15); }
-  100% { background: var(--card-bg); }
-}/* ================= CONFIG & VARIABLES ================= */
-:root {
-  --neon-green: #69f0ae;
-  --neon-blue: #4dabf7;
-  --neon-yellow: #ffd43b;
-  --neon-red: #ff6b6b;
-  --bg-dark: #000000;
-  --card-bg: rgba(255, 255, 255, 0.06);
-  --glass-blur: blur(16px);
-  --border-light: rgba(255, 255, 255, 0.12);
-}
-
-/* ================= GLOBAL ================= */
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Prompt', 'Inter', sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: var(--bg-dark);
-  color: #ffffff;
-  line-height: 1.5;
-}
-
-/* Ambient Glow */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: 
-    radial-gradient(circle at 10% 20%, rgba(105, 240, 174, 0.05), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(77, 171, 247, 0.05), transparent 40%);
-  z-index: -1;
-}
-
-/* ================= TYPO ================= */
-h1 {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ================= CARD ================= */
-.card {
-  position: relative;
-  background: var(--card-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  padding: 20px;
-  border-radius: 24px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border-light);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-}
-
-/* subtle glow */
-.card::before {
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius:24px;
-  background:linear-gradient(120deg,
-    rgba(105,240,174,0.15),
-    rgba(77,171,247,0.15),
-    transparent);
-  opacity:0;
-  transition:0.3s;
-  z-index:-1;
-}
-
-.card:hover::before {
-  opacity:1;
-}
-
-/* ================= HERO ================= */
-.hero-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.speed-display {
-  text-align: left;
-}
-
-#speed {
-  font-size: 64px;
-  font-weight: 900;
-  color: var(--neon-green);
-  line-height: 1;
-  text-shadow: 0 0 20px rgba(105, 240, 174, 0.5);
-}
-
-.unit {
-  font-size: 16px;
-  opacity: 0.6;
-}
-
-/* Risk */
-#risk-container {
-  text-align: right;
-}
-
-#risk {
-  font-size: 40px;
-  font-weight: 800;
-}
-
-/* Style badge */
-#style {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 100px;
-  background: rgba(255,255,255,0.1);
-  letter-spacing: 1px;
-}
-
-/* STATUS COLORS */
-.status-safe {
-  color: var(--neon-green);
-  text-shadow: 0 0 15px var(--neon-green);
-}
-
-.status-warning {
-  color: var(--neon-yellow);
-  text-shadow: 0 0 15px var(--neon-yellow);
-}
-
-.status-danger {
-  color: var(--neon-red);
-  text-shadow: 0 0 15px var(--neon-red);
-  animation: pulse-red 1s infinite;
-}
-
-/* ================= GRID ================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.stat-item {
-  background: rgba(255,255,255,0.03);
-  padding: 12px;
-  border-radius: 16px;
-}
-
-.stat-label {
-  font-size: 11px;
-  opacity: 0.5;
-  text-transform: uppercase;
-}
-
-.stat-value {
-  font-size: 20px;
-  font-weight: 800;
-}
-
-/* ================= BUTTON ================= */
-.button-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-
-  position: sticky;
-  bottom: 10px;
-
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
-  padding: 10px;
-  border-radius: 20px;
-}
-
-button {
-  padding: 18px;
-  border: none;
-  border-radius: 18px;
-  font-weight: 800;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-button:active {
-  transform: scale(0.95);
-}
-
-/* button colors */
-.start { background: var(--neon-green); color: #003d2b; }
-.stop { background: var(--neon-red); color: #fff; }
-.export { background: var(--neon-blue); color: #fff; font-size: 13px; }
-.clear { background: #333; color: #bbb; font-size: 13px; }
-
-/* ================= CHART ================= */
-.chart-container {
-  background: rgba(255,255,255,0.02);
-  border-radius: 20px;
-  padding: 10px;
-}
-
-canvas {
-  max-width: 100%;
-  filter: drop-shadow(0 0 10px rgba(77,171,247,0.2));
-}
-
-/* ================= MAP ================= */
-#map {
-  height: 250px;
-  border-radius: 20px;
-  border: 1px solid var(--border-light);
-
-  /* FIX แล้ว (ไม่เพี้ยน marker) */
-  filter: grayscale(0.4) brightness(0.85);
-}
-
-/* ================= POPUP ================= */
-#popup {
-  background: rgba(0,0,0,0.75);
-  border: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
-}
-
-/* ================= ANIMATION ================= */
-@keyframes pulse-red {
-  0% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.1); }
-  100% { opacity: 0.5; transform: scale(0.9); }
-}
-
-/* recording dot */
-.recording-pulse {
-  width: 10px;
-  height: 10px;
-  background: var(--neon-red);
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 8px;
-  box-shadow: 0 0 10px var(--neon-red);
-  animation: pulse-red 1.2s infinite;
-}
-
-/* risky card */
-.is-risky {
-  border-color: var(--neon-red);
-  animation: warning-bg 1s infinite;
-}
-
-@keyframes warning-bg {
-  0% { background: var(--card-bg); }
-  50% { background: rgba(255,107,107,0.15); }
-  100% { background: var(--card-bg); }
-}
-/* ================= PRO MAX ADD-ON ================= */
-
-/* 🔥 smooth scroll + feel */
-body {
-  transition: background 0.4s ease;
-}
-
-/* 🔥 glow ตอน risk อันตราย */
-body.danger-mode::before {
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 107, 107, 0.15), transparent 60%);
+    radial-gradient(circle at 20% 20%, rgba(165,216,255,0.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255,201,201,0.08), transparent 40%);
+  z-index: -1;
 }
 
-/* 🔥 speed กระพริบตอนเร็วมาก */
-.speed-danger {
-  animation: speedFlash 0.6s infinite;
-}
-
-@keyframes speedFlash {
-  0% { opacity: 0.6; transform: scale(0.95); }
-  50% { opacity: 1; transform: scale(1.05); }
-  100% { opacity: 0.6; transform: scale(0.95); }
-}
-
-/* 🔥 popup ลอยสวยขึ้น */
-#popup {
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  animation: popupSlide 0.4s ease;
-}
-
-@keyframes popupSlide {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-/* 🔥 map glow frame */
-#map {
-  box-shadow: 0 0 20px rgba(77,171,247,0.2);
-}
-
-/* 🔥 button hover (มือถือก็ยังรู้สึกได้) */
-button:hover {
-  filter: brightness(1.1);
-}
-
-/* 🔥 chart glow เพิ่ม */
-canvas {
-  transition: 0.3s;
-}
-
-canvas:hover {
-  filter: drop-shadow(0 0 20px rgba(105,240,174,0.4));
-}
-
-/* 🔥 card ตอน risky */
-.card.is-risky {
-  border-color: var(--neon-red);
-  box-shadow: 0 0 30px rgba(255,107,107,0.3);
-}
-
-/* 🔥 subtle floating effect */
+/* ================= CARD ================= */
 .card {
-  transition: transform 0.25s ease;
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid var(--border-angel);
+
+  box-shadow: 0 10px 40px rgba(165, 216, 255, 0.1);
 }
 
-.card:active {
-  transform: scale(0.98);
+/* hover glow */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 24px;
+  background: linear-gradient(120deg,
+    rgba(165,216,255,0.2),
+    rgba(255,255,255,0.1),
+    transparent);
+  opacity: 0;
+  transition: 0.3s;
+  z-index: -1;
+}
+.card:hover::before {
+  opacity: 1;
 }
 
-/* 🔥 scroll bar (iPhone/Chrome) */
-::-webkit-scrollbar {
-  width: 6px;
+/* ================= HERO ================= */
+.hero-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
-  border-radius: 10px;
+/* SPEED (ตัวเด่นสุด) */
+#speed {
+  font-size: 80px;
+  font-weight: 100;
+  color: var(--glam-white);
+  line-height: 1;
+
+  text-shadow:
+    0 0 20px rgba(248,249,250,0.9),
+    0 0 40px rgba(165,216,255,0.5);
+}
+
+.unit {
+  opacity: 0.5;
+}
+
+/* RISK */
+#risk {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+/* STATUS */
+.status-angel-safe {
+  color: var(--glam-white);
+  text-shadow: 0 0 15px rgba(255,255,255,0.6);
+}
+
+.status-glam-warning {
+  color: var(--gold-glam);
+  text-shadow: 0 0 15px var(--gold-glam);
+}
+
+.status-chic-danger {
+  color: var(--angel-pink);
+  text-shadow: 0 0 15px var(--angel-pink);
+}
+
+/* ================= STATS GRID ================= */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-item {
+  background: rgba(255,255,255,0.03);
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.stat-label {
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* ================= BUTTON ================= */
+.button-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+
+  position: sticky;
+  bottom: 10px;
+
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  padding: 10px;
+  border-radius: 20px;
+}
+
+button {
+  padding: 14px;
+  border-radius: 12px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.3s;
+  background: transparent;
+}
+
+/* ปุ่มสไตล์หรู */
+.start {
+  border: 1px solid var(--glam-white);
+  color: var(--glam-white);
+}
+.start:hover {
+  background: var(--glam-white);
+  color: var(--bg-deep);
+}
+
+.stop {
+  border: 1px solid var(--angel-pink);
+  color: var(--angel-pink);
+}
+.stop:hover {
+  background: var(--angel-pink);
+  color: var(--bg-deep);
+}
+
+.export {
+  border: 1px solid var(--ice-blue);
+  color: var(--ice-blue);
+}
+
+.clear {
+  border: 1px solid #555;
+  color: #777;
+}
+
+/* ================= CHART ================= */
+canvas {
+  max-width: 100%;
+  filter: drop-shadow(0 0 8px rgba(165,216,255,0.3));
+}
+
+/* ================= MAP ================= */
+#map {
+  height: 250px;
+  border-radius: 20px;
+  border: 1px solid var(--border-angel);
+  filter: grayscale(0.4) brightness(0.9);
+}
+
+/* ================= ANIMATION ================= */
+@keyframes pulse-soft {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* risky glow */
+.is-risky {
+  border-color: var(--angel-pink);
+  animation: pulse-soft 1.5s infinite;
 }
