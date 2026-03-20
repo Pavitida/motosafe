@@ -1,142 +1,141 @@
-/* ================= ULTIMATE AURA CONFIG ================= */
+/* ================= ANGELIC RACING CONFIG ================= */
 :root {
   --glam-white: #f8f9fa;
   --ice-blue: #a5d8ff;
   --angel-pink: #ffc9c9;
-  --deep-space: #050508;
-  --card-bg: rgba(255, 255, 255, 0.03);
-  --border-angel: rgba(255, 255, 255, 0.1);
-  --accent-glow: rgba(165, 216, 255, 0.3);
+  --pearl-gold: #fff3bf;
+  --bg-deep: #0d0e12;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --glass-blur: blur(25px);
+  --border-angel: rgba(255, 255, 255, 0.12);
 }
 
-/* ================= BACKGROUND: NEBULA AURA ================= */
+/* ================= BACKGROUND: PEARL NEBULA ================= */
 body {
   margin: 0;
   padding: 16px;
-  background-color: var(--deep-space);
+  background: var(--bg-deep);
   color: var(--glam-white);
   font-family: 'Prompt', sans-serif;
-  min-height: 100vh;
-  /* พื้นหลังไล่เฉดแบบฟุ้งกระจายเหมือนอวกาศ */
+  /* ไล่เฉดสีแบบเนบิวลานางฟ้า */
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(165, 216, 255, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(255, 201, 201, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(10, 10, 15, 1) 0%, transparent 100%);
+    radial-gradient(circle at 20% 20%, rgba(165, 216, 255, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255, 201, 201, 0.1) 0%, transparent 40%),
+    linear-gradient(180deg, #0d0e12 0%, #1a1c24 100%);
   background-attachment: fixed;
 }
 
-/* ================= PREMIUM HEADER ================= */
-header {
-  padding: 30px 0;
-  text-align: center;
+/* ✨ เพิ่มละอองดาวฟุ้งๆ ทั่วหน้าจอ */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at center, #fff 0.5px, transparent 0.5px);
+  background-size: 50px 50px;
+  opacity: 0.2;
+  pointer-events: none;
+  z-index: -1;
 }
 
-h1 {
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: 6px;
-  margin: 0;
-  background: linear-gradient(to bottom, #ffffff 30%, #a5d8ff 100%);
+/* ================= HEADER: AURA TITLE ================= */
+header h1 {
+  font-size: 28px;
+  letter-spacing: 4px;
+  text-align: center;
+  background: linear-gradient(120deg, #fff 0%, var(--ice-blue) 50%, #fff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.4));
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
+  filter: drop-shadow(0 0 10px rgba(165, 216, 255, 0.5));
+  margin: 25px 0;
 }
 
-h1::before, h1::after {
-  content: "";
-  height: 1px;
-  width: 40px;
-  background: linear-gradient(to right, transparent, var(--ice-blue));
-}
-
-h1::after { background: linear-gradient(to left, transparent, var(--ice-blue)); }
-
-/* ================= INTERACTIVE CARDS (กดได้) ================= */
+/* ================= INTERACTIVE CARDS (กดแล้วเรืองแสง) ================= */
 .card {
   background: var(--card-bg);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 28px;
   border: 1px solid var(--border-angel);
-  border-radius: 30px;
-  padding: 24px;
+  padding: 22px;
   margin-bottom: 18px;
+  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
   position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  cursor: pointer; /* ทำให้รู้ว่ากดได้ */
 }
 
-/* เอฟเฟกต์ตอนกดช่อง */
+/* ⭐ เอฟเฟกต์ตอนกดช่อง: กรอบเรืองแสงแบบออร่า */
 .card:active {
-  transform: scale(0.97);
-  background: rgba(255, 255, 255, 0.07);
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--ice-blue);
-  box-shadow: 0 0 30px rgba(165, 216, 255, 0.2);
-}
-
-.card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  transition: 0.5s;
-}
-
-.card:hover::before {
-  left: 100%;
+  box-shadow: 0 0 25px rgba(165, 216, 255, 0.2);
 }
 
 /* ================= SPEED DISPLAY (FIXED) ================= */
-.hero-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 0;
-}
-
 #speed {
   font-size: 100px !important;
   font-weight: 200 !important;
-  line-height: 1 !important; /* ป้องกันตัวเลขขาด */
-  color: #fff;
-  text-shadow: 0 0 30px rgba(165, 216, 255, 0.6);
-  margin: 5px 0;
+  line-height: 1 !important;
+  display: block;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(165, 216, 255, 0.3);
+  margin: 10px 0;
 }
 
-/* ================= BUTTONS ================= */
+.speed-unit {
+  font-size: 14px;
+  opacity: 0.6;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ================= BUTTONS: CLEAN & ANGELIC ================= */
 .button-group {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
 button {
-  height: 54px;
-  border-radius: 20px;
+  height: 52px;
+  border-radius: 18px;
   border: 1px solid var(--border-angel);
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-weight: 500;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   transition: 0.3s;
 }
 
-button:active { transform: scale(0.9); }
+.start { border-color: #a5d8ff; color: #a5d8ff; }
+.stop { border-color: #ffc9c9; color: #ffc9c9; }
+.export { border-color: #d0bfff; color: #d0bfff; }
+.clear { border-color: #ced4da; color: #ced4da; }
 
-.start { border-color: #63e6be; color: #63e6be; }
-.stop { border-color: #ff8787; color: #ff8787; }
-.start:hover { background: rgba(99, 230, 190, 0.1); }
-.stop:hover { background: rgba(255, 135, 135, 0.1); }
+button:active { transform: translateY(2px); opacity: 0.7; }
 
-/* ================= MAP & CHART ================= */
+/* ================= STATS & MAP ================= */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+}
+
 #map {
-  height: 250px;
+  height: 280px;
   border-radius: 25px;
-  filter: invert(90%) hue-rotate(180deg) brightness(0.7); /* แผนที่สีมุกขรึมๆ */
+  border: 1px solid var(--border-angel);
+  filter: grayscale(1) invert(1) opacity(0.7); /* แผนที่โทนมินิมอลขาวมุก */
+}
+
+canvas {
+  filter: drop-shadow(0 0 10px rgba(165, 216, 255, 0.2));
 }
