@@ -1,37 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>MotoSafe</title>
 
+<!-- Chart -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Heatmap -->
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <style>
 body{
-font-family:sans-serif;
+font-family:-apple-system, BlinkMacSystemFont;
 margin:0;
 padding:20px;
-background:#f5f6fa;
+background:#f1f3f5;
 }
+
+h1{font-size:28px;}
 
 .card{
 background:white;
-padding:15px;
+padding:16px;
+border-radius:16px;
 margin-bottom:15px;
-border-radius:12px;
-box-shadow:0 4px 10px rgba(0,0,0,0.05);
+box-shadow:0 8px 20px rgba(0,0,0,0.06);
 }
 
 button{
-padding:10px 15px;
+padding:12px;
 border:none;
-border-radius:8px;
+border-radius:12px;
 margin:5px;
-font-size:14px;
+font-weight:600;
 }
 
 .start{background:#51cf66;color:white;}
@@ -39,7 +46,7 @@ font-size:14px;
 .export{background:#339af0;color:white;}
 .clear{background:#868e96;color:white;}
 
-#map{height:300px;border-radius:10px;}
+#map{height:250px;border-radius:12px;}
 
 #popup{
 position:fixed;
@@ -47,18 +54,21 @@ top:20px;
 left:50%;
 transform:translateX(-50%);
 padding:12px 20px;
-border-radius:12px;
+border-radius:10px;
 color:white;
-font-weight:bold;
 display:none;
-z-index:9999;
+z-index:999;
+font-weight:bold;
 }
 </style>
+
 </head>
 
 <body>
 
 <h1>🏍 MotoSafe</h1>
+
+<div id="popup"></div>
 
 <div class="card">
 <button class="start" onclick="startRide()">Start</button>
@@ -68,8 +78,10 @@ z-index:9999;
 </div>
 
 <div class="card">
-<p>Speed: <span id="speed">0</span> km/h</p>
-<p>Peak Decel: <span id="peak">0</span></p>
+<div>Speed: <span id="speed">0</span> km/h</div>
+<div>Peak Decel: <span id="peak">0</span></div>
+<div>Risk: <span id="risk">100</span></div>
+<div>Style: <span id="style">SAFE</span></div>
 </div>
 
 <div class="card">
@@ -84,28 +96,223 @@ z-index:9999;
 <div id="map"></div>
 </div>
 
-<!-- 🔥 ANALYSIS -->
-<div class="card">
-<h2>🚀 Driving Analysis</h2>
+<script>
 
-<p>Total Brakes: <span id="total">0</span></p>
-<p>Hard Brakes: <span id="hard">0</span></p>
-<p>Brake Distance: <span id="brakeDist">0</span> m</p>
+// ================= ORIGINAL =================
+let watching=false
+let watchId=null
 
-<p>AI Risk Score: <span id="risk">100</span></p>
+let lastSpeed=0
+let lastTime=0
 
-<p>Avg Decel: <span id="avg">0</span></p>
-<p>Max Decel: <span id="max">0</span></p>
+let peakDecel=0
+let brakeStart=null
+let brakeDistance=0
 
-<p style="color:#51cf66">🟢 Slow</p>
-<p style="color:#ffd43b">🟡 Normal</p>
-<p style="color:#ff6b6b">🔴 Hard</p>
-</div>
+let totalBrakes=0
+let hardBrakes=0
+let normalBrakes=0
+let slowBrakes=0
 
-<!-- 🔴 POPUP -->
-<div id="popup">ALERT</div>
+let dataset=[]
 
-<script src="script.js"></script>
+let chart
+let decelChart
+
+let map
+let heatPoints=[]
+
+let rideStartTime=null
+
+// ================= SENSOR =================
+let accelY=0
+let smoothAccel=0
+
+window.addEventListener("devicemotion",(e)=>{
+if(e.accelerationIncludingGravity){
+accelY=e.accelerationIncludingGravity.y||0
+smoothAccel = smoothAccel*0.8 + accelY*0.2
+}
+})
+
+// ================= BUFFER =================
+let decelBuffer=[]
+
+// ================= INIT =================
+window.onload=function(){
+
+chart=new Chart(document.getElementById("speedChart"),{
+type:"line",
+data:{labels:[],datasets:[{label:"Speed",data:[]}]}
+})
+
+decelChart=new Chart(document.getElementById("decelChart"),{
+type:"line",
+data:{labels:[],datasets:[{label:"Decel",data:[]}]}
+})
+
+map=L.map('map').setView([13.7563,100.5018],15)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
+
+}
+
+// ================= START =================
+function startRide(){
+
+if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+DeviceMotionEvent.requestPermission()
+}
+
+navigator.geolocation.getCurrentPosition(()=>{
+watching=true
+rideStartTime=Date.now()
+watchId=navigator.geolocation.watchPosition(updateSpeed)
+})
+
+}
+
+// ================= STOP =================
+function stopRide(){
+watching=false
+navigator.geolocation.clearWatch(watchId)
+}
+
+// ================= POPUP =================
+function showPopup(text,color){
+let p=document.getElementById("popup")
+p.innerText=text
+p.style.background=color
+p.style.display="block"
+setTimeout(()=>p.style.display="none",1500)
+}
+
+// ================= UPDATE =================
+function updateSpeed(pos){
+
+if(!watching)return
+
+let lat=pos.coords.latitude
+let lng=pos.coords.longitude
+map.setView([lat,lng])
+
+let speed=(pos.coords.speed||0)*3.6
+let now=Date.now()
+
+document.getElementById("speed").innerText=speed.toFixed(1)
+
+if(lastTime){
+
+let dt=(now-lastTime)/1000
+if(dt===0)return
+
+let dv=speed-lastSpeed
+let acceleration = dv/dt
+
+// ===== SMART DECEL =====
+let sensorDecel = -smoothAccel
+let gpsDecel = -(dv/dt)
+let decel = Math.max(sensorDecel, gpsDecel)
+
+// ===== FILTER =====
+if(speed < 8) return
+if(Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return
+
+decelBuffer.push(decel)
+if(decelBuffer.length > 5) decelBuffer.shift()
+decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
+
+let isPothole = (decel > 6 && dt < 0.15)
+if(decel < 1.5 && !isPothole) return
+
+// ===== LABEL (AI READY) =====
+let label="CRUISE"
+if(decel > 5) label="HARD_BRAKE"
+else if(decel > 2) label="BRAKE"
+else if(speed < 5) label="STOP"
+
+// ===== PEAK =====
+if(decel>peakDecel) peakDecel=decel
+document.getElementById("peak").innerText=peakDecel.toFixed(2)
+
+// ===== POTHOLE =====
+if(isPothole){
+showPopup("🕳 POTHOLE","#845ef7")
+
+L.circleMarker([lat,lng],{color:"purple",radius:6})
+.addTo(map)
+
+dataset.push({
+timestamp:now,
+event:"pothole",
+decel:decel,
+lat:lat,
+lng:lng,
+label:"POTHOLE"
+})
+}
+
+// ===== CHART =====
+let t=new Date().toLocaleTimeString()
+
+chart.data.labels.push(t)
+chart.data.datasets[0].data.push(speed)
+
+decelChart.data.labels.push(t)
+decelChart.data.datasets[0].data.push(decel)
+
+if(chart.data.labels.length>20){
+chart.data.labels.shift()
+chart.data.datasets[0].data.shift()
+decelChart.data.labels.shift()
+decelChart.data.datasets[0].data.shift()
+}
+
+chart.update()
+decelChart.update()
+
+// ===== DATASET =====
+dataset.push({
+timestamp: now,
+time: t,
+duration: ((now-rideStartTime)/1000),
+speed: speed,
+acceleration: acceleration,
+deceleration: decel,
+lat: lat,
+lng: lng,
+label: label
+})
+
+}
+
+lastSpeed=speed
+lastTime=now
+
+}
+
+// ===== CSV EXPORT =====
+function exportCSV(){
+
+let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,style,peakDecel,distance,label\n"
+
+dataset.forEach(d=>{
+csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""},${d.label||""}\n`
+})
+
+let blob=new Blob([csv])
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="ride_full_ai_dataset.csv"
+a.click()
+
+}
+
+// ===== CLEAR =====
+function clearData(){
+location.reload()
+}
+
+</script>
 
 </body>
 </html>
