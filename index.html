@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MotoSafe</title>
+<title>MotoSafe AI</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -12,19 +12,22 @@
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <style>
+
+/* ===== UI UPGRADE ===== */
 body{
-font-family:-apple-system, BlinkMacSystemFont;
+font-family:-apple-system,BlinkMacSystemFont;
 margin:0;
 padding:20px;
-background:#f1f3f5;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+color:white;
 }
 
 .card{
-background:white;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(10px);
 padding:16px;
 border-radius:16px;
 margin-bottom:15px;
-box-shadow:0 8px 20px rgba(0,0,0,0.06);
 }
 
 button{
@@ -33,12 +36,13 @@ border:none;
 border-radius:12px;
 margin:5px;
 font-weight:600;
+color:white;
 }
 
-.start{background:#51cf66;color:white;}
-.stop{background:#ff6b6b;color:white;}
-.export{background:#339af0;color:white;}
-.clear{background:#868e96;color:white;}
+.start{background:#00c853;}
+.stop{background:#ff1744;}
+.export{background:#2979ff;}
+.clear{background:#757575;}
 
 #map{height:250px;border-radius:12px;}
 
@@ -54,12 +58,17 @@ display:none;
 z-index:999;
 font-weight:bold;
 }
+
+.risk-high{color:#69f0ae;}
+.risk-mid{color:#ffd43b;}
+.risk-low{color:#ff6b6b;}
+
 </style>
 </head>
 
 <body>
 
-<h1>🏍 MotoSafe</h1>
+<h1>🏍 MotoSafe AI</h1>
 <div id="popup"></div>
 
 <div class="card">
@@ -76,7 +85,6 @@ font-weight:bold;
 <div>Style: <span id="style">SAFE</span></div>
 </div>
 
-<!-- ✅ เพิ่ม summary กลับมา -->
 <div class="card">
 <div>Total Brakes: <span id="total">0</span></div>
 <div>Hard: <span id="hard">0</span></div>
@@ -90,7 +98,8 @@ font-weight:bold;
 <div class="card"><div id="map"></div></div>
 
 <script>
-// ===== ORIGINAL =====
+
+// ===== STATE =====
 let watching=false
 let watchId=null
 
@@ -150,6 +159,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
 // ===== START =====
 function startRide(){
+
 if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
 DeviceMotionEvent.requestPermission()
 }
@@ -159,6 +169,7 @@ watching=true
 rideStartTime=Date.now()
 watchId=navigator.geolocation.watchPosition(updateSpeed)
 })
+
 }
 
 // ===== STOP =====
@@ -202,7 +213,7 @@ let sensorDecel = -smoothAccel
 let gpsDecel = -(dv/dt)
 let decel = Math.max(sensorDecel, gpsDecel)
 
-// FILTER
+// ===== FILTER =====
 if(speed < 8) return
 if(Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return
 
@@ -213,11 +224,17 @@ decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 let isPothole = (decel > 6 && dt < 0.15)
 if(decel < 1.5 && !isPothole) return
 
+// ===== LABEL =====
+let label="CRUISE"
+if(decel > 5) label="HARD_BRAKE"
+else if(decel > 2) label="BRAKE"
+else if(speed < 5) label="STOP"
+
 // ===== PEAK =====
 if(decel>peakDecel) peakDecel=decel
 document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-// ===== BRAKE LOGIC (กลับมาแล้ว) =====
+// ===== BRAKE =====
 if(!isPothole){
 if(decel>2){
 if(!brakeStart){
@@ -237,6 +254,15 @@ brakeStart=null
 if(isPothole){
 showPopup("🕳 POTHOLE","#845ef7")
 L.circleMarker([lat,lng],{color:"purple",radius:6}).addTo(map)
+
+dataset.push({
+timestamp:now,
+event:"pothole",
+decel:decel,
+lat:lat,
+lng:lng,
+label:"POTHOLE"
+})
 }
 
 // ===== CHART =====
@@ -262,11 +288,13 @@ decelChart.update()
 dataset.push({
 timestamp: now,
 time: t,
+duration: ((now-rideStartTime)/1000),
 speed: speed,
 acceleration: acceleration,
 deceleration: decel,
 lat: lat,
-lng: lng
+lng: lng,
+label: label
 })
 
 }
@@ -287,21 +315,25 @@ if(peakDecel > 5){
 type="HARD"
 color="red"
 hardBrakes++
+showPopup("🔴 HARD BRAKE","#ff4d4d")
 }
 else if(peakDecel > 2){
 type="NORMAL"
-color="orange"
+color="yellow"
 normalBrakes++
+showPopup("🟡 NORMAL BRAKE","#ffd43b")
 }
 else{
 slowBrakes++
+showPopup("🟢 SLOW","#51cf66")
 }
 
 L.circleMarker([lat,lng],{color:color,radius:8}).addTo(map)
 
-document.getElementById("total").innerText=totalBrakes
-document.getElementById("hard").innerText=hardBrakes
-document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
+if(type==="HARD"){
+heatPoints.push([lat,lng,1])
+L.heatLayer(heatPoints,{radius:25}).addTo(map)
+}
 
 // ===== RISK =====
 let risk=100
@@ -311,13 +343,40 @@ risk -= slowBrakes*2
 risk -= peakDecel*2
 
 if(risk<0) risk=0
-document.getElementById("risk").innerText=Math.round(risk)
+
+let riskEl=document.getElementById("risk")
+riskEl.innerText=Math.round(risk)
+riskEl.className=""
+
+if(risk>70) riskEl.classList.add("risk-high")
+else if(risk>40) riskEl.classList.add("risk-mid")
+else riskEl.classList.add("risk-low")
 
 // ===== STYLE =====
 let style="SAFE"
 if(risk<70) style="NORMAL"
 if(risk<40) style="AGGRESSIVE"
+
 document.getElementById("style").innerText=style
+
+// ===== DATASET =====
+dataset.push({
+timestamp: Date.now(),
+event:"brake",
+type:type,
+risk:risk,
+style:style,
+peakDecel:peakDecel,
+distance:brakeDistance,
+lat:lat,
+lng:lng,
+label:type
+})
+
+// ===== UI =====
+document.getElementById("total").innerText=totalBrakes
+document.getElementById("hard").innerText=hardBrakes
+document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
 
 updateSummary()
 peakDecel=0
@@ -335,22 +394,26 @@ document.getElementById("max").innerText=max.toFixed(2)
 
 // ===== CSV =====
 function exportCSV(){
-let csv="timestamp,time,speed,acceleration,deceleration,lat,lng\n"
+
+let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,style,peakDecel,distance,label\n"
+
 dataset.forEach(d=>{
-csv+=`${d.timestamp},${d.time},${d.speed},${d.acceleration},${d.deceleration},${d.lat},${d.lng}\n`
+csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""},${d.label||""}\n`
 })
 
 let blob=new Blob([csv])
 let a=document.createElement("a")
 a.href=URL.createObjectURL(blob)
-a.download="ride.csv"
+a.download="motosafe_ai_dataset.csv"
 a.click()
+
 }
 
 // ===== CLEAR =====
 function clearData(){
 location.reload()
 }
+
 </script>
 
 </body>
