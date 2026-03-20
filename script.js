@@ -330,3 +330,100 @@ a.click()
 function clearData(){
 location.reload()
 }
+// ================= PRO UPGRADE ADD-ON =================
+
+// 🔥 smooth ค่า speed ไม่ให้กระตุก
+let smoothSpeed = 0
+
+function smoothValue(current, target, alpha=0.2){
+return current*(1-alpha) + target*alpha
+}
+
+// 🔥 override updateSpeed display only (ไม่ยุ่ง logic เดิม)
+const oldUpdateSpeed = updateSpeed
+
+updateSpeed = function(pos){
+
+oldUpdateSpeed(pos)
+
+// smooth speed UI
+let speedEl = document.getElementById("speed")
+let rawSpeed = parseFloat(speedEl.innerText) || 0
+
+smoothSpeed = smoothValue(smoothSpeed, rawSpeed)
+speedEl.innerText = smoothSpeed.toFixed(1)
+
+// 🔥 auto color speed
+if(smoothSpeed > 80){
+speedEl.style.color = "#ff6b6b"
+}
+else if(smoothSpeed > 40){
+speedEl.style.color = "#ffd43b"
+}
+else{
+speedEl.style.color = "#69f0ae"
+}
+
+}
+
+// 🔥 vibration feedback (มือถือ)
+function vibrate(type){
+if(!navigator.vibrate) return
+
+if(type==="hard"){
+navigator.vibrate([100,50,100])
+}
+else if(type==="normal"){
+navigator.vibrate(100)
+}
+}
+
+// 🔥 hook เข้า brake event
+const oldLogBrake = logBrake
+
+logBrake = function(lat,lng){
+
+oldLogBrake(lat,lng)
+
+// vibration ตามความแรง
+if(peakDecel > 5){
+vibrate("hard")
+}else if(peakDecel > 2){
+vibrate("normal")
+}
+
+}
+
+// 🔥 auto center map แบบ smooth
+function smoothPan(lat,lng){
+map.panTo([lat,lng],{animate:true,duration:0.5})
+}
+
+// hook map movement
+const oldUpdateSpeed2 = updateSpeed
+
+updateSpeed = function(pos){
+
+oldUpdateSpeed2(pos)
+
+if(pos && pos.coords){
+smoothPan(pos.coords.latitude,pos.coords.longitude)
+}
+
+}
+
+// 🔥 auto save dataset กันข้อมูลหาย
+setInterval(()=>{
+if(dataset.length > 0){
+localStorage.setItem("moto_dataset", JSON.stringify(dataset))
+}
+},5000)
+
+// 🔥 recover dataset ตอน reload
+window.addEventListener("load",()=>{
+let saved = localStorage.getItem("moto_dataset")
+if(saved){
+dataset = JSON.parse(saved)
+console.log("Recovered dataset:", dataset.length)
+}
+})
