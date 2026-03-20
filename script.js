@@ -48,30 +48,21 @@ window.onload=function(){
 
 // ================= START =================
 function startRide(){
-    // 🔧 SUGGESTION: เช็ค permission ให้ปลอดภัย
     if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-        DeviceMotionEvent.requestPermission()
-          .then(response=>{
-              if(response!=="granted") console.warn("Motion permission denied")
-          })
-          .catch(console.error)
+        DeviceMotionEvent.requestPermission().catch(console.error)
     }
 
-    // 🔧 SUGGESTION: เพิ่ม try/catch กัน GPS crash
-    try {
-        navigator.geolocation.getCurrentPosition((pos)=>{
-            watching=true
-            rideStartTime=Date.now()
-            watchId=navigator.geolocation.watchPosition(updateSpeed, (err)=>console.error(err), {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
-            })
-            showPopup("STARTING... ✨", "#a5d8ff")
-        }, (err)=> alert("กรุณาเปิด GPS ด้วยนะคะ!"))
-    } catch(err){
-        console.error("GPS not available", err)
-    }
+    navigator.geolocation.getCurrentPosition((pos)=>{
+        watching=true
+        rideStartTime=Date.now()
+        // เพิ่ม Options ให้ GPS แม่นและไวขึ้น
+        watchId=navigator.geolocation.watchPosition(updateSpeed, (err)=>console.error(err), {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        })
+        showPopup("STARTING... ✨", "#a5d8ff")
+    }, (err)=> alert("กรุณาเปิด GPS ด้วยนะคะ!"))
 }
 
 function stopRide(){
@@ -93,35 +84,39 @@ function showPopup(text,color){
 function updateSpeed(pos){
     if(!watching) return
 
-    // 🔧 SUGGESTION: ใช้ default value ป้องกัน crash
-    let lat = pos?.coords?.latitude || 0
-    let lng = pos?.coords?.longitude || 0
-    let speed = (pos?.coords?.speed || 0) * 3.6
-    let now = Date.now()
-
+    let lat=pos.coords.latitude
+    let lng=pos.coords.longitude
     map.setView([lat,lng])
+
+    let speed=(pos.coords.speed||0)*3.6
+    let now=Date.now()
+
     document.getElementById("speed").innerText=speed.toFixed(1)
 
     if(lastTime){
         let dt=(now-lastTime)/1000
-        if(dt <= 0) return
+        if(dt <= 0) return // กันค่า dt พัง
 
-        let dv = speed - lastSpeed
+        let dv=speed-lastSpeed
         let acceleration = dv/dt
+
         let sensorDecel = -smoothAccel
         let gpsDecel = -acceleration
         let decel = Math.max(sensorDecel, gpsDecel)
 
-        if(speed > 5){
+        // Filter: ถ้าความเร็วน้อยมาก ไม่ต้องคำนวณเบรก
+        if(speed > 5) {
             decelBuffer.push(decel)
             if(decelBuffer.length > 5) decelBuffer.shift()
             let avgDecel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 
             let isPothole = (decel > 6 && dt < 0.15)
             
+            // PEAK
             if(decel > peakDecel) peakDecel = decel
             document.getElementById("peak").innerText = peakDecel.toFixed(2)
 
+            // BRAKE LOGIC
             if(!isPothole){
                 if(decel > 2){
                     if(!brakeStart){
@@ -137,6 +132,7 @@ function updateSpeed(pos){
                 showPopup("🕳 POTHOLE","#845ef7")
             }
 
+            // CHART UPDATE
             let t=new Date().toLocaleTimeString()
             chart.data.labels.push(t); chart.data.datasets[0].data.push(speed)
             decelChart.data.labels.push(t); decelChart.data.datasets[0].data.push(decel)
@@ -147,14 +143,9 @@ function updateSpeed(pos){
             chart.update('none'); decelChart.update('none')
         }
     }
-
-    lastSpeed = speed
-    lastTime = now
-
-    // 🔧 SUGGESTION: auto-save dataset แบบ batch
-    if(dataset.length > 50){ // limit ข้อมูลเก่า
-        dataset = dataset.slice(-50)
-    }
+    // ย้ายมาไว้นอก if(lastTime) เพื่อให้อัปเดตค่าเสมอ
+    lastSpeed=speed
+    lastTime=now
 }
 
 // ================= BRAKE EVENT & OTHERS =================
@@ -192,10 +183,4 @@ function exportCSV(){ /* เหมือนเดิม */ }
 function clearData(){ localStorage.removeItem("moto_dataset"); location.reload(); }
 
 // ================= AUTO SAVE =================
-setInterval(()=>{
-    if(dataset.length > 0){
-        // 🔧 SUGGESTION: limit batch save
-        const saveData = dataset.slice(-50)
-        localStorage.setItem("moto_dataset", JSON.stringify(saveData))
-    }
-},5000)
+setInterval(()=>{ if(dataset.length > 0) localStorage.setItem("moto_dataset", JSON.stringify(dataset)) },5000)
