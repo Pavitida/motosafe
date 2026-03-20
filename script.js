@@ -24,7 +24,7 @@ let heatPoints=[]
 
 let rideStartTime=null
 
-// ================= ADD: SENSOR =================
+// ================= SENSOR =================
 let accelY=0
 let smoothAccel=0
 
@@ -35,7 +35,7 @@ smoothAccel = smoothAccel*0.8 + accelY*0.2
 }
 })
 
-// ================= ADD: BUFFER =================
+// ================= BUFFER =================
 let decelBuffer=[]
 
 // ================= INIT =================
@@ -108,27 +108,27 @@ if(dt===0)return
 let dv=speed-lastSpeed
 let acceleration = dv/dt
 
-// ================= 🔥 SMART DECEL =================
+// ================= SMART DECEL =================
 let sensorDecel = -smoothAccel
 let gpsDecel = -(dv/dt)
 let decel = Math.max(sensorDecel, gpsDecel)
 
-// ===== FILTER 1 =====
+// ===== FILTER =====
 if(speed < 8) return
-
-// ===== FILTER 2 =====
 if(Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return
 
-// ===== FILTER 3 (smooth) =====
 decelBuffer.push(decel)
 if(decelBuffer.length > 5) decelBuffer.shift()
 decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 
-// ===== FILTER 4 (pothole detect) =====
 let isPothole = (decel > 6 && dt < 0.15)
-
-// ===== FILTER 5 =====
 if(decel < 1.5 && !isPothole) return
+
+// ================= 🧠 ADD LABEL =================
+let label="CRUISE"
+if(decel > 5) label="HARD_BRAKE"
+else if(decel > 2) label="BRAKE"
+else if(speed < 5) label="STOP"
 
 // ================= PEAK =================
 if(decel>peakDecel) peakDecel=decel
@@ -150,7 +150,7 @@ brakeStart=null
 }
 }
 
-// ================= 🕳 POTHOLE =================
+// ================= POTHOLE =================
 if(isPothole){
 showPopup("🕳 POTHOLE","#845ef7")
 
@@ -164,7 +164,8 @@ timestamp:now,
 event:"pothole",
 decel:decel,
 lat:lat,
-lng:lng
+lng:lng,
+label:"POTHOLE" // 🔥 ADD
 })
 }
 
@@ -196,7 +197,8 @@ speed: speed,
 acceleration: acceleration,
 deceleration: decel,
 lat: lat,
-lng: lng
+lng: lng,
+label: label // 🔥 ADD
 })
 
 }
@@ -252,6 +254,13 @@ risk -= peakDecel*2
 if(risk<0) risk=0
 document.getElementById("risk").innerText=Math.round(risk)
 
+// 🔥 ADD COLOR CLASS
+let riskEl=document.getElementById("risk")
+riskEl.className=""
+if(risk>70) riskEl.classList.add("risk-high")
+else if(risk>40) riskEl.classList.add("risk-mid")
+else riskEl.classList.add("risk-low")
+
 // driving style
 let style="SAFE"
 if(risk<70) style="NORMAL"
@@ -269,7 +278,8 @@ style:style,
 peakDecel:peakDecel,
 distance:brakeDistance,
 lat:lat,
-lng:lng
+lng:lng,
+label:type // 🔥 ADD
 })
 
 // ================= UI =================
@@ -282,26 +292,13 @@ updateSummary()
 peakDecel=0
 }
 
-// ================= SUMMARY =================
-function updateSummary(){
-
-let decels=dataset.map(d=>d.deceleration||0)
-
-let avg=decels.reduce((a,b)=>a+b,0)/decels.length || 0
-let max=Math.max(...decels,0)
-
-document.getElementById("avg").innerText=avg.toFixed(2)
-document.getElementById("max").innerText=max.toFixed(2)
-
-}
-
 // ================= CSV =================
 function exportCSV(){
 
-let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,style,peakDecel,distance\n"
+let csv="timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,style,peakDecel,distance,label\n"
 
 dataset.forEach(d=>{
-csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""}\n`
+csv+=`${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""},${d.label||""}\n`
 })
 
 let blob=new Blob([csv])
