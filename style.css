@@ -1,17 +1,17 @@
-/* ================= THE ANGELIC VISION CONFIG ================= */
+/* ================= MAGIC ANGELIC CONFIG ================= */
 :root {
   --glam-white: #ffffff;
   --ice-blue: #a5d8ff;
   --angel-pink: #ffc9c9;
   --soft-gold: #fcc419;
   --bg-deep: #0a0b10;
-  --card-bg: rgba(255, 255, 255, 0.03);
+  --card-bg: rgba(255, 255, 255, 0.04);
   --glass-blur: blur(20px);
   --border-angel: rgba(255, 255, 255, 0.15);
-  --neon-glow: 0 0 20px rgba(165, 216, 255, 0.4);
+  --neon-glow: 0 0 25px rgba(165, 216, 255, 0.5);
 }
 
-/* ================= GLOBAL SETUP ================= */
+/* ================= BACKGROUND MAGIC ================= */
 body {
   font-family: 'Prompt', -apple-system, sans-serif;
   background: var(--bg-deep);
@@ -19,115 +19,111 @@ body {
   margin: 0;
   padding: 15px;
   overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(165,216,255,0.1), transparent 30%),
+    radial-gradient(circle at 90% 80%, rgba(255,201,201,0.1), transparent 30%);
 }
 
-/* Starry Background */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(165,216,255,0.1), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(255,201,201,0.1), transparent 40%);
-  z-index: -2;
-}
-
-/* ================= THE GLASS CARD ================= */
+/* ================= THE GLASS CARDS ================= */
 .card {
   background: var(--card-bg);
   backdrop-filter: var(--glass-blur);
-  border-radius: 28px;
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: 24px;
   border: 1px solid var(--border-angel);
-  padding: 22px;
-  margin-bottom: 18px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  position: relative;
+  padding: 20px;
+  margin-bottom: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
-/* ================= SPEED & RISK DISPLAY ================= */
-.display-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 15px;
-  align-items: end;
+/* ================= HERO SPEED DISPLAY ================= */
+.speed-box {
+  text-align: center;
+  position: relative;
+  padding: 20px 0;
 }
 
 #speed {
-  font-size: 110px !important; /* ใหญ่สะใจแบบในรูป */
+  font-size: 110px !important; /* ขนาดใหญ่แบบในรูปแม่ */
   font-weight: 200 !important;
-  line-height: 0.9 !important;
-  letter-spacing: -4px;
+  line-height: 0.85 !important; /* แก้ตัวเลขขาด */
+  letter-spacing: -3px;
+  color: #fff;
   text-shadow: var(--neon-glow);
-  margin: 0;
+  margin: 5px 0;
 }
 
-.speed-unit {
-  font-size: 18px;
-  opacity: 0.6;
-  margin-left: 5px;
+/* เพิ่มปีกนางฟ้าข้างตัวเลข */
+#speed::after {
+  content: " 👼";
+  font-size: 24px;
+  filter: drop-shadow(0 0 8px var(--ice-blue));
+  position: absolute;
+  top: 10px;
+  animation: wingFloat 3s infinite ease-in-out;
 }
 
-/* Risk Gauge Style (แบบในรูป) */
-.risk-container {
-  text-align: center;
-  position: relative;
+@keyframes wingFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
 }
 
-.risk-value {
-  font-size: 45px;
-  font-weight: 700;
-  color: var(--soft-gold);
-  text-shadow: 0 0 15px var(--soft-gold);
+/* ================= GLAM EMOJI & ICONS ================= */
+.glam-icon {
+  display: inline-block;
+  filter: drop-shadow(0 0 8px var(--soft-gold));
+  font-size: 20px;
+  vertical-align: middle;
 }
 
-.style-badge {
-  background: rgba(165, 216, 255, 0.15);
-  padding: 4px 15px;
-  border-radius: 20px;
-  font-size: 14px;
-  color: #d1ffcd; /* สีเขียวมิ้นท์แบบในรูป */
-  border: 1px solid rgba(209, 255, 205, 0.3);
-  box-shadow: 0 0 10px rgba(209, 255, 205, 0.2);
-}
-
-/* ================= GLOWING BUTTONS ================= */
-.button-container {
+/* ================= BUTTONS GRID (ตามรูป) ================= */
+.button-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
 button {
-  height: 55px;
-  border-radius: 18px;
+  height: 50px;
+  border-radius: 15px;
   font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 1px;
   text-transform: uppercase;
   border: 1px solid var(--border-angel);
-  background: rgba(255,255,255,0.05);
-  color: white;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: 0.3s;
+  transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.btn-start { background: linear-gradient(to right, rgba(165,216,255,0.1), transparent); }
-.btn-stop { background: linear-gradient(to right, rgba(255,201,201,0.1), transparent); }
+button:active { transform: scale(0.92); }
 
-/* ================= EMOJI AURA ================= */
-.emoji-icon {
-  width: 24px;
-  height: 24px;
-  filter: drop-shadow(0 0 5px rgba(255,255,255,0.8));
-}
+.btn-start { border-color: var(--ice-blue); background: rgba(165, 216, 255, 0.1); }
+.btn-stop { border-color: var(--angel-pink); background: rgba(255, 201, 201, 0.1); color: var(--angel-pink); }
 
-/* ================= MAP CUSTOMIZATION ================= */
+/* ================= MAP & CHART ================= */
 #map {
-  height: 280px;
-  border-radius: 24px;
-  filter: invert(90%) hue-rotate(180deg) contrast(1.2) brightness(0.8);
+  height: 250px;
+  border-radius: 20px;
   border: 1px solid var(--border-angel);
+  /* แผนที่โทนสีหรูแบบในรูป */
+  filter: invert(90%) hue-rotate(180deg) brightness(0.7) contrast(1.2);
+}
+
+.risk-gauge-text {
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--soft-gold);
+  text-shadow: 0 0 15px var(--soft-gold);
+}
+
+.style-badge {
+  background: rgba(165, 216, 255, 0.1);
+  padding: 5px 15px;
+  border-radius: 50px;
+  border: 1px solid rgba(165, 216, 255, 0.3);
+  color: #d1ffcd;
+  font-weight: bold;
 }
