@@ -1,40 +1,290 @@
 // ================= ORIGINAL =================
-let watching=false
-let watchId=null
+let watching = false;
+let watchId = null;
 
-let lastSpeed=0
-let lastTime=0
+let lastSpeed = 0;
+let lastTime = 0;
 
-let peakDecel=0
-let brakeStart=null
-let brakeDistance=0
+let peakDecel = 0;
+let brakeStart = null;
+let brakeDistance = 0;
 
-let totalBrakes=0
-let hardBrakes=0
-let normalBrakes=0
-let slowBrakes=0
+let totalBrakes = 0;
+let hardBrakes = 0;
+let normalBrakes = 0;
+let slowBrakes = 0;
 
-let dataset=[]
+let dataset = [];
 
-let chart
-let decelChart
+let chart;
+let decelChart;
 
-let map
-let heatPoints=[]
-let heatLayer=null
+let map;
+let heatPoints = [];
+let heatLayer = null;
 
-let rideStartTime=null
+let rideStartTime = null;
 
 // ================= SENSOR =================
-let accelY=0
-let smoothAccel=0
+let accelY = 0;
+let smoothAccel = 0;
 
-window.addEventListener("devicemotion",(e)=>{
-if(e.accelerationIncludingGravity){
-accelY=e.accelerationIncludingGravity.y||0
-smoothAccel = smoothAccel*0.8 + accelY*0.2
+window.addEventListener("devicemotion", (e) => {
+    if (e.accelerationIncludingGravity) {
+        accelY = e.accelerationIncludingGravity.y || 0;
+        smoothAccel = smoothAccel * 0.8 + accelY * 0.2;
+    }
+});
+
+// ================= BUFFER =================
+let decelBuffer = [];
+
+// ================= INIT =================
+window.onload = function () {
+    chart = new Chart(document.getElementById("speedChart"), {
+        type: "line",
+        data: { labels: [], datasets: [{ label: "Speed", data: [], borderColor: '#a5d8ff', tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    decelChart = new Chart(document.getElementById("decelChart"), {
+        type: "line",
+        data: { labels: [], datasets: [{ label: "Decel", data: [], borderColor: '#ffc9c9', tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+    map = L.map('map').setView([13.7563, 100.5018], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    heatLayer = L.heatLayer(heatPoints, { radius: 25 }).addTo(map);
+
+    // 🔥 Recover dataset ตอนโหลดหน้าเว็บ
+    let saved = localStorage.getItem("moto_dataset");
+    if (saved) {
+        dataset = JSON.parse(saved);
+        console.log("Recovered dataset:", dataset.length);
+    }
+};
+
+// ================= START (FIXED) =================
+function startRide() {
+    // ขออนุญาต Sensor สำหรับ iOS
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        DeviceMotionEvent.requestPermission().catch(console.error);
+    }
+
+    // ขอตำแหน่งปัจจุบันก่อนเริ่ม Watch
+    navigator.geolocation.getCurrentPosition((pos) => {
+        watching = true;
+        rideStartTime = Date.now();
+        // เริ่มติดตามตำแหน่งต่อเนื่อง
+        watchId = navigator.geolocation.watchPosition(updateSpeed, (err) => console.log(err), {
+            enableHighAccuracy: true
+        });
+        showPopup("START RIDING ✨", "#a5d8ff");
+    }, (err) => {
+        alert("กรุณาเปิด GPS และอนุญาตสิทธิ์ตำแหน่งก่อนนะคะนางฟ้า!");
+    });
 }
-})
+
+// ================= STOP =================
+function stopRide() {
+    watching = false;
+    if (watchId) navigator.geolocation.clearWatch(watchId);
+    showPopup("STOPPED", "#ff8787");
+}
+
+// ================= POPUP =================
+function showPopup(text, color) {
+    let p = document.getElementById("popup");
+    if (!p) return;
+    p.innerText = text;
+    p.style.background = color;
+    p.style.display = "block";
+    setTimeout(() => p.style.display = "none", 1500);
+}
+
+// ================= UPDATE LOGIC =================
+function updateSpeed(pos) {
+    if (!watching || !pos) return;
+
+    let lat = pos.coords.latitude;
+    let lng = pos.coords.longitude;
+    
+    // Auto Center Map แบบ Smooth
+    map.panTo([lat, lng], { animate: true, duration: 0.5 });
+
+    let speed = (pos.coords.speed || 0) * 3.6;
+    let now = Date.now();
+
+    // 🔥 PRO UPGRADE: Smooth Speed Display & Auto Color
+    let speedEl = document.getElementById("speed");
+    let currentVal = parseFloat(speedEl.innerText) || 0;
+    let smoothed = currentVal * 0.8 + speed * 0.2; // Smooth filter
+    speedEl.innerText = smoothed.toFixed(1);
+
+    if (smoothed > 80) speedEl.style.color = "#ff6b6b";
+    else if (smoothed > 40) speedEl.style.color = "#ffd43b";
+    else speedEl.style.color = "#69f0ae";
+
+    if (lastTime) {
+        let dt = (now - lastTime) / 1000;
+        if (dt === 0) return;
+
+        let dv = speed - lastSpeed;
+        let acceleration = dv / dt;
+
+        let sensorDecel = -smoothAccel;
+        let gpsDecel = -(dv / dt);
+        let decel = Math.max(sensorDecel, gpsDecel);
+
+        if (speed < 8) return;
+        if (Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return;
+
+        decelBuffer.push(decel);
+        if (decelBuffer.length > 5) decelBuffer.shift();
+        decel = decelBuffer.reduce((a, b) => a + b, 0) / decelBuffer.length;
+
+        let isPothole = (decel > 6 && dt < 0.15);
+        if (decel < 1.5 && !isPothole) return;
+
+        let label = "CRUISE";
+        if (decel > 5) label = "HARD_BRAKE";
+        else if (decel > 2) label = "BRAKE";
+        else if (speed < 5) label = "STOP";
+
+        if (decel > peakDecel) peakDecel = decel;
+        document.getElementById("peak").innerText = peakDecel.toFixed(2);
+
+        if (!isPothole) {
+            if (decel > 2) {
+                if (!brakeStart) {
+                    brakeStart = now;
+                    brakeDistance = 0;
+                }
+                brakeDistance += speed * dt / 3600;
+            } else {
+                if (brakeStart) {
+                    logBrake(lat, lng);
+                    brakeStart = null;
+                }
+            }
+        }
+
+        if (isPothole) {
+            showPopup("🕳 POTHOLE", "#845ef7");
+            L.circleMarker([lat, lng], { color: "purple", radius: 6 }).addTo(map).bindPopup("POTHOLE");
+        }
+
+        // Update Charts
+        let t = new Date().toLocaleTimeString();
+        chart.data.labels.push(t);
+        chart.data.datasets[0].data.push(speed);
+        decelChart.data.labels.push(t);
+        decelChart.data.datasets[0].data.push(decel);
+
+        if (chart.data.labels.length > 20) {
+            chart.data.labels.shift();
+            chart.data.datasets[0].data.shift();
+            decelChart.data.labels.shift();
+            decelChart.data.datasets[0].data.shift();
+        }
+        chart.update('none'); // Update แบบเงียบๆ ไม่กระตุก
+        decelChart.update('none');
+
+        dataset.push({
+            timestamp: now, time: t, duration: ((now - rideStartTime) / 1000),
+            speed: speed, acceleration: acceleration, deceleration: decel,
+            lat: lat, lng: lng, label: label
+        });
+    }
+    lastSpeed = speed;
+    lastTime = now;
+}
+
+// ================= BRAKE EVENT =================
+function logBrake(lat, lng) {
+    totalBrakes++;
+    let type = "SLOW";
+    let color = "green";
+
+    if (peakDecel > 5) {
+        type = "HARD"; color = "red"; hardBrakes++;
+        showPopup("🔴 HARD BRAKE", "#ff4d4d");
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // 🔥 Vibration
+    } else if (peakDecel > 2) {
+        type = "NORMAL"; color = "yellow"; normalBrakes++;
+        showPopup("🟡 NORMAL BRAKE", "#ffd43b");
+        if (navigator.vibrate) navigator.vibrate(100); // 🔥 Vibration
+    } else {
+        slowBrakes++;
+        showPopup("🟢 SLOW", "#51cf66");
+    }
+
+    L.circleMarker([lat, lng], { color: color, radius: 8 }).addTo(map).bindPopup(type);
+
+    if (type === "HARD") {
+        heatPoints.push([lat, lng, 1]);
+        heatLayer.setLatLngs(heatPoints);
+    }
+
+    let risk = 100 - (hardBrakes * 12) - (normalBrakes * 6) - (slowBrakes * 2) - (peakDecel * 2);
+    if (risk < 0) risk = 0;
+
+    let riskEl = document.getElementById("risk");
+    riskEl.innerText = Math.round(risk);
+    
+    // Style Update
+    let style = "SAFE";
+    if (risk < 70) style = "NORMAL";
+    if (risk < 40) style = "AGGRESSIVE";
+    document.getElementById("style").innerText = style;
+
+    dataset.push({
+        timestamp: Date.now(), event: "brake", type: type, risk: risk,
+        style: style, peakDecel: peakDecel, distance: brakeDistance,
+        lat: lat, lng: lng, label: type
+    });
+
+    document.getElementById("total").innerText = totalBrakes;
+    document.getElementById("hard").innerText = hardBrakes;
+    document.getElementById("brakeDist").innerText = brakeDistance.toFixed(2);
+
+    updateSummary();
+    peakDecel = 0;
+}
+
+function updateSummary() {
+    let decels = dataset.map(d => d.deceleration || 0).filter(v => v > 0);
+    let avg = decels.reduce((a, b) => a + b, 0) / decels.length || 0;
+    let max = Math.max(...decels, 0);
+    document.getElementById("avg").innerText = avg.toFixed(2);
+    document.getElementById("max").innerText = max.toFixed(2);
+}
+
+// ================= AUTO SAVE & CSV =================
+setInterval(() => {
+    if (dataset.length > 0) localStorage.setItem("moto_dataset", JSON.stringify(dataset));
+}, 5000);
+
+function exportCSV() {
+    let csv = "timestamp,time,duration,speed,acceleration,deceleration,lat,lng,event,type,risk,style,peakDecel,distance,label\n";
+    dataset.forEach(d => {
+        csv += `${d.timestamp || ""},${d.time || ""},${d.duration || ""},${d.speed || ""},${d.acceleration || ""},${d.deceleration || ""},${d.lat || ""},${d.lng || ""},${d.event || ""},${d.type || ""},${d.risk || ""},${d.style || ""},${d.peakDecel || ""},${d.distance || ""},${d.label || ""}\n`;
+    });
+    let blob = new Blob([csv], { type: 'text/csv' });
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ride_full_ai_dataset.csv";
+    a.click();
+}
+
+function clearData() {
+    if (confirm("ล้างข้อมูลทั้งหมดใช่ไหมคะ?")) {
+        localStorage.removeItem("moto_dataset");
+        location.reload();
+    }
+}})
 
 // ================= BUFFER =================
 let decelBuffer=[]
