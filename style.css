@@ -54,4 +54,71 @@ font-weight:800;
 
 .risk-high{color:#69f0ae;}
 .risk-mid{color:#ffd43b;}
-.risk-low{color:#ff6b6b;}
+.risk-low{color:#ff6b6b;} 
+/* ===== ADD UI PRO UPGRADE ===== */
+
+/* ✨ smooth ทั้งหน้า */
+body{
+  transition: all 0.3s ease;
+}
+
+/* ✨ card ลอย + hover */
+.card{
+  transition: 0.25s;
+}
+
+.card:hover{
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+/* ✨ ปุ่มดู premium */
+button{
+  transition: 0.2s;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+button:hover{
+  transform: translateY(-2px);
+}
+
+button:active{
+  transform: scale(0.95);
+}
+
+/* ✨ ทำหัวข้อดูเด่น */
+h1{
+  font-size:28px;
+  font-weight:800;
+  margin-bottom:10px;
+}
+
+/* ✨ ตัวเลข animate นิดๆ */
+#speed, #peak, #risk{
+  transition: all 0.2s ease;
+}
+
+/* ✨ card spacing mobile ดีขึ้น */
+@media (max-width:600px){
+  body{
+    padding:15px;
+  }
+
+  .card{
+    padding:14px;
+  }
+
+  h1{
+    font-size:24px;
+  }
+}
+
+/* ✨ popup smooth */
+#popup{
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateX(-50%) translateY(-10px);}
+  to{opacity:1; transform:translateX(-50%) translateY(0);}
+}
