@@ -2,6 +2,7 @@
 let watchId;
 let rideData = [];
 let accBuffer = [];
+let lastAlertTime = 0;
 
 // ================= MAP =================
 let map = L.map('map').setView([13.736717, 100.523186], 15);
@@ -48,6 +49,46 @@ function updateStyle(risk){
   }
 }
 
+// ================= EVENT CLASSIFICATION =================
+function classifyEvent(acc, speed){
+
+  if(acc < -2 && speed > 20){
+    return "HARD BRAKE";
+  }
+
+  if(acc > 2){
+    return "BUMP";
+  }
+
+  return "NORMAL";
+}
+
+// ================= VOICE ALERT =================
+function speak(text){
+  let now = Date.now();
+
+  // กันพูดรัว
+  if(now - lastAlertTime < 3000) return;
+
+  lastAlertTime = now;
+
+  let msg = new SpeechSynthesisUtterance(text);
+  speechSynthesis.speak(msg);
+}
+
+// ================= DANGER ZONE =================
+function addDangerZone(lat, lng, risk){
+  if(risk > 70){
+
+    L.circle([lat, lng], {
+      radius: 20,
+      color: "red",
+      fillOpacity: 0.3
+    }).addTo(map);
+
+  }
+}
+
 // ================= START =================
 function startRide(){
 
@@ -56,7 +97,6 @@ function startRide(){
     let lat = pos.coords.latitude;
     let lng = pos.coords.longitude;
 
-    // speed (km/h)
     let speed = pos.coords.speed ? pos.coords.speed * 3.6 : 0;
     if(speed < 1) speed = 0;
 
@@ -66,28 +106,38 @@ function startRide(){
     map.setView([lat, lng]);
     L.marker([lat, lng]).addTo(map);
 
-    // 🔥 mock acceleration (แทน sensor จริง)
-    let acc = Math.random()*2 - 1;
+    // 🔥 mock acceleration (ไว้ก่อน เดี๋ยวเปลี่ยนเป็น sensor จริง)
+    let acc = Math.random()*4 - 2;
 
-    // smoothing
     let smoothAcc = smoothAcceleration(acc);
 
-    // risk calculation
-    let riskLevel = Math.min(100, Math.abs(smoothAcc) * 50);
+    let riskLevel = Math.min(100, Math.abs(smoothAcc) * 40);
 
     document.getElementById("risk").innerText = Math.round(riskLevel);
 
-    // 🔥 update style
     updateStyle(riskLevel);
 
-    // save data
+    // 🎯 classify
+    let eventType = classifyEvent(smoothAcc, speed);
+    document.getElementById("event").innerText = eventType;
+
+    // 🔊 alert
+    if(riskLevel > 80){
+      speak("Warning dangerous riding");
+    }
+
+    // 🔥 danger zone
+    addDangerZone(lat, lng, riskLevel);
+
+    // 💾 save data
     rideData.push({
       time: new Date().toISOString(),
-      lat: lat,
-      lng: lng,
-      speed: speed,
+      lat,
+      lng,
+      speed,
       acc: smoothAcc,
-      risk: riskLevel
+      risk: riskLevel,
+      event: eventType
     });
 
     // chart
