@@ -299,3 +299,7 @@ canvas{
   50%{transform:translate(3px)}
   100%{transform:translate(0)}
 }
+/* hide optional data collection UI */
+.session-tools{
+display:none;
+}
