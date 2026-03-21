@@ -1,142 +1,140 @@
- /* ================= ULTIMATE AURA CONFIG ================= */
+/* ================= ANGELIC FINAL CONFIG ================= */
 :root {
---glam-white: #f8f9fa;
---ice-blue: #a5d8ff;
---angel-pink: #ffc9c9;
---deep-space: #050508;
---card-bg: rgba(255, 255, 255, 0.03);
---border-angel: rgba(255, 255, 255, 0.1);
---accent-glow: rgba(165, 216, 255, 0.3);
+  --glam-white: #f8f9fa;
+  --ice-blue: #a5d8ff;
+  --gold-glam: #fcc419;
+  --angel-pink: #ffc9c9;
+
+  --bg-deep: #111111;
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --glass-blur: blur(20px);
+  --border-angel: rgba(255, 255, 255, 0.15);
 }
 
-/* ================= BACKGROUND: NEBULA AURA ================= */
+/* ================= GLOBAL ================= */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-margin: 0;
-padding: 16px;
-background-color: var(--deep-space);
-color: var(--glam-white);
-font-family: 'Prompt', sans-serif;
-min-height: 100vh;
-/* พื้นหลังไล่เฉดแบบฟุ้งกระจายเหมือนอวกาศ */
-background-image:
-radial-gradient(circle at 10% 20%, rgba(165, 216, 255, 0.15) 0%, transparent 40%),
-radial-gradient(circle at 90% 80%, rgba(255, 201, 201, 0.12) 0%, transparent 40%),
-radial-gradient(circle at 50% 50%, rgba(10, 10, 15, 1) 0%, transparent 100%);
-background-attachment: fixed;
+  font-family: -apple-system, BlinkMacSystemFont, 'Prompt', sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: var(--bg-deep);
+  color: var(--glam-white);
 }
 
-/* ================= PREMIUM HEADER ================= */
-header {
-padding: 30px 0;
-text-align: center;
+/* ================= BG EFFECT ================= */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(165,216,255,0.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255,201,201,0.08), transparent 40%);
+  z-index: -2;
 }
 
-h1 {
-font-size: 32px;
-font-weight: 800;
-letter-spacing: 6px;
-margin: 0;
-background: linear-gradient(to bottom, #ffffff 30%, #a5d8ff 100%);
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.4));
-text-transform: uppercase;
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 15px;
-}
-
-h1::before, h1::after {
-content: "";
-height: 1px;
-width: 40px;
-background: linear-gradient(to right, transparent, var(--ice-blue));
-}
-
-h1::after { background: linear-gradient(to left, transparent, var(--ice-blue)); }
-
-/* ================= INTERACTIVE CARDS (กดได้) ================= */
+/* ================= CARD ================= */
 .card {
-background: var(--card-bg);
-backdrop-filter: blur(25px);
--webkit-backdrop-filter: blur(25px);
-border: 1px solid var(--border-angel);
-border-radius: 30px;
-padding: 24px;
-margin-bottom: 18px;
-position: relative;
-overflow: hidden;
-transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-cursor: pointer; /* ทำให้รู้ว่ากดได้ */
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid var(--border-angel);
+  margin-bottom: 15px;
 }
 
-/* เอฟเฟกต์ตอนกดช่อง */
-.card:active {
-transform: scale(0.97);
-background: rgba(255, 255, 255, 0.07);
-border-color: var(--ice-blue);
-box-shadow: 0 0 30px rgba(165, 216, 255, 0.2);
-}
-
-.card::before {
-content: "";
-position: absolute;
-top: 0; left: -100%;
-width: 100%; height: 100%;
-background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-transition: 0.5s;
-}
-
-.card:hover::before {
-left: 100%;
-}
-
-/* ================= SPEED DISPLAY (FIXED) ================= */
+/* ================= HERO ================= */
 .hero-container {
-display: flex;
-flex-direction: column;
-align-items: center;
-padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+/* 🔥 FIX ตัวเลขไม่หาย */
 #speed {
-font-size: 100px !important;
-font-weight: 200 !important;
-line-height: 1 !important; /* ป้องกันตัวเลขขาด */
-color: #fff;
-text-shadow: 0 0 30px rgba(165, 216, 255, 0.6);
-margin: 5px 0;
+  font-size: 80px !important;
+  font-weight: 200 !important;
+  line-height: 1.2 !important;
+  color: var(--glam-white);
+  text-shadow: 0 0 20px rgba(255,255,255,0.7);
 }
 
-/* ================= BUTTONS ================= */
+.unit {
+  opacity: 0.5;
+}
+
+/* ================= RISK ================= */
+#risk {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+/* 🔥 IMPORTANT: script ใช้ class นี้ */
+.status-angel-safe {
+  color: var(--glam-white);
+  text-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+.status-glam-warning {
+  color: var(--gold-glam);
+  text-shadow: 0 0 10px var(--gold-glam);
+}
+
+.status-chic-danger {
+  color: var(--angel-pink);
+  text-shadow: 0 0 10px var(--angel-pink);
+}
+
+/* ================= GRID ================= */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* ================= BUTTON ================= */
 .button-group {
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 button {
-height: 54px;
-border-radius: 20px;
-border: 1px solid var(--border-angel);
-background: rgba(255, 255, 255, 0.05);
-color: #fff;
-font-weight: 600;
-letter-spacing: 1px;
-transition: 0.3s;
+  padding: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
-button:active { transform: scale(0.9); }
+.start { border-color: #69f0ae; color: #69f0ae; }
+.stop { border-color: #ff6b6b; color: #ff6b6b; }
+.export { border-color: #4dabf7; color: #4dabf7; }
 
-.start { border-color: #63e6be; color: #63e6be; }
-.stop { border-color: #ff8787; color: #ff8787; }
-.start:hover { background: rgba(99, 230, 190, 0.1); }
-.stop:hover { background: rgba(255, 135, 135, 0.1); }
-
-/* ================= MAP & CHART ================= */
+/* ================= MAP ================= */
 #map {
-height: 250px;
-border-radius: 25px;
-filter: invert(90%) hue-rotate(180deg) brightness(0.7); /* แผนที่สีมุกขรึมๆ */
-}css
+  height: 250px;
+  border-radius: 20px;
+  border: 1px solid var(--border-angel);
+}
+
+/* ================= CHART ================= */
+canvas {
+  max-width: 100%;
+}
+
+/* ================= ANIMATION ================= */
+@keyframes pulse-soft {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.is-risky {
+  border-color: var(--angel-pink);
+  animation: pulse-soft 1.5s infinite;
+}
