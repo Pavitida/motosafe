@@ -1,70 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>MotoSafe</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoSafe AI</title>
 
 <link rel="stylesheet" href="style.css">
 
-<!-- Leaflet -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-<!-- Heatmap -->
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
-<!-- Chart -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
-<h1>🏍 MotoSafe</h1>
-
-<div class="container">
-
-<div class="card">
-<h2>Speed</h2>
-<div id="speed">0</div>
-<p id="style">SAFE</p>
-</div>
-
-<div class="card">
-<h2>Risk</h2>
-<div id="risk">100</div>
-<p>Peak Decel: <span id="peak">0</span></p>
-</div>
-
-<div class="card">
-<h2>Braking</h2>
-<p>Total: <span id="total">0</span></p>
-<p>Hard: <span id="hard">0</span></p>
-<p>Distance: <span id="brakeDist">0</span></p>
-</div>
-
-<div class="card">
-<h2>Summary</h2>
-<p>Avg Decel: <span id="avg">0</span></p>
-<p>Max Decel: <span id="max">0</span></p>
-</div>
-
-</div>
-
-<canvas id="speedChart"></canvas>
-<canvas id="decelChart"></canvas>
-
-<div id="map"></div>
-
-<div class="buttons">
-<button id="startBtn" onclick="startRide()">Start</button>
-<button id="stopBtn" onclick="stopRide()">Stop</button>
-<button onclick="exportCSV()">Export</button>
-<button onclick="clearData()">Clear</button>
-</div>
+<header>
+<h1>🏍 MOTOSAFE</h1>
+</header>
 
 <div id="popup"></div>
+
+<div class="card">
+<div class="button-group">
+<button class="start" onclick="startRide()">Start</button>
+<button class="stop" onclick="stopRide()">Stop</button>
+<button class="export" onclick="exportCSV()">Export CSV</button>
+<button class="clear" onclick="clearData()">Clear</button>
+
+<!-- ✅ เพิ่มสำหรับ dataset -->
+<button onclick="markEvent('REAL_POTHOLE')">Mark Pothole</button>
+</div>
+</div>
+
+<div class="card">
+<div class="hero-container">
+<div class="speed-unit">Current Speed</div>
+<span id="speed">0.0</span>
+<div class="speed-unit">km/h</div>
+</div>
+
+<hr>
+
+<div class="stats-grid">
+<div class="stat-item">
+<div class="risk-label">PEAK DECEL</div>
+<div id="peak" class="stat-value">0</div>
+</div>
+
+<div class="stat-item">
+<div class="risk-label">RISK LEVEL</div>
+<div id="risk" class="stat-value">100</div>
+</div>
+</div>
+
+<div style="text-align: center; margin-top: 15px;">
+<span class="speed-unit">Style:</span> 
+<b id="style">SAFE</b>
+</div>
+</div>
+
+<div class="card">
+<div class="stats-grid">
+<div>Total Brakes: <span id="total">0</span></div>
+<div>Hard Brakes: <span id="hard">0</span></div>
+<div>Brake Dist: <span id="brakeDist">0</span> km</div>
+<div>Avg Decel: <span id="avg">0</span></div>
+</div>
+
+<div style="margin-top: 10px;">
+Max Decel: <span id="max">0</span>
+</div>
+</div>
+
+<div class="card"><canvas id="speedChart"></canvas></div>
+<div class="card"><canvas id="decelChart"></canvas></div>
+<div class="card"><div id="map"></div></div>
 
 <script src="script.js"></script>
 
