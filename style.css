@@ -1,140 +1,154 @@
-/* ================= ANGELIC FINAL CONFIG ================= */
-:root {
-  --glam-white: #f8f9fa;
-  --ice-blue: #a5d8ff;
-  --gold-glam: #fcc419;
-  --angel-pink: #ffc9c9;
+/* ===== ANGEL PRO MAX (KEEP BEAUTY + FIX BUG) ===== */
 
-  --bg-deep: #111111;
-  --card-bg: rgba(255, 255, 255, 0.05);
-  --glass-blur: blur(20px);
-  --border-angel: rgba(255, 255, 255, 0.15);
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont;
+background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+color:white;
+text-align:center;
 }
 
-/* ================= GLOBAL ================= */
-* {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
+/* 🔥 background glow */
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background:
+radial-gradient(circle at 20% 20%, rgba(165,216,255,0.1), transparent 40%),
+radial-gradient(circle at 80% 80%, rgba(255,201,201,0.1), transparent 40%);
+z-index:-1;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Prompt', sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: var(--bg-deep);
-  color: var(--glam-white);
+h1{
+margin-top:30px;
+font-size:32px;
 }
 
-/* ================= BG EFFECT ================= */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(165,216,255,0.08), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(255,201,201,0.08), transparent 40%);
-  z-index: -2;
+/* ===== CARD ===== */
+.container{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+padding:20px;
+max-width:900px;
+margin:auto;
 }
 
-/* ================= CARD ================= */
-.card {
-  background: var(--card-bg);
-  backdrop-filter: var(--glass-blur);
-  padding: 20px;
-  border-radius: 24px;
-  border: 1px solid var(--border-angel);
-  margin-bottom: 15px;
+.card{
+background:rgba(255,255,255,0.08);
+padding:25px;
+border-radius:20px;
+backdrop-filter:blur(10px);
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
+transition:0.3s;
 }
 
-/* ================= HERO ================= */
-.hero-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.card:hover{
+transform:translateY(-5px) scale(1.02);
 }
 
-/* 🔥 FIX ตัวเลขไม่หาย */
-#speed {
-  font-size: 80px !important;
-  font-weight: 200 !important;
-  line-height: 1.2 !important;
-  color: var(--glam-white);
-  text-shadow: 0 0 20px rgba(255,255,255,0.7);
+/* ===== SPEED (FIX + PREMIUM) ===== */
+#speed{
+font-size:80px;
+font-weight:200;
+line-height:1.2;
+margin:10px 0;
+
+text-shadow:
+0 0 20px rgba(255,255,255,0.8),
+0 0 40px rgba(165,216,255,0.4);
+
+animation:floatSpeed 3s ease-in-out infinite;
 }
 
-.unit {
-  opacity: 0.5;
+@keyframes floatSpeed{
+0%{transform:translateY(0);}
+50%{transform:translateY(-6px);}
+100%{transform:translateY(0);}
 }
 
-/* ================= RISK ================= */
-#risk {
-  font-size: 34px;
-  font-weight: 700;
+/* ===== RISK ===== */
+#risk{
+font-size:32px;
+font-weight:bold;
 }
 
-/* 🔥 IMPORTANT: script ใช้ class นี้ */
-.status-angel-safe {
-  color: var(--glam-white);
-  text-shadow: 0 0 10px rgba(255,255,255,0.5);
+/* ===== STYLE STATUS ===== */
+.status-angel-safe{
+color:#69f0ae;
+text-shadow:0 0 10px #69f0ae;
 }
 
-.status-glam-warning {
-  color: var(--gold-glam);
-  text-shadow: 0 0 10px var(--gold-glam);
+.status-glam-warning{
+color:#ffd43b;
+text-shadow:0 0 10px #ffd43b;
 }
 
-.status-chic-danger {
-  color: var(--angel-pink);
-  text-shadow: 0 0 10px var(--angel-pink);
+.status-chic-danger{
+color:#ff6b6b;
+text-shadow:0 0 10px #ff6b6b;
+animation:pulse 1.2s infinite;
 }
 
-/* ================= GRID ================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+@keyframes pulse{
+0%{transform:scale(1);opacity:0.7;}
+50%{transform:scale(1.1);opacity:1;}
+100%{transform:scale(1);opacity:0.7;}
 }
 
-/* ================= BUTTON ================= */
-.button-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+/* ===== BUTTON ===== */
+.buttons{
+margin:20px;
 }
 
-button {
-  padding: 14px;
-  border-radius: 12px;
-  cursor: pointer;
-  background: transparent;
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
+button{
+padding:12px 25px;
+border:none;
+border-radius:12px;
+margin:10px;
+font-size:16px;
+cursor:pointer;
+background:#4f8cff;
+color:white;
+box-shadow:0 6px 15px rgba(0,0,0,0.3);
+transition:0.2s;
 }
 
-.start { border-color: #69f0ae; color: #69f0ae; }
-.stop { border-color: #ff6b6b; color: #ff6b6b; }
-.export { border-color: #4dabf7; color: #4dabf7; }
-
-/* ================= MAP ================= */
-#map {
-  height: 250px;
-  border-radius: 20px;
-  border: 1px solid var(--border-angel);
+button:hover{
+transform:translateY(-2px);
 }
 
-/* ================= CHART ================= */
-canvas {
-  max-width: 100%;
+button:active{
+transform:scale(0.95);
 }
 
-/* ================= ANIMATION ================= */
-@keyframes pulse-soft {
-  0% { opacity: 0.6; }
-  50% { opacity: 1; }
-  100% { opacity: 0.6; }
+#startBtn{
+background:linear-gradient(135deg,#00c853,#43e97b);
 }
 
-.is-risky {
-  border-color: var(--angel-pink);
-  animation: pulse-soft 1.5s infinite;
+#stopBtn{
+background:linear-gradient(135deg,#ff512f,#dd2476);
+}
+
+/* ===== CHART ===== */
+canvas{
+width:90%;
+height:250px;
+background:white;
+border-radius:20px;
+margin:20px auto;
+padding:10px;
+display:block;
+}
+
+/* ===== MAP ===== */
+#map{
+height:250px;
+border-radius:20px;
+margin:20px;
+}
+
+/* ===== DANGER GLOW ===== */
+.is-risky{
+box-shadow:0 0 25px rgba(255,0,0,0.6);
 }
