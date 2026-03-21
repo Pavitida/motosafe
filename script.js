@@ -25,6 +25,13 @@ let heatLayer=null
 
 let rideStartTime=null
 
+// ✅ เพิ่ม: เก็บตำแหน่งล่าสุด
+let currentLat=13.7563
+let currentLng=100.5018
+
+// ✅ เพิ่ม: ทำ speed ให้ลื่นขึ้น
+let smoothSpeed=0
+
 // ================= SENSOR =================
 let accelY=0
 let smoothAccel=0
@@ -39,52 +46,109 @@ smoothAccel = smoothAccel*0.8 + accelY*0.2
 // ================= BUFFER =================
 let decelBuffer=[]
 
+function smoothValue(current,target,alpha=0.2){
+return current*(1-alpha)+target*alpha
+}
+
 // ================= INIT =================
 window.onload=function(){
 
 chart=new Chart(document.getElementById("speedChart"),{
 type:"line",
-data:{labels:[],datasets:[{label:"Speed",data:[]}]}
+data:{labels:[],datasets:[{label:"Speed",data:[]}]},
+options:{
+responsive:true,
+animation:false
+}
 })
 
 decelChart=new Chart(document.getElementById("decelChart"),{
 type:"line",
-data:{labels:[],datasets:[{label:"Decel",data:[]}]}
+data:{labels:[],datasets:[{label:"Decel",data:[]}]},
+options:{
+responsive:true,
+animation:false
+}
 })
 
 map=L.map('map').setView([13.7563,100.5018],15)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
-// 🔥 heatmap init (แก้บัคไม่ขึ้น)
+// 🔥 create heat layer once
 heatLayer = L.heatLayer(heatPoints,{radius:25,blur:15,maxZoom:17}).addTo(map)
 
+// 🔥 recover dataset ตอน reload
+let saved=localStorage.getItem("moto_dataset")
+if(saved){
+dataset=JSON.parse(saved)
+console.log("Recovered dataset:", dataset.length)
+}
 }
 
 // ================= START =================
 function startRide(){
 
+// ✅ กันกดซ้ำ
+if(watching) return
+
 if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-DeviceMotionEvent.requestPermission()
+DeviceMotionEvent.requestPermission().catch(()=>{})
 }
 
-navigator.geolocation.getCurrentPosition(()=>{
+navigator.geolocation.getCurrentPosition((pos)=>{
+
 watching=true
 rideStartTime=Date.now()
 
-watchId=navigator.geolocation.watchPosition(updateSpeed,{
+// ✅ reset เฉพาะค่าที่ควร reset ตอนเริ่มรอบใหม่
+lastSpeed=0
+lastTime=0
+peakDecel=0
+brakeStart=null
+brakeDistance=0
+decelBuffer=[]
+smoothSpeed=0
+
+currentLat=pos.coords.latitude
+currentLng=pos.coords.longitude
+
+// ✅ แก้ watchPosition ให้ถูกต้อง
+watchId=navigator.geolocation.watchPosition(
+updateSpeed,
+(err)=>{ console.error("GPS Error:", err) },
+{
 enableHighAccuracy:true,
 maximumAge:0,
 timeout:5000
-})
+}
+)
 
+},(err)=>{
+console.error("Start location error:", err)
+},{
+enableHighAccuracy:true,
+maximumAge:0,
+timeout:5000
 })
 
 }
 
 // ================= STOP =================
 function stopRide(){
+
 watching=false
+
+if(watchId!==null){
 navigator.geolocation.clearWatch(watchId)
+watchId=null
+}
+
+// ✅ ถ้ายังเบรกค้างอยู่ตอนกด stop ให้ log ปิด event
+if(brakeStart!==null){
+logBrake(currentLat,currentLng)
+brakeStart=null
+}
+
 }
 
 // ================= POPUP =================
@@ -104,13 +168,33 @@ if(!watching)return
 let lat=pos.coords.latitude
 let lng=pos.coords.longitude
 
+currentLat=lat
+currentLng=lng
+
 // 🔥 smooth map (ไม่กระตุก)
 if(map) map.panTo([lat,lng],{animate:true,duration:0.5})
 
-let speed=(pos.coords.speed||0)*3.6
-let now=Date.now()
+let rawSpeed=(pos.coords.speed||0)*3.6
+if(rawSpeed < 1) rawSpeed = 0
 
-document.getElementById("speed").innerText=speed.toFixed(1)
+// ✅ smooth เฉพาะการแสดงผล
+smoothSpeed = smoothValue(smoothSpeed, rawSpeed)
+document.getElementById("speed").innerText=smoothSpeed.toFixed(1)
+
+// ✅ เปลี่ยนสี speed ตามความเร็ว
+let speedEl=document.getElementById("speed")
+if(smoothSpeed > 80){
+speedEl.style.color="#ff6b6b"
+}
+else if(smoothSpeed > 40){
+speedEl.style.color="#ffd43b"
+}
+else{
+speedEl.style.color="#69f0ae"
+}
+
+let speed=rawSpeed
+let now=Date.now()
 
 if(lastTime){
 
@@ -133,7 +217,9 @@ decelBuffer.push(decel)
 if(decelBuffer.length > 5) decelBuffer.shift()
 decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 
-let isPothole = (decel > 6 && dt < 0.15)
+// ✅ ปรับ pothole ให้ false positive น้อยลง
+let isPothole = (decel > 6 && dt < 0.15 && speed > 12)
+
 if(decel < 1.5 && !isPothole) return
 
 // ================= LABEL =================
@@ -233,7 +319,7 @@ type="HARD"
 color="red"
 hardBrakes++
 showPopup("🔴 HARD BRAKE","#ff4d4d")
-triggerEffect("hard") // 🔥 เพิ่ม effect
+triggerEffect("hard")
 }
 else if(peakDecel > 2){
 type="NORMAL"
@@ -252,7 +338,7 @@ color:color,
 radius:8
 }).addTo(map).bindPopup(type)
 
-// 🔥 heatmap update
+// 🔥 update heatmap
 if(type==="HARD"){
 heatPoints.push([lat,lng,1])
 heatLayer.setLatLngs(heatPoints)
@@ -281,6 +367,13 @@ if(risk<70) style="NORMAL"
 if(risk<40) style="AGGRESSIVE"
 
 document.getElementById("style").innerText=style
+
+// ================= vibration =================
+if(type==="HARD"){
+vibrate("hard")
+}else if(type==="NORMAL"){
+vibrate("normal")
+}
 
 // ================= DATASET =================
 dataset.push({
@@ -336,6 +429,7 @@ a.click()
 
 // ================= CLEAR =================
 function clearData(){
+localStorage.removeItem("moto_dataset")
 location.reload()
 }
 
@@ -356,6 +450,18 @@ function triggerEffect(type){
 let body=document.body
 body.classList.add("shake")
 setTimeout(()=>body.classList.remove("shake"),300)
+}
+
+// 🔥 vibration
+function vibrate(type){
+if(!navigator.vibrate) return
+
+if(type==="hard"){
+navigator.vibrate([100,50,100])
+}
+else if(type==="normal"){
+navigator.vibrate(100)
+}
 }
 
 // 🔥 auto save
