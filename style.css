@@ -1,217 +1,214 @@
-/* ================= KEEP YOUR STYLE + ENHANCE ================= */
-
-/* ===== BASE ===== */
-body{
-margin:0;
-font-family:-apple-system,BlinkMacSystemFont,'Prompt',sans-serif;
-background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-color:white;
-text-align:center;
-overflow-x:hidden;
+/* ================= ULTIMATE AURA CONFIG ================= */
+:root {
+--glam-white: #f8f9fa;
+--ice-blue: #a5d8ff;
+--angel-pink: #ffc9c9;
+--deep-space: #050508;
+--card-bg: rgba(255, 255, 255, 0.03);
+--border-angel: rgba(255, 255, 255, 0.1);
+--accent-glow: rgba(165, 216, 255, 0.3);
 }
 
-/* ===== GLOW BACKGROUND ===== */
-body::before{
-content:"";
-position:fixed;
-inset:0;
-background:
-radial-gradient(circle at 20% 20%, rgba(165,216,255,0.12), transparent 40%),
-radial-gradient(circle at 80% 80%, rgba(255,201,201,0.12), transparent 40%);
-z-index:-1;
+/* ================= BACKGROUND: NEBULA AURA ================= */
+body {
+margin: 0;
+padding: 16px;
+background-color: var(--deep-space);
+color: var(--glam-white);
+font-family: 'Prompt', sans-serif;
+min-height: 100vh;
+
+background-image:
+radial-gradient(circle at 10% 20%, rgba(165, 216, 255, 0.15) 0%, transparent 40%),
+radial-gradient(circle at 90% 80%, rgba(255, 201, 201, 0.12) 0%, transparent 40%),
+radial-gradient(circle at 50% 50%, rgba(10, 10, 15, 1) 0%, transparent 100%);
+background-attachment: fixed;
 }
 
-/* ===== TITLE ===== */
-h1{
-margin-top:30px;
-font-size:32px;
-letter-spacing:1px;
+/* ================= PREMIUM HEADER ================= */
+header {
+padding: 30px 0;
+text-align: center;
 }
 
-/* ===== CARD ===== */
-.container{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:20px;
-padding:20px;
-max-width:1000px;
-margin:auto;
+h1 {
+font-size: 32px;
+font-weight: 800;
+letter-spacing: 6px;
+margin: 0;
+background: linear-gradient(to bottom, #ffffff 30%, #a5d8ff 100%);
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.4));
+text-transform: uppercase;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 15px;
 }
 
-.card{
-background:rgba(255,255,255,0.08);
-padding:25px;
-border-radius:20px;
-backdrop-filter:blur(14px);
-border:1px solid rgba(255,255,255,0.12);
-box-shadow:0 10px 30px rgba(0,0,0,0.5);
-transition:0.3s;
-position:relative;
-overflow:hidden;
+h1::before, h1::after {
+content: "";
+height: 1px;
+width: 40px;
+background: linear-gradient(to right, transparent, var(--ice-blue));
 }
 
-/* glow border */
-.card::before{
-content:"";
-position:absolute;
-inset:-2px;
-border-radius:20px;
-background:linear-gradient(120deg,rgba(165,216,255,0.2),transparent);
-opacity:0;
-transition:0.4s;
-z-index:-1;
+h1::after { 
+background: linear-gradient(to left, transparent, var(--ice-blue)); 
 }
 
-.card:hover::before{
-opacity:1;
+/* ================= INTERACTIVE CARDS ================= */
+.card {
+background: var(--card-bg);
+backdrop-filter: blur(25px);
+-webkit-backdrop-filter: blur(25px);
+border: 1px solid var(--border-angel);
+border-radius: 30px;
+padding: 24px;
+margin-bottom: 18px;
+position: relative;
+overflow: hidden;
+transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+cursor: pointer;
 }
 
-.card:hover{
-transform:translateY(-5px) scale(1.02);
+.card:active {
+transform: scale(0.97);
+background: rgba(255, 255, 255, 0.07);
+border-color: var(--ice-blue);
+box-shadow: 0 0 30px rgba(165, 216, 255, 0.2);
 }
 
-/* ===== SPEED ===== */
-#speed{
-font-size:80px;
-font-weight:200;
-line-height:1.2;
-margin:10px 0;
-
-text-shadow:
-0 0 20px rgba(255,255,255,0.8),
-0 0 40px rgba(165,216,255,0.4);
-
-animation:floatSpeed 3s ease-in-out infinite;
+.card::before {
+content: "";
+position: absolute;
+top: 0; left: -100%;
+width: 100%; height: 100%;
+background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+transition: 0.5s;
 }
 
-@keyframes floatSpeed{
-0%{transform:translateY(0);}
-50%{transform:translateY(-6px);}
-100%{transform:translateY(0);}
+.card:hover::before {
+left: 100%;
 }
 
-/* ===== RISK ===== */
-#risk{
-font-size:34px;
-font-weight:800;
-transition:0.3s;
+/* ================= SPEED DISPLAY ================= */
+.hero-container {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 10px 0;
 }
 
-/* ===== STATUS (ใช้กับ JS ของแก) ===== */
-.status-angel-safe{
-color:#69f0ae;
-text-shadow:0 0 15px #69f0ae;
+#speed {
+font-size: 100px !important;
+font-weight: 200 !important;
+line-height: 1 !important;
+color: #fff;
+text-shadow: 0 0 30px rgba(165, 216, 255, 0.6);
+margin: 5px 0;
 }
 
-.status-glam-warning{
-color:#ffd43b;
-text-shadow:0 0 15px #ffd43b;
+.speed-unit {
+opacity: 0.7;
+font-size: 14px;
 }
 
-.status-chic-danger{
-color:#ff6b6b;
-text-shadow:0 0 20px #ff6b6b;
-animation:pulseDanger 1.2s infinite;
+/* ================= STATS ================= */
+.stats-grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 10px;
 }
 
-@keyframes pulseDanger{
-0%{transform:scale(1);opacity:0.7;}
-50%{transform:scale(1.1);opacity:1;}
-100%{transform:scale(1);opacity:0.7;}
+.stat-item {
+text-align: center;
 }
 
-/* ===== STYLE TEXT ===== */
-#style{
-display:inline-block;
-margin-top:5px;
-padding:4px 12px;
-border-radius:20px;
-background:rgba(255,255,255,0.1);
-font-size:12px;
-letter-spacing:1px;
+.stat-value {
+font-size: 22px;
+font-weight: 600;
 }
 
-/* ===== BUTTON ===== */
-.buttons{
-margin:20px;
-position:sticky;
-bottom:10px;
+.risk-label {
+font-size: 12px;
+opacity: 0.6;
 }
 
-button{
-padding:14px 26px;
-border:none;
-border-radius:14px;
-margin:8px;
-font-size:15px;
-cursor:pointer;
-color:white;
-transition:0.25s;
-backdrop-filter:blur(6px);
+/* ================= BUTTONS ================= */
+.button-group {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 12px;
 }
 
-#startBtn{
-background:linear-gradient(135deg,#00c853,#69f0ae);
-box-shadow:0 0 15px rgba(105,240,174,0.5);
+button {
+height: 54px;
+border-radius: 20px;
+border: 1px solid var(--border-angel);
+background: rgba(255, 255, 255, 0.05);
+color: #fff;
+font-weight: 600;
+letter-spacing: 1px;
+transition: 0.3s;
 }
 
-#stopBtn{
-background:linear-gradient(135deg,#ff512f,#ff6b6b);
-box-shadow:0 0 15px rgba(255,107,107,0.5);
+button:active { transform: scale(0.9); }
+
+.start { border-color: #63e6be; color: #63e6be; }
+.stop { border-color: #ff8787; color: #ff8787; }
+.export { border-color: #74c0fc; color: #74c0fc; }
+.clear { border-color: #adb5bd; color: #adb5bd; }
+
+.start:hover { background: rgba(99, 230, 190, 0.1); }
+.stop:hover { background: rgba(255, 135, 135, 0.1); }
+.export:hover { background: rgba(116, 192, 252, 0.1); }
+.clear:hover { background: rgba(173, 181, 189, 0.1); }
+
+/* ================= MAP & CHART ================= */
+#map {
+height: 250px;
+border-radius: 25px;
+filter: invert(90%) hue-rotate(180deg) brightness(0.7);
 }
 
-button:hover{
-transform:translateY(-2px) scale(1.03);
-}
-
-button:active{
-transform:scale(0.95);
-}
-
-/* ===== CHART ===== */
-canvas{
-width:90%;
-height:250px;
-background:rgba(255,255,255,0.05);
-border-radius:20px;
-margin:20px auto;
-padding:10px;
-display:block;
-backdrop-filter:blur(10px);
-}
-
-/* ===== MAP ===== */
-#map{
-height:260px;
-border-radius:20px;
-margin:20px;
-border:1px solid rgba(255,255,255,0.15);
-filter:grayscale(0.3) brightness(0.9);
-}
-
-/* ===== POPUP ===== */
+/* ================= POPUP ================= */
 #popup{
 position:fixed;
 top:20px;
 left:50%;
 transform:translateX(-50%);
-padding:12px 20px;
+padding:10px 20px;
 border-radius:12px;
-font-weight:bold;
 display:none;
+font-weight:600;
+color:white;
 z-index:999;
-backdrop-filter:blur(10px);
-box-shadow:0 5px 20px rgba(0,0,0,0.5);
 }
 
-/* ===== DANGER CARD EFFECT ===== */
-.is-risky{
-box-shadow:0 0 25px rgba(255,0,0,0.6);
-animation:dangerFlash 1s infinite;
+/* ================= STATUS COLORS ================= */
+.status-safe { color:#69f0ae; }
+.status-warning { color:#ffd43b; }
+.status-danger { color:#ff6b6b; }
+
+/* ================= EFFECT ================= */
+.hard-flash{
+animation:flashRed 0.6s;
 }
 
-@keyframes dangerFlash{
-0%{background:rgba(255,255,255,0.05);}
-50%{background:rgba(255,0,0,0.15);}
-100%{background:rgba(255,255,255,0.05);}
+@keyframes flashRed{
+0%{background:red;}
+100%{background:transparent;}
+}
+
+.shake{
+animation:shake 0.3s;
+}
+
+@keyframes shake{
+0%{transform:translate(0)}
+25%{transform:translate(-3px)}
+50%{transform:translate(3px)}
+100%{transform:translate(0)}
 }
