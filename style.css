@@ -1,15 +1,15 @@
-/* ================= ULTIMATE AURA CONFIG ================= */
+/* ================= ULTIMATE AURA CONFIG: ANGEL EDITION ================= */
 :root {
   --glam-white: #f8f9fa;
   --ice-blue: #a5d8ff;
   --angel-pink: #ffc9c9;
   --deep-space: #050508;
-  --card-bg: rgba(255, 255, 255, 0.03);
-  --border-angel: rgba(255, 255, 255, 0.1);
-  --accent-glow: rgba(165, 216, 255, 0.3);
+  --card-bg: rgba(255, 255, 255, 0.04); /* เพิ่มความสว่างนิดหน่อย */
+  --border-angel: rgba(255, 255, 255, 0.15);
+  --accent-glow: rgba(165, 216, 255, 0.4);
 }
 
-/* ================= BACKGROUND: NEBULA AURA ================= */
+/* ================= BACKGROUND: HEAVENLY NEBULA ================= */
 body {
   margin: 0;
   padding: 16px;
@@ -17,11 +17,35 @@ body {
   color: var(--glam-white);
   font-family: 'Prompt', sans-serif;
   min-height: 100vh;
+  /* เพิ่มเลเยอร์แสงออโรร่าและดาวระยิบระยับ */
   background-image:
-    radial-gradient(circle at 10% 20%, rgba(165, 216, 255, 0.15) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(255, 201, 201, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 50% 50%, rgba(10, 10, 15, 1) 0%, transparent 100%);
+    radial-gradient(circle at 15% 25%, rgba(165, 216, 255, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(255, 201, 201, 0.15) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(15, 15, 25, 1) 0%, transparent 100%);
   background-attachment: fixed;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* เอฟเฟกต์ละอองดาว (Floating Sparkles) */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: 
+    radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 100px 150px, var(--ice-blue), rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 200px 80px, #fff, rgba(0,0,0,0));
+  background-size: 300px 300px;
+  animation: sparkleMove 20s linear infinite;
+  opacity: 0.4;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes sparkleMove {
+  from { transform: translateY(0); }
+  to { transform: translateY(-300px); }
 }
 
 /* ================= PREMIUM HEADER ================= */
@@ -35,10 +59,10 @@ h1 {
   font-weight: 800;
   letter-spacing: 6px;
   margin: 0;
-  background: linear-gradient(to bottom, #ffffff 30%, #a5d8ff 100%);
+  background: linear-gradient(to bottom, #ffffff 40%, var(--ice-blue) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.4));
+  filter: drop-shadow(0 0 15px rgba(165, 216, 255, 0.5));
   text-transform: uppercase;
   display: flex;
   align-items: center;
@@ -46,260 +70,134 @@ h1 {
   gap: 15px;
 }
 
+/* เปลี่ยนเส้นข้าง Header ให้เป็นประกายดาว */
 h1::before, h1::after {
-  content: "";
-  height: 1px;
-  width: 40px;
-  background: linear-gradient(to right, transparent, var(--ice-blue));
+  content: "✧";
+  font-size: 16px;
+  -webkit-text-fill-color: var(--ice-blue);
+  filter: blur(0.5px);
+  animation: starBlink 2s ease-in-out infinite;
 }
 
-h1::after {
-  background: linear-gradient(to left, transparent, var(--ice-blue));
-}
-
-/* ================= RECORD STATUS ================= */
-.recording-wrap{
-  margin-top: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  opacity: 0.9;
-}
-
-.record-dot{
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #6c757d;
-  box-shadow: 0 0 8px rgba(108,117,125,0.6);
-}
-
-.recording .record-dot{
-  background: #ff4d4d;
-  box-shadow: 0 0 12px rgba(255,77,77,0.9);
-  animation: pulseRed 1.2s infinite;
-}
-
-@keyframes pulseRed{
-  0%{transform:scale(1);opacity:0.7;}
-  50%{transform:scale(1.15);opacity:1;}
-  100%{transform:scale(1);opacity:0.7;}
+@keyframes starBlink {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 /* ================= INTERACTIVE CARDS ================= */
 .card {
   background: var(--card-bg);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  backdrop-filter: blur(30px); /* เพิ่มความนวล */
+  -webkit-backdrop-filter: blur(30px);
   border: 1px solid var(--border-angel);
   border-radius: 30px;
   padding: 24px;
   margin-bottom: 18px;
   position: relative;
   overflow: hidden;
-  transition: all 0.35s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
-.card:active {
-  transform: scale(0.98);
-  background: rgba(255, 255, 255, 0.07);
+/* เอฟเฟกต์การลอยของการ์ด */
+.card {
+  animation: angelFloat 6s ease-in-out infinite;
+}
+
+@keyframes angelFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.card:hover {
   border-color: var(--ice-blue);
-  box-shadow: 0 0 30px rgba(165, 216, 255, 0.2);
+  box-shadow: 0 15px 35px rgba(165, 216, 255, 0.15);
 }
 
+/* แสง Shimmer วิ่งผ่านการ์ดแบบนุ่มนวล */
 .card::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-  transition: 0.5s;
+  top: 0; left: -150%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  transition: 0.8s;
 }
 
 .card:hover::before {
-  left: 100%;
+  left: 150%;
 }
 
 /* ================= SPEED DISPLAY ================= */
-.hero-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px 0;
-}
-
 #speed {
   font-size: 100px !important;
   font-weight: 200 !important;
   line-height: 1 !important;
   color: #fff;
-  text-shadow: 0 0 30px rgba(165, 216, 255, 0.6);
+  /* ปรับเงา Speed ให้ดูเป็น Aura กระจายออก */
+  text-shadow: 
+    0 0 20px rgba(165, 216, 255, 0.4),
+    0 0 40px rgba(165, 216, 255, 0.2);
   margin: 5px 0;
+  animation: speedPulse 3s ease-in-out infinite;
 }
 
-.speed-unit {
-  opacity: 0.7;
-  font-size: 14px;
-}
-
-.style-wrap{
-  text-align: center;
-  margin-top: 15px;
-}
-
-/* ================= STATS ================= */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.stat-item {
-  text-align: center;
-}
-
-.stat-value {
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.risk-label {
-  font-size: 12px;
-  opacity: 0.6;
-}
-
-.summary-row{
-  margin-top: 10px;
-  opacity: 0.8;
+@keyframes speedPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); text-shadow: 0 0 50px var(--ice-blue); }
 }
 
 /* ================= BUTTONS ================= */
-.button-group {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
 button {
   height: 54px;
   border-radius: 20px;
   border: 1px solid var(--border-angel);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
   font-weight: 600;
-  letter-spacing: 1px;
-  transition: 0.3s;
+  letter-spacing: 1.5px;
+  transition: all 0.3s;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
 }
 
-button:active { transform: scale(0.9); }
-
-.start { border-color: #63e6be; color: #63e6be; }
-.stop { border-color: #ff8787; color: #ff8787; }
-.export { border-color: #74c0fc; color: #74c0fc; }
-.clear { border-color: #adb5bd; color: #adb5bd; }
-
-.start:hover { background: rgba(99, 230, 190, 0.1); }
-.stop:hover { background: rgba(255, 135, 135, 0.1); }
-.export:hover { background: rgba(116, 192, 252, 0.1); }
-.clear:hover { background: rgba(173, 181, 189, 0.1); }
-
-/* ================= SESSION TOOLS ================= */
-.session-tools{
-  margin-top: 16px;
-  display: grid;
-  gap: 14px;
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
 }
 
-.tool-block{
-  text-align: left;
+button:active { transform: scale(0.92); }
+
+/* Shimmer สำหรับปุ่ม */
+button::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: 0.4s;
 }
 
-.tool-block label{
-  display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  opacity: 0.8;
-}
-
-select{
-  width: 100%;
-  height: 44px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.06);
-  color: white;
-  border: 1px solid var(--border-angel);
-  padding: 0 12px;
-}
-
-.mark-buttons{
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.mark-btn{
-  height: 44px;
-  font-size: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-}
+button:hover::after { left: 100%; }
 
 /* ================= MAP & CHART ================= */
 #map {
   height: 300px;
   border-radius: 25px;
-  filter: invert(90%) hue-rotate(180deg) brightness(0.7);
+  filter: invert(90%) hue-rotate(180deg) brightness(0.8) contrast(1.1);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.4);
 }
 
-canvas{
-  width: 100% !important;
-  max-width: 100%;
-  background: rgba(255,255,255,0.03);
+canvas {
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 20px;
+  border: 1px solid var(--border-angel);
 }
 
-/* ================= POPUP ================= */
-#popup{
-  position:fixed;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  padding:10px 20px;
-  border-radius:12px;
-  display:none;
-  font-weight:600;
-  color:white;
-  z-index:999;
-}
-
-/* ================= STATUS COLORS ================= */
-.status-safe { color:#69f0ae; }
-.status-warning { color:#ffd43b; }
-.status-danger { color:#ff6b6b; }
-
-/* ================= EFFECT ================= */
-.hard-flash{
-  animation:flashRed 0.6s;
-}
-@keyframes flashRed{
-  0%{background:red;}
-  100%{background:transparent;}
-}
-
-.shake{
-  animation:shake 0.3s;
-}
-@keyframes shake{
-  0%{transform:translate(0)}
-  25%{transform:translate(-3px)}
-  50%{transform:translate(3px)}
-  100%{transform:translate(0)}
-}
-/* hide optional data collection UI */
-.session-tools{
-display:none;
+/* ================= POPUP: ANGEL STYLE ================= */
+#popup {
+  background: rgba(10, 20, 40, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--ice-blue);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 15px var(--accent-glow);
 }
