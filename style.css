@@ -365,3 +365,133 @@ opacity:0.6;
 50%{transform:translateY(-30px);}
 100%{transform:translateY(0);}
 }
+/* ================= EXTRA LUXURY MOTION ================= */
+
+/* card glow + ลอยเบา ๆ */
+.card{
+box-shadow:
+0 8px 30px rgba(165,216,255,0.12),
+0 0 20px rgba(255,255,255,0.04),
+inset 0 0 1px rgba(255,255,255,0.2);
+animation:cardFloat 6s ease-in-out infinite;
+}
+
+@keyframes cardFloat{
+0%{transform:translateY(0);}
+50%{transform:translateY(-4px);}
+100%{transform:translateY(0);}
+}
+
+.card:hover{
+box-shadow:
+0 12px 36px rgba(165,216,255,0.22),
+0 0 28px rgba(255,255,255,0.08),
+inset 0 0 1px rgba(255,255,255,0.25);
+}
+
+/* speed วิ้งนิด ๆ */
+#speed{
+animation:speedAura 3s ease-in-out infinite;
+}
+
+@keyframes speedAura{
+0%{
+text-shadow:
+0 0 20px rgba(165,216,255,0.45),
+0 0 40px rgba(255,255,255,0.08);
+}
+50%{
+text-shadow:
+0 0 28px rgba(255,255,255,0.75),
+0 0 52px rgba(165,216,255,0.22);
+}
+100%{
+text-shadow:
+0 0 20px rgba(165,216,255,0.45),
+0 0 40px rgba(255,255,255,0.08);
+}
+}
+
+/* ปุ่มลอย + กดเด้ง */
+button{
+box-shadow:
+0 8px 20px rgba(0,0,0,0.18),
+0 0 12px rgba(255,255,255,0.04);
+backdrop-filter: blur(14px);
+-webkit-backdrop-filter: blur(14px);
+}
+
+button:hover{
+transform:translateY(-3px) scale(1.01);
+box-shadow:
+0 12px 26px rgba(0,0,0,0.2),
+0 0 16px rgba(255,255,255,0.08);
+}
+
+button:active{
+transform:scale(0.94);
+}
+
+/* shimmer วิ่งผ่านปุ่ม */
+button{
+position:relative;
+overflow:hidden;
+}
+
+button::after{
+content:"";
+position:absolute;
+top:0;
+left:-120%;
+width:60%;
+height:100%;
+background:linear-gradient(
+90deg,
+transparent,
+rgba(255,255,255,0.18),
+transparent
+);
+transform:skewX(-20deg);
+transition:0.6s;
+}
+
+button:hover::after{
+left:140%;
+}
+
+/* map ขอบเรืองแสง */
+#map{
+box-shadow:
+0 10px 26px rgba(0,0,0,0.2),
+0 0 24px rgba(165,216,255,0.16);
+border:1px solid rgba(255,255,255,0.12);
+}
+
+/* chart ขอบฟุ้ง */
+canvas{
+box-shadow:
+0 10px 24px rgba(0,0,0,0.18),
+0 0 20px rgba(165,216,255,0.12);
+border:1px solid rgba(255,255,255,0.08);
+}
+
+/* popup ให้ดูหรูขึ้น */
+#popup{
+backdrop-filter: blur(16px);
+-webkit-backdrop-filter: blur(16px);
+box-shadow:
+0 10px 24px rgba(0,0,0,0.2),
+0 0 16px rgba(255,255,255,0.08);
+animation:popupFadeFloat .35s ease;
+}
+
+@keyframes popupFadeFloat{
+0%{
+opacity:0;
+transform:translateX(-50%) translateY(-8px);
+}
+100%{
+opacity:1;
+transform:translateX(-50%) translateY(0);
+}
+}
