@@ -25,6 +25,11 @@ let heatLayer=null
 
 let rideStartTime=null
 
+// ✅ เพิ่ม: current position + route
+let currentMarker=null
+let routePoints=[]
+let routeLine=null
+
 // ✅ เพิ่ม: เก็บตำแหน่งล่าสุด
 let currentLat=13.7563
 let currentLng=100.5018
@@ -74,21 +79,26 @@ animation:false
 map=L.map('map').setView([13.7563,100.5018],15)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
-// 🔥 create heat layer once
+// 🔥 heatmap
 heatLayer = L.heatLayer(heatPoints,{radius:25,blur:15,maxZoom:17}).addTo(map)
 
-// 🔥 recover dataset ตอน reload
+// ✅ route line
+routeLine = L.polyline(routePoints,{
+color:"#a5d8ff",
+weight:4,
+opacity:0.8
+}).addTo(map)
+
+// 🔥 recover
 let saved=localStorage.getItem("moto_dataset")
 if(saved){
 dataset=JSON.parse(saved)
-console.log("Recovered dataset:", dataset.length)
 }
 }
 
 // ================= START =================
 function startRide(){
 
-// ✅ กันกดซ้ำ
 if(watching) return
 
 if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
@@ -100,7 +110,7 @@ navigator.geolocation.getCurrentPosition((pos)=>{
 watching=true
 rideStartTime=Date.now()
 
-// ✅ reset เฉพาะค่าที่ควร reset ตอนเริ่มรอบใหม่
+// reset ต่อรอบ
 lastSpeed=0
 lastTime=0
 peakDecel=0
@@ -112,7 +122,13 @@ smoothSpeed=0
 currentLat=pos.coords.latitude
 currentLng=pos.coords.longitude
 
-// ✅ แก้ watchPosition ให้ถูกต้อง
+// ✅ reset route ต่อรอบ
+routePoints=[]
+if(routeLine){
+routeLine.setLatLngs(routePoints)
+}
+
+// watch GPS
 watchId=navigator.geolocation.watchPosition(
 updateSpeed,
 (err)=>{ console.error("GPS Error:", err) },
@@ -143,7 +159,7 @@ navigator.geolocation.clearWatch(watchId)
 watchId=null
 }
 
-// ✅ ถ้ายังเบรกค้างอยู่ตอนกด stop ให้ log ปิด event
+// ถ้ายังเบรกค้างอยู่ตอนกด stop ให้ log ปิด event
 if(brakeStart!==null){
 logBrake(currentLat,currentLng)
 brakeStart=null
@@ -171,17 +187,35 @@ let lng=pos.coords.longitude
 currentLat=lat
 currentLng=lng
 
-// 🔥 smooth map (ไม่กระตุก)
+// smooth map
 if(map) map.panTo([lat,lng],{animate:true,duration:0.5})
+
+// ✅ current marker
+if(currentMarker){
+currentMarker.setLatLng([lat,lng])
+}else{
+currentMarker = L.circleMarker([lat,lng],{
+radius:8,
+color:"#4dabf7",
+fillColor:"#4dabf7",
+fillOpacity:0.9
+}).addTo(map).bindPopup("Current Position")
+}
+
+// ✅ route line
+routePoints.push([lat,lng])
+if(routeLine){
+routeLine.setLatLngs(routePoints)
+}
 
 let rawSpeed=(pos.coords.speed||0)*3.6
 if(rawSpeed < 1) rawSpeed = 0
 
-// ✅ smooth เฉพาะการแสดงผล
+// smooth แค่การแสดงผล
 smoothSpeed = smoothValue(smoothSpeed, rawSpeed)
 document.getElementById("speed").innerText=smoothSpeed.toFixed(1)
 
-// ✅ เปลี่ยนสี speed ตามความเร็ว
+// เปลี่ยนสี speed ตามความเร็ว
 let speedEl=document.getElementById("speed")
 if(smoothSpeed > 80){
 speedEl.style.color="#ff6b6b"
@@ -209,7 +243,7 @@ let sensorDecel = -smoothAccel
 let gpsDecel = -(dv/dt)
 let decel = Math.max(sensorDecel, gpsDecel)
 
-// ===== FILTER =====
+// FILTER
 if(speed < 8) return
 if(Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return
 
@@ -217,22 +251,22 @@ decelBuffer.push(decel)
 if(decelBuffer.length > 5) decelBuffer.shift()
 decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 
-// ✅ ปรับ pothole ให้ false positive น้อยลง
+// ปรับ pothole ให้นิ่งขึ้น
 let isPothole = (decel > 6 && dt < 0.15 && speed > 12)
 
 if(decel < 1.5 && !isPothole) return
 
-// ================= LABEL =================
+// LABEL
 let label="CRUISE"
 if(decel > 5) label="HARD_BRAKE"
 else if(decel > 2) label="BRAKE"
 else if(speed < 5) label="STOP"
 
-// ================= PEAK =================
+// PEAK
 if(decel>peakDecel) peakDecel=decel
 document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-// ================= BRAKE =================
+// BRAKE
 if(!isPothole){
 if(decel>2){
 if(!brakeStart){
@@ -248,7 +282,7 @@ brakeStart=null
 }
 }
 
-// ================= POTHOLE =================
+// POTHOLE
 if(isPothole){
 showPopup("🕳 POTHOLE","#845ef7")
 
@@ -267,7 +301,7 @@ label:"POTHOLE"
 })
 }
 
-// ================= CHART =================
+// CHART
 let t=new Date().toLocaleTimeString()
 
 chart.data.labels.push(t)
@@ -286,7 +320,7 @@ decelChart.data.datasets[0].data.shift()
 chart.update()
 decelChart.update()
 
-// ================= DATASET =================
+// DATASET
 dataset.push({
 timestamp: now,
 time: t,
@@ -332,19 +366,19 @@ slowBrakes++
 showPopup("🟢 SLOW","#51cf66")
 }
 
-// ================= MAP =================
+// MAP
 L.circleMarker([lat,lng],{
 color:color,
 radius:8
 }).addTo(map).bindPopup(type)
 
-// 🔥 update heatmap
+// heatmap
 if(type==="HARD"){
 heatPoints.push([lat,lng,1])
 heatLayer.setLatLngs(heatPoints)
 }
 
-// ================= RISK =================
+// RISK
 let risk=100
 risk -= hardBrakes*12
 risk -= normalBrakes*6
@@ -361,21 +395,21 @@ if(risk>70) riskEl.classList.add("status-safe")
 else if(risk>40) riskEl.classList.add("status-warning")
 else riskEl.classList.add("status-danger")
 
-// ================= STYLE =================
+// STYLE
 let style="SAFE"
 if(risk<70) style="NORMAL"
 if(risk<40) style="AGGRESSIVE"
 
 document.getElementById("style").innerText=style
 
-// ================= vibration =================
+// vibration
 if(type==="HARD"){
 vibrate("hard")
 }else if(type==="NORMAL"){
 vibrate("normal")
 }
 
-// ================= DATASET =================
+// DATASET
 dataset.push({
 timestamp: Date.now(),
 event:"brake",
@@ -389,7 +423,7 @@ lng:lng,
 label:type
 })
 
-// ================= UI =================
+// UI
 document.getElementById("total").innerText=totalBrakes
 document.getElementById("hard").innerText=hardBrakes
 document.getElementById("brakeDist").innerText=brakeDistance.toFixed(2)
@@ -434,8 +468,6 @@ location.reload()
 }
 
 // ================= ADD-ON =================
-
-// 🔥 manual label (สำหรับ ML)
 function markEvent(type){
 dataset.push({
 timestamp: Date.now(),
@@ -445,14 +477,12 @@ label:type
 showPopup("Marked: "+type,"#339af0")
 }
 
-// 🔥 effect
 function triggerEffect(type){
 let body=document.body
 body.classList.add("shake")
 setTimeout(()=>body.classList.remove("shake"),300)
 }
 
-// 🔥 vibration
 function vibrate(type){
 if(!navigator.vibrate) return
 
@@ -464,14 +494,12 @@ navigator.vibrate(100)
 }
 }
 
-// 🔥 auto save
 setInterval(()=>{
 if(dataset.length>0){
 localStorage.setItem("moto_dataset",JSON.stringify(dataset))
 }
 },5000)
 
-// 🔥 recover
 window.addEventListener("load",()=>{
 let saved=localStorage.getItem("moto_dataset")
 if(saved){
