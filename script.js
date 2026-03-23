@@ -366,6 +366,14 @@ function updateRecordingUI(isOn) {
   }
 }
 
+function updateAngelMode(isActive){
+  if(isActive){
+    document.body.classList.add("recording")
+  }else{
+    document.body.classList.remove("recording")
+  }
+}
+
 function updateSessionUI() {
   const sid = document.getElementById("sessionId")
   const dur = document.getElementById("duration")
@@ -482,6 +490,7 @@ window.onload = function () {
   renderDangerZones()
   setPhonePosition(phonePosition)
   updateRecordingUI(false)
+  updateAngelMode(false)
   updateSessionUI()
   updateInsights("Ready", "Normal", "Stable")
 }
@@ -525,8 +534,9 @@ function startRide() {
       if (routeLine) routeLine.setLatLngs(routePoints)
 
       updateRecordingUI(true)
+      updateAngelMode(true)
       updateSessionUI()
-      updateInsights("Active", "Monitoring", "Stable")
+      updateInsights("Angel Active", "Monitoring", "Stable")
 
       watchId = navigator.geolocation.watchPosition(
         updateSpeed,
@@ -566,6 +576,7 @@ function stopRide() {
   }
 
   updateRecordingUI(false)
+  updateAngelMode(false)
   updateSessionUI()
   updateInsights("Idle", "Normal", "Stable")
 }
@@ -696,7 +707,6 @@ function updateSpeed(pos) {
     if (decel > peakDecel) peakDecel = decel
     document.getElementById("peak").innerText = peakDecel.toFixed(2)
 
-    // ================= REAL BRAKE DETECTION =================
     if (speed > MIN_SPEED_FOR_BRAKE) {
       if (brakeWindowStartTime === 0) {
         resetBrakeWindow(now, speed)
@@ -748,7 +758,6 @@ function updateSpeed(pos) {
       resetBrakeWindow(now, speed)
     }
 
-    // ================= POTHOLE =================
     if (isPothole && now - lastRoadEventTime > 800) {
       lastRoadEventTime = now
 
@@ -778,7 +787,6 @@ function updateSpeed(pos) {
       })
     }
 
-    // ================= ROUGH ROAD =================
     if (isRoughRoad && now - lastRoadEventTime > ROUGH_ROAD_REPEAT_MS) {
       lastRoadEventTime = now
 
@@ -808,7 +816,6 @@ function updateSpeed(pos) {
       })
     }
 
-    // ================= CHART =================
     const t = new Date().toLocaleTimeString()
 
     chart.data.labels.push(t)
@@ -827,7 +834,6 @@ function updateSpeed(pos) {
     chart.update()
     decelChart.update()
 
-    // ================= DATASET =================
     dataset.push({
       sessionId: currentSessionId,
       phonePosition: phonePosition,
