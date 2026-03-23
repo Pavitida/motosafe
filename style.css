@@ -891,3 +891,394 @@ body.recording .hero-card{
     padding:11px 14px;
   }
 }
+/* ================= ANGEL BUTTON SHIMMER ================= */
+button{
+  position: relative;
+  overflow: hidden;
+}
+
+button::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-130%;
+  width:58%;
+  height:100%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255,255,255,0.24),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: 0.7s;
+}
+
+button:hover::before{
+  left:150%;
+}
+
+button:hover{
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.18),
+    0 0 16px rgba(255,255,255,0.08),
+    0 0 22px rgba(165,216,255,0.12);
+}
+
+button:active{
+  transform: scale(0.96);
+}
+
+/* ================= RECORDING ANGEL MODE ================= */
+body.recording .hero-card{
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.18),
+    0 0 34px rgba(165,216,255,0.18),
+    0 0 70px rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.14);
+}
+
+body.recording #speed{
+  animation: angelSpeedAura 2.8s ease-in-out infinite;
+}
+
+@keyframes angelSpeedAura{
+  0%,100%{
+    text-shadow:
+      0 0 18px rgba(165,216,255,0.34),
+      0 0 38px rgba(255,255,255,0.08);
+  }
+  50%{
+    text-shadow:
+      0 0 30px rgba(255,255,255,0.72),
+      0 0 58px rgba(165,216,255,0.22);
+  }
+}
+
+/* ================= CRYSTAL POPUP UPGRADE ================= */
+#popup{
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06)),
+    rgba(10, 20, 45, 0.56) !important;
+  border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.22),
+    0 0 18px rgba(255,255,255,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+  overflow: hidden;
+}
+
+#popup::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(120deg,
+      transparent 0%,
+      rgba(255,255,255,0.15) 35%,
+      transparent 65%);
+  transform: translateX(-120%);
+  animation: popupShine 1.6s ease-out 1;
+  pointer-events:none;
+}
+
+#popup::after{
+  content:"✦";
+  position:absolute;
+  top:6px;
+  right:10px;
+  font-size:12px;
+  color: rgba(255,255,255,0.75);
+  text-shadow: 0 0 10px rgba(255,255,255,0.35);
+  animation: sparkleBlink 1.8s ease-in-out infinite;
+}
+
+@keyframes popupShine{
+  0%{ transform: translateX(-120%); }
+  100%{ transform: translateX(140%); }
+}
+
+@keyframes sparkleBlink{
+  0%,100%{ opacity:0.35; transform:scale(0.9); }
+  50%{ opacity:1; transform:scale(1.18); }
+}
+
+/* ================= HERO AURA ================= */
+.hero-card{
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before{
+  content:"";
+  position:absolute;
+  inset:-18% -10% auto -10%;
+  height:180px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.10), transparent 65%);
+  filter: blur(28px);
+  pointer-events:none;
+  animation: heroAuraPulse 5s ease-in-out infinite;
+}
+
+@keyframes heroAuraPulse{
+  0%,100%{
+    opacity:0.52;
+    transform: scale(1);
+  }
+  50%{
+    opacity:0.94;
+    transform: scale(1.04);
+  }
+}
+
+/* ================= INSIGHT ANGEL GLASS ================= */
+.insight-card{
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.insight-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(135deg,
+      rgba(255,255,255,0.08),
+      transparent 45%,
+      rgba(165,216,255,0.06));
+  pointer-events:none;
+}
+
+.insight-card:hover{
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.14),
+    0 0 18px rgba(165,216,255,0.12);
+}
+
+.insight-value{
+  text-shadow: 0 0 10px rgba(255,255,255,0.12);
+}
+
+/* ================= CARD FLOAT FEEL ================= */
+.card{
+  animation: sectionFadeIn 0.7s ease both;
+}
+
+.card:nth-of-type(2){ animation-delay: 0.08s; }
+.card:nth-of-type(3){ animation-delay: 0.14s; }
+.card:nth-of-type(4){ animation-delay: 0.20s; }
+.card:nth-of-type(5){ animation-delay: 0.26s; }
+.card:nth-of-type(6){ animation-delay: 0.32s; }
+
+@keyframes sectionFadeIn{
+  from{
+    opacity:0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+  to{
+    opacity:1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+/* ================= ANGEL BACKGROUND LAYER ================= */
+body{
+  position: relative;
+  isolation: isolate;
+}
+
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,0.9), transparent),
+    radial-gradient(2px 2px at 78% 22%, rgba(200,230,255,0.8), transparent),
+    radial-gradient(2px 2px at 28% 72%, rgba(255,255,255,0.75), transparent),
+    radial-gradient(2px 2px at 84% 78%, rgba(255,220,230,0.65), transparent),
+    radial-gradient(1.5px 1.5px at 54% 44%, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1.8px 1.8px at 64% 14%, rgba(165,216,255,0.85), transparent),
+    radial-gradient(1.6px 1.6px at 20% 84%, rgba(255,255,255,0.8), transparent);
+  opacity: 0.55;
+  animation: angelParticlesFloat 22s linear infinite;
+}
+
+body::after{
+  content:"";
+  position: fixed;
+  inset: -10%;
+  pointer-events: none;
+  z-index: -2;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(255,255,255,0.09), transparent 28%),
+    radial-gradient(circle at 82% 18%, rgba(165,216,255,0.14), transparent 28%),
+    radial-gradient(circle at 70% 75%, rgba(255,201,201,0.10), transparent 30%),
+    radial-gradient(circle at 40% 58%, rgba(255,255,255,0.07), transparent 35%);
+  filter: blur(26px);
+  animation: angelGlowShift 18s ease-in-out infinite alternate;
+}
+
+@keyframes angelParticlesFloat{
+  0%{ transform: translateY(0) translateX(0); }
+  50%{ transform: translateY(-18px) translateX(8px); }
+  100%{ transform: translateY(0) translateX(0); }
+}
+
+@keyframes angelGlowShift{
+  0%{ transform: scale(1) translate3d(0,0,0); }
+  50%{ transform: scale(1.03) translate3d(1.5%, -1.2%, 0); }
+  100%{ transform: scale(1.01) translate3d(-1%, 1.2%, 0); }
+}
+
+/* ================= EXTRA SPARKLE OVERLAY ================= */
+header,
+.card{
+  position: relative;
+}
+
+header::after,
+.card::after{
+  content:"";
+  position:absolute;
+  top: 10px;
+  right: 14px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.15) 45%, transparent 70%);
+  box-shadow:
+    0 0 10px rgba(255,255,255,0.35),
+    0 0 18px rgba(165,216,255,0.18);
+  opacity: 0.65;
+  animation: tinySparkle 2.8s ease-in-out infinite;
+  pointer-events:none;
+}
+
+header::after{
+  top: 24px;
+  right: 22px;
+}
+
+@keyframes tinySparkle{
+  0%,100%{
+    transform: scale(0.8);
+    opacity: 0.35;
+  }
+  50%{
+    transform: scale(1.25);
+    opacity: 0.95;
+  }
+}
+
+/* ================= START / STOP SPARKLE PRESS ================= */
+button{
+  position: relative;
+  overflow: hidden;
+}
+
+button:active::after{
+  content:"✦";
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%) scale(0.6);
+  font-size:18px;
+  color: rgba(255,255,255,0.95);
+  text-shadow:
+    0 0 10px rgba(255,255,255,0.5),
+    0 0 16px rgba(165,216,255,0.25);
+  animation: buttonSpark 0.45s ease-out forwards;
+  pointer-events:none;
+}
+
+@keyframes buttonSpark{
+  0%{
+    opacity:0;
+    transform:translate(-50%,-50%) scale(0.4);
+  }
+  40%{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1.15);
+  }
+  100%{
+    opacity:0;
+    transform:translate(-50%,-58%) scale(1.4);
+  }
+}
+
+/* ================= SPECIAL START BUTTON GLOW ================= */
+.start{
+  box-shadow:
+    0 0 18px rgba(99,230,190,0.10),
+    0 0 28px rgba(255,255,255,0.04);
+}
+
+.start:hover{
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.18),
+    0 0 18px rgba(99,230,190,0.14),
+    0 0 26px rgba(255,255,255,0.08);
+}
+
+/* ================= SPECIAL STOP BUTTON GLOW ================= */
+.stop{
+  box-shadow:
+    0 0 18px rgba(255,135,135,0.08),
+    0 0 24px rgba(255,255,255,0.03);
+}
+
+.stop:hover{
+  box-shadow:
+    0 10px 26px rgba(0,0,0,0.18),
+    0 0 18px rgba(255,135,135,0.14),
+    0 0 26px rgba(255,255,255,0.06);
+}
+
+/* ================= MAP / CHART EXTRA POLISH ================= */
+#map,
+canvas{
+  position: relative;
+}
+
+#map::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 0 24px rgba(255,255,255,0.02);
+}
+
+/* ================= HERO TITLE SHIMMER ================= */
+h1{
+  position: relative;
+  overflow: visible;
+}
+
+h1::before{
+  animation: titleShimmer 4.5s ease-in-out infinite;
+}
+
+@keyframes titleShimmer{
+  0%,100%{
+    opacity:0.5;
+    filter: blur(0px);
+  }
+  50%{
+    opacity:1;
+    filter: blur(0.6px);
+  }
+}
