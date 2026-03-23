@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MotoSafe AI</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 </head>
@@ -17,54 +17,45 @@
   <header>
     <h1>🏍 MOTOSAFE</h1>
     <div class="recording-wrap">
-      <span id="recordDot" class="record-dot"></span>
+      <span class="record-dot"></span>
       <span id="recordText">IDLE</span>
     </div>
   </header>
 
   <div id="popup"></div>
 
-  <div class="card">
+  <!-- CONTROL CARD -->
+  <section class="card">
     <div class="button-group">
       <button class="start" onclick="startRide()">Start</button>
       <button class="stop" onclick="stopRide()">Stop</button>
       <button class="export" onclick="exportCSV()">Export CSV</button>
       <button class="clear" onclick="clearData()">Clear</button>
     </div>
+  </section>
 
-    <div class="session-tools">
-      <div class="tool-block">
-        <label for="phonePosition">Phone Position</label>
-        <select id="phonePosition" onchange="setPhonePosition(this.value)">
-          <option value="handlebar">Handlebar</option>
-          <option value="pocket">Pocket</option>
-        </select>
-      </div>
-
-      <div class="tool-block">
-        <label>Manual Mark</label>
-        <div class="mark-buttons">
-          <button class="mark-btn" onclick="markEvent('REAL_POTHOLE')">Mark Pothole</button>
-          <button class="mark-btn" onclick="markEvent('REAL_BRAKE')">Mark Brake</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
+  <!-- HERO CARD -->
+  <section class="card">
     <div class="hero-container">
-      <div class="speed-unit">Current Speed</div>
+      <div class="speed-unit">CURRENT SPEED</div>
       <span id="speed">0.0</span>
       <div class="speed-unit">km/h</div>
     </div>
 
-    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 15px 0;">
+    <div class="summary-row" style="text-align:center; margin-top: 8px;">
+      Session: <span id="sessionId">-</span> |
+      Duration: <span id="duration">0</span>s |
+      Distance: <span id="distanceRide">0.00</span> km
+    </div>
+
+    <hr style="border:0;border-top:1px solid rgba(255,255,255,0.10);margin:16px 0;">
 
     <div class="stats-grid">
       <div class="stat-item">
         <div class="risk-label">PEAK DECEL</div>
         <div id="peak" class="stat-value">0</div>
       </div>
+
       <div class="stat-item">
         <div class="risk-label">RISK LEVEL</div>
         <div id="risk" class="stat-value">100</div>
@@ -72,35 +63,77 @@
     </div>
 
     <div class="style-wrap">
-      <span class="speed-unit">Style:</span>
-      <b id="style" style="color:#a5d8ff;">SAFE</b>
+      <span class="speed-unit">STYLE:</span>
+      <strong id="style">SAFE</strong>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
+  <!-- SUMMARY CARD -->
+  <section class="card">
     <div class="stats-grid">
-      <div>Total Brakes: <span id="total">0</span></div>
-      <div>Hard Brakes: <span id="hard">0</span></div>
-      <div>Brake Dist: <span id="brakeDist">0</span> km</div>
-      <div>Avg Decel: <span id="avg">0</span></div>
+      <div class="stat-item">
+        <div class="risk-label">TOTAL BRAKES</div>
+        <div id="total" class="stat-value">0</div>
+      </div>
+
+      <div class="stat-item">
+        <div class="risk-label">HARD BRAKES</div>
+        <div id="hard" class="stat-value">0</div>
+      </div>
+
+      <div class="stat-item">
+        <div class="risk-label">BRAKE DISTANCE</div>
+        <div><span id="brakeDist" class="stat-value">0</span> km</div>
+      </div>
+
+      <div class="stat-item">
+        <div class="risk-label">AVG DECEL</div>
+        <div id="avg" class="stat-value">0</div>
+      </div>
     </div>
-    <div class="summary-row">
+
+    <div class="summary-row" style="text-align:center;">
       Max Decel: <span id="max">0</span>
     </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div class="stats-grid">
-      <div>Session: <span id="sessionId">-</span></div>
-      <div>Phone: <span id="phonePosText">handlebar</span></div>
-      <div>Duration: <span id="duration">0</span> s</div>
-      <div>Distance: <span id="distanceRide">0.00</span> km</div>
+  <!-- MAP CARD -->
+  <section class="card">
+    <div class="risk-label" style="margin-bottom:10px;">LIVE MAP</div>
+    <div id="map"></div>
+  </section>
+
+  <!-- CHARTS CARD -->
+  <section class="card">
+    <div class="risk-label" style="margin-bottom:10px;">SPEED TREND</div>
+    <canvas id="speedChart"></canvas>
+  </section>
+
+  <section class="card">
+    <div class="risk-label" style="margin-bottom:10px;">DECELERATION TREND</div>
+    <canvas id="decelChart"></canvas>
+  </section>
+
+  <!-- OPTIONAL SESSION TOOLS (hidden by CSS if needed) -->
+  <section class="card session-tools">
+    <div class="tool-block">
+      <label>Phone Position</label>
+      <select onchange="setPhonePosition(this.value)">
+        <option value="handlebar" selected>Handlebar</option>
+        <option value="pocket">Pocket</option>
+        <option value="bag">Bag</option>
+      </select>
+      <div class="summary-row">Current: <span id="phonePosText">handlebar</span></div>
     </div>
-  </div>
 
-  <div class="card"><canvas id="speedChart"></canvas></div>
-  <div class="card"><canvas id="decelChart"></canvas></div>
-  <div class="card"><div id="map"></div></div>
+    <div class="tool-block">
+      <label>Manual Mark</label>
+      <div class="mark-buttons">
+        <button class="mark-btn" onclick="markEvent('POTHOLE')">Mark Pothole</button>
+        <button class="mark-btn" onclick="markEvent('BRAKE')">Mark Brake</button>
+      </div>
+    </div>
+  </section>
 
   <script src="script.js"></script>
 </body>
