@@ -241,18 +241,22 @@ function checkNearbyDangerZones(lat, lng) {
           showPopup("⚠️ Approaching Risk Zone", "#ff6b6b")
           speak("Warning approaching risk zone")
           vibrate("hard")
+          updateInsights("Warning", "Risk Zone", "Brake Hotspot")
         } else if (z.type === "ROUGH_ROAD") {
           showPopup("⚠️ Rough Road Ahead", "#845ef7")
           speak("Warning rough road ahead")
           vibrate("normal")
+          updateInsights("Warning", "Road Zone", "Rough Road")
         } else if (z.type === "ROAD_WORK") {
           showPopup("🚧 Possible Road Work Area", "#f59f00")
           speak("Warning possible road work area")
           vibrate("normal")
+          updateInsights("Warning", "Road Zone", "Possible Road Work")
         } else if (z.type === "POTHOLE") {
           showPopup("⚠️ Approaching Pothole Zone", "#845ef7")
           speak("Warning approaching pothole zone")
           vibrate("normal")
+          updateInsights("Warning", "Road Zone", "Pothole Area")
         }
       }
     } else if (dist > ALERT_RADIUS_METERS + 20) {
@@ -350,6 +354,17 @@ function logLatency(tag, startTime) {
   console.log(`${tag} latency: ${latency} ms`)
 }
 
+// ================= UI INSIGHTS =================
+function updateInsights(mode = "Ready", zone = "Normal", road = "Stable") {
+  const modeEl = document.getElementById("insightMode")
+  const zoneEl = document.getElementById("insightZone")
+  const roadEl = document.getElementById("insightRoad")
+
+  if (modeEl) modeEl.innerText = mode
+  if (zoneEl) zoneEl.innerText = zone
+  if (roadEl) roadEl.innerText = road
+}
+
 // ================= INIT =================
 window.onload = function () {
   chart = new Chart(document.getElementById("speedChart"), {
@@ -397,6 +412,7 @@ window.onload = function () {
   setPhonePosition(phonePosition)
   updateRecordingUI(false)
   updateSessionUI()
+  updateInsights("Ready", "Normal", "Stable")
 }
 
 // ================= START =================
@@ -436,6 +452,7 @@ function startRide() {
 
       updateRecordingUI(true)
       updateSessionUI()
+      updateInsights("Active", "Monitoring", "Stable")
 
       watchId = navigator.geolocation.watchPosition(
         updateSpeed,
@@ -476,11 +493,14 @@ function stopRide() {
 
   updateRecordingUI(false)
   updateSessionUI()
+  updateInsights("Idle", "Normal", "Stable")
 }
 
 // ================= ROAD CLASSIFIER =================
 function classifyRoadEvent(speed, dt, decel, speedDropShort) {
-  if (speed < MIN_SPEED_FOR_ROAD_EVENT) return { isPothole: false, isRoughRoad: false }
+  if (speed < MIN_SPEED_FOR_ROAD_EVENT) {
+    return { isPothole: false, isRoughRoad: false }
+  }
 
   const accelAbs = Math.abs(accelY)
 
@@ -661,6 +681,7 @@ function updateSpeed(pos) {
       showPopup("🕳 POTHOLE", "#845ef7")
       speak("Warning pothole detected")
       addPotholeZone(lat, lng)
+      updateInsights("Alert", "Road Hazard", "Pothole")
 
       L.circleMarker([lat, lng], {
         color: "purple",
@@ -689,6 +710,7 @@ function updateSpeed(pos) {
       showPopup("⚠️ ROUGH ROAD", "#6f42c1")
       speak("Warning rough road ahead")
       addRoughRoadZone(lat, lng)
+      updateInsights("Alert", "Road Hazard", "Rough Road")
 
       L.circleMarker([lat, lng], {
         color: "#6f42c1",
@@ -783,9 +805,11 @@ function logBrake(lat, lng, forcedType = null) {
     speak("Warning hard brake")
     triggerEffect()
     addDangerZone(lat, lng, "HARD_BRAKE")
+    updateInsights("Alert", "Risk Zone", "Harsh Braking")
   } else if (type === "NORMAL") {
     normalBrakes++
     showPopup("🟡 NORMAL BRAKE", "#ffd43b")
+    updateInsights("Active", "Caution", "Normal Brake")
   } else {
     slowBrakes++
     showPopup("🟢 SLOW", "#51cf66")
