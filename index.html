@@ -16,9 +16,17 @@
 
   <header>
     <h1>🏍 MOTOSAFE</h1>
+    <div class="hero-subtitle">Real-time Motorcycle Safety Dashboard</div>
+
     <div class="recording-wrap">
       <span class="record-dot"></span>
       <span id="recordText">IDLE</span>
+    </div>
+
+    <div class="system-chip-row">
+      <span class="system-chip">Live Sensor Feed</span>
+      <span class="system-chip">GPS Tracking</span>
+      <span class="system-chip">Risk Detection</span>
     </div>
   </header>
 
@@ -26,6 +34,7 @@
 
   <!-- CONTROL CARD -->
   <section class="card">
+    <div class="section-title">Ride Control</div>
     <div class="button-group">
       <button class="start" onclick="startRide()">Start</button>
       <button class="stop" onclick="stopRide()">Stop</button>
@@ -35,14 +44,16 @@
   </section>
 
   <!-- HERO CARD -->
-  <section class="card">
+  <section class="card hero-card">
+    <div class="section-title">Live Ride Status</div>
+
     <div class="hero-container">
       <div class="speed-unit">CURRENT SPEED</div>
       <span id="speed">0.0</span>
       <div class="speed-unit">km/h</div>
     </div>
 
-    <div class="summary-row" style="text-align:center; margin-top: 8px;">
+    <div class="summary-row session-row" style="text-align:center; margin-top: 8px;">
       Session: <span id="sessionId">-</span> |
       Duration: <span id="duration">0</span>s |
       Distance: <span id="distanceRide">0.00</span> km
@@ -68,8 +79,30 @@
     </div>
   </section>
 
+  <!-- QUICK INSIGHTS -->
+  <section class="card">
+    <div class="section-title">Quick Insights</div>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-label">System Mode</div>
+        <div class="insight-value" id="insightMode">Ready</div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-label">Current Zone</div>
+        <div class="insight-value" id="insightZone">Normal</div>
+      </div>
+
+      <div class="insight-card">
+        <div class="insight-label">Road Condition</div>
+        <div class="insight-value" id="insightRoad">Stable</div>
+      </div>
+    </div>
+  </section>
+
   <!-- SUMMARY CARD -->
   <section class="card">
+    <div class="section-title">Ride Summary</div>
     <div class="stats-grid">
       <div class="stat-item">
         <div class="risk-label">TOTAL BRAKES</div>
@@ -99,22 +132,32 @@
 
   <!-- MAP CARD -->
   <section class="card">
-    <div class="risk-label" style="margin-bottom:10px;">LIVE MAP</div>
+    <div class="section-title">Risk Map</div>
+
+    <div class="map-meta">
+      <span class="map-tag red">Hard Brake</span>
+      <span class="map-tag purple">Rough Road</span>
+      <span class="map-tag orange">Possible Road Work</span>
+      <span class="map-tag blue">Live Route</span>
+    </div>
+
     <div id="map"></div>
   </section>
 
   <!-- CHARTS CARD -->
   <section class="card">
-    <div class="risk-label" style="margin-bottom:10px;">SPEED TREND</div>
+    <div class="section-title">Speed Trend</div>
+    <div class="chart-meta">Live speed changes during the current session</div>
     <canvas id="speedChart"></canvas>
   </section>
 
   <section class="card">
-    <div class="risk-label" style="margin-bottom:10px;">DECELERATION TREND</div>
+    <div class="section-title">Deceleration Trend</div>
+    <div class="chart-meta">Detected braking intensity and sudden motion changes</div>
     <canvas id="decelChart"></canvas>
   </section>
 
-  <!-- OPTIONAL SESSION TOOLS (hidden by CSS if needed) -->
+  <!-- OPTIONAL SESSION TOOLS -->
   <section class="card session-tools">
     <div class="tool-block">
       <label>Phone Position</label>
