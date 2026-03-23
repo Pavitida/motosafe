@@ -50,7 +50,8 @@ let smoothAccel=0
 window.addEventListener("devicemotion",(e)=>{
   if(e.accelerationIncludingGravity){
     accelY=e.accelerationIncludingGravity.y||0
-    smoothAccel = smoothAccel*0.8 + accelY*0.2
+    // ✅ ปรับให้ไวขึ้นจากเดิม
+    smoothAccel = smoothAccel*0.5 + accelY*0.5
   }
 })
 
@@ -106,6 +107,28 @@ function speak(text){
     msg.pitch=1
     speechSynthesis.speak(msg)
   }
+}
+
+// ================= REAL BRAKE LOGIC ADD =================
+const BRAKE_THRESHOLD = 2.8
+const HARD_BRAKE_THRESHOLD = 4.0
+const MIN_SPEED_FOR_BRAKE = 15
+const MIN_SPEED_DROP = 6
+const BRAKE_WINDOW_MS = 1200
+const POTHOLE_THRESHOLD = 4.5
+
+let brakeFrames = 0
+let hardBrakeFrames = 0
+let brakeWindowStartSpeed = 0
+let brakeWindowStartTime = 0
+let brakeConfirmedType = null
+
+function resetBrakeWindow(now,speed){
+  brakeFrames = 0
+  hardBrakeFrames = 0
+  brakeWindowStartTime = now
+  brakeWindowStartSpeed = speed
+  brakeConfirmedType = null
 }
 
 // ================= INIT =================
@@ -180,6 +203,9 @@ function startRide(){
 
     currentLat=pos.coords.latitude
     currentLng=pos.coords.longitude
+
+    // ✅ reset brake logic
+    resetBrakeWindow(Date.now(),0)
 
     // reset route
     routePoints=[]
@@ -306,42 +332,105 @@ function updateSpeed(pos){
     let gpsDecel = -(dv/dt)
     let decel = Math.max(sensorDecel, gpsDecel)
 
-    // FILTER
-    if(speed < 8) return
-    if(Math.abs(sensorDecel) < 0.8 && Math.abs(gpsDecel) < 0.8) return
+    // FILTER พื้นฐาน
+    if(speed < 8) {
+      lastSpeed=speed
+      lastTime=now
+      return
+    }
+
+    if(Math.abs(sensorDecel) < 0.6 && Math.abs(gpsDecel) < 0.6){
+      lastSpeed=speed
+      lastTime=now
+      return
+    }
 
     decelBuffer.push(decel)
-    if(decelBuffer.length > 5) decelBuffer.shift()
+    if(decelBuffer.length > 4) decelBuffer.shift()
     decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 
-    let isPothole = (decel > 6 && dt < 0.15 && speed > 12)
+    // ✅ pothole = spike สั้น + ความเร็วไม่ตกมาก
+    let speedDropShort = Math.max(0, lastSpeed - speed)
+    let isPothole = (
+      Math.abs(accelY) > POTHOLE_THRESHOLD &&
+      dt < 0.20 &&
+      speed > 12 &&
+      speedDropShort < 3
+    )
 
-    if(decel < 1.5 && !isPothole) return
+    if(decel < 1.2 && !isPothole){
+      lastSpeed=speed
+      lastTime=now
+      return
+    }
 
-    // LABEL
+    // LABEL เบื้องต้น
     let label="CRUISE"
-    if(decel > 5) label="HARD_BRAKE"
-    else if(decel > 2) label="BRAKE"
+    if(decel > HARD_BRAKE_THRESHOLD) label="HARD_BRAKE"
+    else if(decel > BRAKE_THRESHOLD) label="BRAKE"
     else if(speed < 5) label="STOP"
 
     // PEAK
     if(decel>peakDecel) peakDecel=decel
     document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
-    // BRAKE
-    if(!isPothole){
-      if(decel>2){
-        if(!brakeStart){
-          brakeStart=now
-          brakeDistance=0
-        }
-        brakeDistance+=speed*dt/3600
+    // ================= REAL BRAKE DETECTION =================
+    if(speed > MIN_SPEED_FOR_BRAKE){
+
+      if(brakeWindowStartTime === 0){
+        resetBrakeWindow(now, speed)
+      }
+
+      if((now - brakeWindowStartTime) > BRAKE_WINDOW_MS){
+        resetBrakeWindow(now, speed)
+      }
+
+      if(decel > BRAKE_THRESHOLD){
+        brakeFrames++
       }else{
+        brakeFrames = Math.max(0, brakeFrames - 1)
+      }
+
+      if(decel > HARD_BRAKE_THRESHOLD){
+        hardBrakeFrames++
+      }else{
+        hardBrakeFrames = Math.max(0, hardBrakeFrames - 1)
+      }
+
+      let speedDrop = Math.max(0, brakeWindowStartSpeed - speed)
+
+      if(!isPothole){
+        // เปิด brake phase เมื่อเริ่มมี decel ต่อเนื่อง
+        if((brakeFrames >= 2 || hardBrakeFrames >= 2) && !brakeStart){
+          brakeStart = now
+          brakeDistance = 0
+        }
+
         if(brakeStart){
-          logBrake(lat,lng)
-          brakeStart=null
+          brakeDistance += speed*dt/3600
+        }
+
+        // confirm ประเภทเบรก
+        if(hardBrakeFrames >= 2 && speedDrop >= (MIN_SPEED_DROP + 2)){
+          brakeConfirmedType = "HARD"
+        }else if(brakeFrames >= 2 && speedDrop >= MIN_SPEED_DROP){
+          if(brakeConfirmedType !== "HARD"){
+            brakeConfirmedType = "NORMAL"
+          }
+        }
+
+        // จบ brake phase เมื่อ decel ลดลง
+        if(brakeStart && decel < 1.5){
+          if(brakeConfirmedType){
+            logBrake(lat,lng,brakeConfirmedType)
+          }
+          brakeStart = null
+          resetBrakeWindow(now, speed)
         }
       }
+
+    }else{
+      resetBrakeWindow(now, speed)
     }
 
     // POTHOLE
@@ -360,6 +449,7 @@ function updateSpeed(pos){
         timestamp:now,
         event:"pothole",
         decel:decel,
+        accelY:accelY,
         lat:lat,
         lng:lng,
         label:"POTHOLE"
@@ -395,6 +485,9 @@ function updateSpeed(pos){
       speed: speed,
       acceleration: acceleration,
       deceleration: decel,
+      accelY: accelY,
+      sensorDecel: sensorDecel,
+      gpsDecel: gpsDecel,
       lat: lat,
       lng: lng,
       totalDistance: totalDistance,
@@ -409,24 +502,37 @@ function updateSpeed(pos){
 }
 
 // ================= BRAKE EVENT =================
-function logBrake(lat,lng){
+function logBrake(lat,lng,forcedType=null){
 
   totalBrakes++
 
   let type="SLOW"
   let color="green"
 
-  if(peakDecel > 5){
+  if(forcedType === "HARD"){
     type="HARD"
     color="red"
+  }else if(forcedType === "NORMAL"){
+    type="NORMAL"
+    color="yellow"
+  }else{
+    if(peakDecel > HARD_BRAKE_THRESHOLD){
+      type="HARD"
+      color="red"
+    }
+    else if(peakDecel > BRAKE_THRESHOLD){
+      type="NORMAL"
+      color="yellow"
+    }
+  }
+
+  if(type==="HARD"){
     hardBrakes++
     showPopup("🔴 HARD BRAKE","#ff4d4d")
     speak("Warning hard brake")
     triggerEffect("hard")
   }
-  else if(peakDecel > 2){
-    type="NORMAL"
-    color="yellow"
+  else if(type==="NORMAL"){
     normalBrakes++
     showPopup("🟡 NORMAL BRAKE","#ffd43b")
   }
@@ -496,6 +602,7 @@ function logBrake(lat,lng){
   updateSummary()
 
   peakDecel=0
+  brakeConfirmedType = null
 }
 
 // ================= SUMMARY =================
@@ -512,10 +619,10 @@ function updateSummary(){
 // ================= CSV =================
 function exportCSV(){
 
-  let csv="sessionId,phonePosition,timestamp,time,duration,speed,acceleration,deceleration,lat,lng,totalDistance,event,type,risk,style,peakDecel,distance,label\n"
+  let csv="sessionId,phonePosition,timestamp,time,duration,speed,acceleration,deceleration,accelY,sensorDecel,gpsDecel,lat,lng,totalDistance,event,type,risk,style,peakDecel,distance,label\n"
 
   dataset.forEach(d=>{
-    csv+=`${d.sessionId||""},${d.phonePosition||""},${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.lat||""},${d.lng||""},${d.totalDistance||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""},${d.label||""}\n`
+    csv+=`${d.sessionId||""},${d.phonePosition||""},${d.timestamp||""},${d.time||""},${d.duration||""},${d.speed||""},${d.acceleration||""},${d.deceleration||""},${d.accelY||""},${d.sensorDecel||""},${d.gpsDecel||""},${d.lat||""},${d.lng||""},${d.totalDistance||""},${d.event||""},${d.type||""},${d.risk||""},${d.style||""},${d.peakDecel||""},${d.distance||""},${d.label||""}\n`
   })
 
   let blob=new Blob([csv])
