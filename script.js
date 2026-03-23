@@ -25,23 +25,147 @@ let heatLayer=null
 
 let rideStartTime=null
 
-// ✅ เพิ่ม: current position + route
+// ✅ current position + route
 let currentMarker=null
 let routePoints=[]
 let routeLine=null
 
-// ✅ เพิ่ม: เก็บตำแหน่งล่าสุด
+// ✅ latest position
 let currentLat=13.7563
 let currentLng=100.5018
 
-// ✅ เพิ่ม: ทำ speed ให้ลื่นขึ้น
+// ✅ smooth speed UI
 let smoothSpeed=0
 
-// ✅ เพิ่ม: total distance / session / phone / voice
+// ✅ total distance / session / phone / voice
 let totalDistance=0
 let currentSessionId="-"
 let phonePosition="handlebar"
 let lastVoiceTime=0
+
+// ================= REAL BRAKE TUNING =================
+const BRAKE_THRESHOLD = 2.8
+const HARD_BRAKE_THRESHOLD = 4.0
+const MIN_SPEED_FOR_BRAKE = 15
+const MIN_SPEED_DROP = 6
+const BRAKE_WINDOW_MS = 1200
+const POTHOLE_THRESHOLD = 4.5
+
+let brakeFrames = 0
+let hardBrakeFrames = 0
+let brakeWindowStartSpeed = 0
+let brakeWindowStartTime = 0
+let brakeConfirmedType = null
+
+function resetBrakeWindow(now,speed){
+  brakeFrames = 0
+  hardBrakeFrames = 0
+  brakeWindowStartTime = now
+  brakeWindowStartSpeed = speed
+  brakeConfirmedType = null
+}
+
+// ================= GOAL A ADD-ON =================
+let dangerZones = []
+let alertedZones = new Set()
+
+const ALERT_RADIUS_METERS = 60
+const ZONE_MERGE_METERS = 35
+
+function loadDangerZones(){
+  let saved = localStorage.getItem("moto_danger_zones")
+  if(saved){
+    dangerZones = JSON.parse(saved)
+  }
+}
+
+function saveDangerZones(){
+  localStorage.setItem("moto_danger_zones", JSON.stringify(dangerZones))
+}
+
+function toRad(deg){
+  return deg * Math.PI / 180
+}
+
+function getDistanceMeters(lat1,lng1,lat2,lng2){
+  const R = 6371000
+  const dLat = toRad(lat2-lat1)
+  const dLng = toRad(lng2-lng1)
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+    Math.sin(dLng/2) * Math.sin(dLng/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
+
+function addDangerZone(lat,lng,type){
+  let found = false
+
+  for(let i=0;i<dangerZones.length;i++){
+    let z = dangerZones[i]
+    let dist = getDistanceMeters(lat,lng,z.lat,z.lng)
+
+    if(dist <= ZONE_MERGE_METERS && z.type === type){
+      z.count += 1
+      z.lat = (z.lat + lat) / 2
+      z.lng = (z.lng + lng) / 2
+      z.updatedAt = Date.now()
+      found = true
+      break
+    }
+  }
+
+  if(!found){
+    dangerZones.push({
+      id: "zone_" + Date.now() + "_" + Math.floor(Math.random()*1000),
+      lat: lat,
+      lng: lng,
+      type: type,
+      count: 1,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    })
+  }
+
+  saveDangerZones()
+}
+
+function addPotholeZone(lat,lng){
+  addDangerZone(lat,lng,"POTHOLE")
+}
+
+function checkNearbyDangerZones(lat,lng){
+  for(let i=0;i<dangerZones.length;i++){
+    let z = dangerZones[i]
+    let dist = getDistanceMeters(lat,lng,z.lat,z.lng)
+
+    if(dist <= ALERT_RADIUS_METERS){
+      if(!alertedZones.has(z.id)){
+        alertedZones.add(z.id)
+
+        if(z.type === "HARD_BRAKE"){
+          showPopup("⚠️ Approaching Brake Risk Zone","#ff6b6b")
+          speak("Warning approaching brake risk zone")
+          vibrate("hard")
+        }else if(z.type === "POTHOLE"){
+          showPopup("⚠️ Approaching Pothole Zone","#845ef7")
+          speak("Warning approaching pothole zone")
+          vibrate("normal")
+        }
+      }
+    }else{
+      if(dist > ALERT_RADIUS_METERS + 20){
+        alertedZones.delete(z.id)
+      }
+    }
+  }
+}
+
+function logLatency(tag,startTime){
+  const latency = Date.now() - startTime
+  console.log(`${tag} latency: ${latency} ms`)
+}
 
 // ================= SENSOR =================
 let accelY=0
@@ -50,7 +174,6 @@ let smoothAccel=0
 window.addEventListener("devicemotion",(e)=>{
   if(e.accelerationIncludingGravity){
     accelY=e.accelerationIncludingGravity.y||0
-    // ✅ ปรับให้ไวขึ้นจากเดิม
     smoothAccel = smoothAccel*0.5 + accelY*0.5
   }
 })
@@ -109,28 +232,6 @@ function speak(text){
   }
 }
 
-// ================= REAL BRAKE LOGIC ADD =================
-const BRAKE_THRESHOLD = 2.8
-const HARD_BRAKE_THRESHOLD = 4.0
-const MIN_SPEED_FOR_BRAKE = 15
-const MIN_SPEED_DROP = 6
-const BRAKE_WINDOW_MS = 1200
-const POTHOLE_THRESHOLD = 4.5
-
-let brakeFrames = 0
-let hardBrakeFrames = 0
-let brakeWindowStartSpeed = 0
-let brakeWindowStartTime = 0
-let brakeConfirmedType = null
-
-function resetBrakeWindow(now,speed){
-  brakeFrames = 0
-  hardBrakeFrames = 0
-  brakeWindowStartTime = now
-  brakeWindowStartSpeed = speed
-  brakeConfirmedType = null
-}
-
 // ================= INIT =================
 window.onload=function(){
 
@@ -155,22 +256,20 @@ window.onload=function(){
   map=L.map('map').setView([13.7563,100.5018],15)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
-  // heatmap
   heatLayer = L.heatLayer(heatPoints,{radius:25,blur:15,maxZoom:17}).addTo(map)
 
-  // route line
   routeLine = L.polyline(routePoints,{
     color:"#a5d8ff",
     weight:4,
     opacity:0.8
   }).addTo(map)
 
-  // recover
   let saved=localStorage.getItem("moto_dataset")
   if(saved){
     dataset=JSON.parse(saved)
   }
 
+  loadDangerZones()
   setPhonePosition(phonePosition)
   updateRecordingUI(false)
   updateSessionUI()
@@ -191,7 +290,6 @@ function startRide(){
     rideStartTime=Date.now()
     currentSessionId=generateSessionId()
 
-    // reset ต่อรอบ
     lastSpeed=0
     lastTime=0
     peakDecel=0
@@ -204,10 +302,8 @@ function startRide(){
     currentLat=pos.coords.latitude
     currentLng=pos.coords.longitude
 
-    // ✅ reset brake logic
     resetBrakeWindow(Date.now(),0)
 
-    // reset route
     routePoints=[]
     if(routeLine){
       routeLine.setLatLngs(routePoints)
@@ -247,7 +343,7 @@ function stopRide(){
   }
 
   if(brakeStart!==null){
-    logBrake(currentLat,currentLng)
+    logBrake(currentLat,currentLng,brakeConfirmedType || "NORMAL")
     brakeStart=null
   }
 
@@ -267,6 +363,8 @@ function showPopup(text,color){
 // ================= UPDATE =================
 function updateSpeed(pos){
 
+  const startTime = Date.now()
+
   if(!watching)return
 
   let lat=pos.coords.latitude
@@ -277,7 +375,8 @@ function updateSpeed(pos){
 
   if(map) map.panTo([lat,lng],{animate:true,duration:0.5})
 
-  // current marker
+  checkNearbyDangerZones(lat,lng)
+
   if(currentMarker){
     currentMarker.setLatLng([lat,lng])
   }else{
@@ -289,7 +388,6 @@ function updateSpeed(pos){
     }).addTo(map).bindPopup("Current Position")
   }
 
-  // route line
   routePoints.push([lat,lng])
   if(routeLine){
     routeLine.setLatLngs(routePoints)
@@ -323,25 +421,24 @@ function updateSpeed(pos){
     let dv=speed-lastSpeed
     let acceleration = dv/dt
 
-    // เพิ่มระยะทาง
     totalDistance += speed*dt/3600
     updateSessionUI()
 
-    // SMART DECEL
     let sensorDecel = -smoothAccel
     let gpsDecel = -(dv/dt)
     let decel = Math.max(sensorDecel, gpsDecel)
 
-    // FILTER พื้นฐาน
-    if(speed < 8) {
+    if(speed < 8){
       lastSpeed=speed
       lastTime=now
+      logLatency("updateSpeed", startTime)
       return
     }
 
     if(Math.abs(sensorDecel) < 0.6 && Math.abs(gpsDecel) < 0.6){
       lastSpeed=speed
       lastTime=now
+      logLatency("updateSpeed", startTime)
       return
     }
 
@@ -349,7 +446,6 @@ function updateSpeed(pos){
     if(decelBuffer.length > 4) decelBuffer.shift()
     decel = decelBuffer.reduce((a,b)=>a+b,0)/decelBuffer.length
 
-    // ✅ pothole = spike สั้น + ความเร็วไม่ตกมาก
     let speedDropShort = Math.max(0, lastSpeed - speed)
     let isPothole = (
       Math.abs(accelY) > POTHOLE_THRESHOLD &&
@@ -361,16 +457,15 @@ function updateSpeed(pos){
     if(decel < 1.2 && !isPothole){
       lastSpeed=speed
       lastTime=now
+      logLatency("updateSpeed", startTime)
       return
     }
 
-    // LABEL เบื้องต้น
     let label="CRUISE"
     if(decel > HARD_BRAKE_THRESHOLD) label="HARD_BRAKE"
     else if(decel > BRAKE_THRESHOLD) label="BRAKE"
     else if(speed < 5) label="STOP"
 
-    // PEAK
     if(decel>peakDecel) peakDecel=decel
     document.getElementById("peak").innerText=peakDecel.toFixed(2)
 
@@ -400,7 +495,7 @@ function updateSpeed(pos){
       let speedDrop = Math.max(0, brakeWindowStartSpeed - speed)
 
       if(!isPothole){
-        // เปิด brake phase เมื่อเริ่มมี decel ต่อเนื่อง
+
         if((brakeFrames >= 2 || hardBrakeFrames >= 2) && !brakeStart){
           brakeStart = now
           brakeDistance = 0
@@ -410,7 +505,6 @@ function updateSpeed(pos){
           brakeDistance += speed*dt/3600
         }
 
-        // confirm ประเภทเบรก
         if(hardBrakeFrames >= 2 && speedDrop >= (MIN_SPEED_DROP + 2)){
           brakeConfirmedType = "HARD"
         }else if(brakeFrames >= 2 && speedDrop >= MIN_SPEED_DROP){
@@ -419,7 +513,6 @@ function updateSpeed(pos){
           }
         }
 
-        // จบ brake phase เมื่อ decel ลดลง
         if(brakeStart && decel < 1.5){
           if(brakeConfirmedType){
             logBrake(lat,lng,brakeConfirmedType)
@@ -433,10 +526,11 @@ function updateSpeed(pos){
       resetBrakeWindow(now, speed)
     }
 
-    // POTHOLE
+    // ================= POTHOLE =================
     if(isPothole){
       showPopup("🕳 POTHOLE","#845ef7")
       speak("Warning pothole detected")
+      addPotholeZone(lat,lng)
 
       L.circleMarker([lat,lng],{
         color:"purple",
@@ -456,7 +550,7 @@ function updateSpeed(pos){
       })
     }
 
-    // CHART
+    // ================= CHART =================
     let t=new Date().toLocaleTimeString()
 
     chart.data.labels.push(t)
@@ -475,7 +569,7 @@ function updateSpeed(pos){
     chart.update()
     decelChart.update()
 
-    // DATASET
+    // ================= DATASET =================
     dataset.push({
       sessionId: currentSessionId,
       phonePosition: phonePosition,
@@ -498,7 +592,7 @@ function updateSpeed(pos){
 
   lastSpeed=speed
   lastTime=now
-
+  logLatency("updateSpeed", startTime)
 }
 
 // ================= BRAKE EVENT =================
@@ -531,6 +625,7 @@ function logBrake(lat,lng,forcedType=null){
     showPopup("🔴 HARD BRAKE","#ff4d4d")
     speak("Warning hard brake")
     triggerEffect("hard")
+    addDangerZone(lat,lng,"HARD_BRAKE")
   }
   else if(type==="NORMAL"){
     normalBrakes++
@@ -630,12 +725,12 @@ function exportCSV(){
   a.href=URL.createObjectURL(blob)
   a.download="ride_full_ai_dataset.csv"
   a.click()
-
 }
 
 // ================= CLEAR =================
 function clearData(){
   localStorage.removeItem("moto_dataset")
+  localStorage.removeItem("moto_danger_zones")
   location.reload()
 }
 
