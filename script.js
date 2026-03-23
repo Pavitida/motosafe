@@ -52,14 +52,12 @@ window.addEventListener("devicemotion", (e) => {
 })
 
 // ================= TUNING =================
-// เบรกจริง
 const BRAKE_THRESHOLD = 2.8
 const HARD_BRAKE_THRESHOLD = 4.0
 const MIN_SPEED_FOR_BRAKE = 15
 const MIN_SPEED_DROP = 6
 const BRAKE_WINDOW_MS = 1200
 
-// ถนนขรุขระ / หลุม
 const MIN_SPEED_FOR_ROAD_EVENT = 10
 const ROUGH_ROAD_ACCEL_THRESHOLD = 2.8
 const POTHOLE_THRESHOLD = 4.2
@@ -69,7 +67,6 @@ const ROUGH_ROAD_REPEAT_MS = 1800
 
 let lastRoadEventTime = 0
 
-// risk zone
 const ALERT_RADIUS_METERS = 60
 const ZONE_MERGE_METERS = 35
 
@@ -86,6 +83,76 @@ function resetBrakeWindow(now, speed) {
   brakeWindowStartTime = now
   brakeWindowStartSpeed = speed
   brakeConfirmedType = null
+}
+
+// ================= SOUND FX =================
+let audioCtx = null
+let audioReady = false
+let lastSfxTime = 0
+
+function initSound(){
+  try{
+    if(!audioCtx){
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext
+      if(!AudioContextClass) return
+      audioCtx = new AudioContextClass()
+    }
+
+    if(audioCtx.state === "suspended"){
+      audioCtx.resume()
+    }
+
+    audioReady = true
+  }catch(e){
+    console.log("Audio init error:", e)
+  }
+}
+
+function playTone(freq = 880, duration = 0.12, type = "sine", volume = 0.03, startDelay = 0){
+  if(!audioReady || !audioCtx) return
+
+  const now = audioCtx.currentTime + startDelay
+  const osc = audioCtx.createOscillator()
+  const gain = audioCtx.createGain()
+
+  osc.type = type
+  osc.frequency.setValueAtTime(freq, now)
+
+  gain.gain.setValueAtTime(0.0001, now)
+  gain.gain.exponentialRampToValueAtTime(volume, now + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
+
+  osc.connect(gain)
+  gain.connect(audioCtx.destination)
+
+  osc.start(now)
+  osc.stop(now + duration + 0.03)
+}
+
+function playChime(kind = "start"){
+  const now = Date.now()
+  if(now - lastSfxTime < 250) return
+  lastSfxTime = now
+
+  if(!audioReady) return
+
+  if(kind === "start"){
+    playTone(740, 0.10, "sine", 0.025, 0.00)
+    playTone(988, 0.12, "sine", 0.020, 0.08)
+    playTone(1318, 0.14, "triangle", 0.016, 0.16)
+  }
+  else if(kind === "alert"){
+    playTone(880, 0.10, "triangle", 0.028, 0.00)
+    playTone(660, 0.12, "triangle", 0.022, 0.08)
+  }
+  else if(kind === "soft-alert"){
+    playTone(1046, 0.08, "sine", 0.018, 0.00)
+    playTone(1244, 0.09, "sine", 0.014, 0.06)
+  }
+  else if(kind === "export"){
+    playTone(784, 0.08, "sine", 0.020, 0.00)
+    playTone(1174, 0.10, "triangle", 0.016, 0.07)
+  }
 }
 
 // ================= DANGER ZONES =================
@@ -241,21 +308,25 @@ function checkNearbyDangerZones(lat, lng) {
           showPopup("⚠️ Approaching Risk Zone", "#ff6b6b")
           speak("Warning approaching risk zone")
           vibrate("hard")
+          playChime("alert")
           updateInsights("Warning", "Risk Zone", "Brake Hotspot")
         } else if (z.type === "ROUGH_ROAD") {
           showPopup("⚠️ Rough Road Ahead", "#845ef7")
           speak("Warning rough road ahead")
           vibrate("normal")
+          playChime("soft-alert")
           updateInsights("Warning", "Road Zone", "Rough Road")
         } else if (z.type === "ROAD_WORK") {
           showPopup("🚧 Possible Road Work Area", "#f59f00")
           speak("Warning possible road work area")
           vibrate("normal")
+          playChime("soft-alert")
           updateInsights("Warning", "Road Zone", "Possible Road Work")
         } else if (z.type === "POTHOLE") {
           showPopup("⚠️ Approaching Pothole Zone", "#845ef7")
           speak("Warning approaching pothole zone")
           vibrate("normal")
+          playChime("soft-alert")
           updateInsights("Warning", "Road Zone", "Pothole Area")
         }
       }
@@ -418,6 +489,9 @@ window.onload = function () {
 // ================= START =================
 function startRide() {
   if (watching) return
+
+  initSound()
+  playChime("start")
 
   if (
     typeof DeviceMotionEvent !== "undefined" &&
@@ -680,6 +754,7 @@ function updateSpeed(pos) {
 
       showPopup("🕳 POTHOLE", "#845ef7")
       speak("Warning pothole detected")
+      playChime("alert")
       addPotholeZone(lat, lng)
       updateInsights("Alert", "Road Hazard", "Pothole")
 
@@ -709,6 +784,7 @@ function updateSpeed(pos) {
 
       showPopup("⚠️ ROUGH ROAD", "#6f42c1")
       speak("Warning rough road ahead")
+      playChime("soft-alert")
       addRoughRoadZone(lat, lng)
       updateInsights("Alert", "Road Hazard", "Rough Road")
 
@@ -803,12 +879,14 @@ function logBrake(lat, lng, forcedType = null) {
     hardBrakes++
     showPopup("🔴 HARD BRAKE", "#ff4d4d")
     speak("Warning hard brake")
+    playChime("alert")
     triggerEffect()
     addDangerZone(lat, lng, "HARD_BRAKE")
     updateInsights("Alert", "Risk Zone", "Harsh Braking")
   } else if (type === "NORMAL") {
     normalBrakes++
     showPopup("🟡 NORMAL BRAKE", "#ffd43b")
+    playChime("soft-alert")
     updateInsights("Active", "Caution", "Normal Brake")
   } else {
     slowBrakes++
@@ -894,6 +972,9 @@ function updateSummary() {
 
 // ================= CSV =================
 function exportCSV() {
+  initSound()
+  playChime("export")
+
   let csv =
     "sessionId,phonePosition,timestamp,time,duration,speed,acceleration,deceleration,accelY,sensorDecel,gpsDecel,lat,lng,totalDistance,event,type,risk,style,peakDecel,distance,label\n"
 
