@@ -1282,3 +1282,241 @@ h1::before{
     filter: blur(0.6px);
   }
 }
+/* ================= ANGEL ACTIVE MODE ================= */
+body.recording{
+  background-size: 240% 240%;
+}
+
+body.recording::before{
+  opacity: 0.8;
+  animation-duration: 14s;
+}
+
+body.recording::after{
+  opacity: 1;
+  filter: blur(30px);
+  animation-duration: 12s;
+}
+
+body.recording header{
+  transform: translateY(-1px);
+}
+
+body.recording .hero-subtitle{
+  color: rgba(255,255,255,0.98);
+  text-shadow:
+    0 0 14px rgba(255,255,255,0.18),
+    0 0 24px rgba(165,216,255,0.18);
+}
+
+body.recording .system-chip{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow:
+    0 0 14px rgba(255,255,255,0.05),
+    0 0 18px rgba(165,216,255,0.08);
+}
+
+body.recording .card{
+  box-shadow:
+    0 16px 36px rgba(0,0,0,0.18),
+    0 0 32px rgba(165,216,255,0.14),
+    0 0 70px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.14);
+}
+
+body.recording .hero-card{
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.16),
+    0 0 40px rgba(165,216,255,0.20),
+    0 0 90px rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+body.recording .hero-card::before{
+  opacity: 1;
+  filter: blur(34px);
+}
+
+body.recording #speed{
+  animation: angelSpeedAuraStrong 2.4s ease-in-out infinite;
+}
+
+@keyframes angelSpeedAuraStrong{
+  0%,100%{
+    text-shadow:
+      0 0 24px rgba(165,216,255,0.42),
+      0 0 46px rgba(255,255,255,0.10),
+      0 0 80px rgba(255,255,255,0.04);
+  }
+  50%{
+    text-shadow:
+      0 0 34px rgba(255,255,255,0.82),
+      0 0 62px rgba(165,216,255,0.26),
+      0 0 95px rgba(255,255,255,0.08);
+  }
+}
+
+body.recording .record-dot{
+  box-shadow:
+    0 0 14px rgba(255,77,77,0.95),
+    0 0 28px rgba(255,77,77,0.25);
+}
+
+body.recording .insight-card{
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.14),
+    0 0 16px rgba(165,216,255,0.10);
+}
+
+body.recording #map,
+body.recording canvas{
+  box-shadow:
+    0 16px 32px rgba(0,0,0,0.20),
+    0 0 26px rgba(165,216,255,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* active halo */
+body.recording .hero-card::after{
+  content:"";
+  position:absolute;
+  inset:auto -20% -35% -20%;
+  height:160px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.10), transparent 65%);
+  filter: blur(22px);
+  pointer-events:none;
+  animation: activeHalo 4s ease-in-out infinite;
+}
+
+@keyframes activeHalo{
+  0%,100%{
+    opacity:0.45;
+    transform: scale(1);
+  }
+  50%{
+    opacity:0.9;
+    transform: scale(1.06);
+  }
+}
+/* ================= ANGEL ACTIVE MODE ================= */
+body.recording{
+  background-size: 240% 240%;
+}
+
+body.recording::before{
+  opacity: 0.8;
+  animation-duration: 14s;
+}
+
+body.recording::after{
+  opacity: 1;
+  filter: blur(30px);
+  animation-duration: 12s;
+}
+
+body.recording header{
+  transform: translateY(-1px);
+}
+
+body.recording .hero-subtitle{
+  color: rgba(255,255,255,0.98);
+  text-shadow:
+    0 0 14px rgba(255,255,255,0.18),
+    0 0 24px rgba(165,216,255,0.18);
+}
+
+body.recording .system-chip{
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.16);
+  box-shadow:
+    0 0 14px rgba(255,255,255,0.05),
+    0 0 18px rgba(165,216,255,0.08);
+}
+
+body.recording .card{
+  box-shadow:
+    0 16px 36px rgba(0,0,0,0.18),
+    0 0 32px rgba(165,216,255,0.14),
+    0 0 70px rgba(255,255,255,0.04),
+    inset 0 1px 0 rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.14);
+}
+
+body.recording .hero-card{
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.16),
+    0 0 40px rgba(165,216,255,0.20),
+    0 0 90px rgba(255,255,255,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+body.recording .hero-card::before{
+  opacity: 1;
+  filter: blur(34px);
+}
+
+body.recording #speed{
+  animation: angelSpeedAuraStrong 2.4s ease-in-out infinite;
+}
+
+@keyframes angelSpeedAuraStrong{
+  0%,100%{
+    text-shadow:
+      0 0 24px rgba(165,216,255,0.42),
+      0 0 46px rgba(255,255,255,0.10),
+      0 0 80px rgba(255,255,255,0.04);
+  }
+  50%{
+    text-shadow:
+      0 0 34px rgba(255,255,255,0.82),
+      0 0 62px rgba(165,216,255,0.26),
+      0 0 95px rgba(255,255,255,0.08);
+  }
+}
+
+body.recording .record-dot{
+  box-shadow:
+    0 0 14px rgba(255,77,77,0.95),
+    0 0 28px rgba(255,77,77,0.25);
+}
+
+body.recording .insight-card{
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.14),
+    0 0 16px rgba(165,216,255,0.10);
+}
+
+body.recording #map,
+body.recording canvas{
+  box-shadow:
+    0 16px 32px rgba(0,0,0,0.20),
+    0 0 26px rgba(165,216,255,0.14),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* active halo */
+body.recording .hero-card::after{
+  content:"";
+  position:absolute;
+  inset:auto -20% -35% -20%;
+  height:160px;
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.10), transparent 65%);
+  filter: blur(22px);
+  pointer-events:none;
+  animation: activeHalo 4s ease-in-out infinite;
+}
+
+@keyframes activeHalo{
+  0%,100%{
+    opacity:0.45;
+    transform: scale(1);
+  }
+  50%{
+    opacity:0.9;
+    transform: scale(1.06);
+  }
+}
