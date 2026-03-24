@@ -127,14 +127,17 @@
     <div id="map"></div>
   </section>
 
-  <details class="collapse-panel">
-    <summary>
-      <span class="collapse-kicker"></span>
-      <span class="collapse-text">Ride Recap</span>
-      <span class="collapse-icon">+</span>
+  <details class="lux-panel">
+    <summary class="lux-summary">
+      <div class="lux-accent"></div>
+      <div class="lux-copy">
+        <div class="lux-title">Ride Recap</div>
+        <div class="lux-sub">Session totals and braking overview</div>
+      </div>
+      <div class="lux-toggle">+</div>
     </summary>
 
-    <div class="collapse-body">
+    <div class="lux-body">
       <div class="stats-grid">
         <div class="stat-item">
           <div class="risk-label">Total brakes</div>
@@ -160,14 +163,17 @@
     </div>
   </details>
 
-  <details class="collapse-panel">
-    <summary>
-      <span class="collapse-kicker"></span>
-      <span class="collapse-text">Instant Insights</span>
-      <span class="collapse-icon">+</span>
+  <details class="lux-panel">
+    <summary class="lux-summary">
+      <div class="lux-accent"></div>
+      <div class="lux-copy">
+        <div class="lux-title">Instant Insights</div>
+        <div class="lux-sub">Current system, zone, and road condition</div>
+      </div>
+      <div class="lux-toggle">+</div>
     </summary>
 
-    <div class="collapse-body">
+    <div class="lux-body">
       <div class="insight-grid">
         <div class="insight-card">
           <div class="insight-label">System mode</div>
@@ -185,14 +191,17 @@
     </div>
   </details>
 
-  <details class="collapse-panel">
-    <summary>
-      <span class="collapse-kicker"></span>
-      <span class="collapse-text">Proactive Guard</span>
-      <span class="collapse-icon">+</span>
+  <details class="lux-panel">
+    <summary class="lux-summary">
+      <div class="lux-accent"></div>
+      <div class="lux-copy">
+        <div class="lux-title">Proactive Guard</div>
+        <div class="lux-sub">Alerts, learned zones, and response timing</div>
+      </div>
+      <div class="lux-toggle">+</div>
     </summary>
 
-    <div class="collapse-body">
+    <div class="lux-body">
       <div class="insight-grid">
         <div class="insight-card">
           <div class="insight-label">Active alerts</div>
@@ -215,28 +224,32 @@
     </div>
   </details>
 
-  <details class="collapse-panel">
-    <summary>
-      <span class="collapse-kicker"></span>
-      <span class="collapse-text">Velocity Trace</span>
-      <span class="collapse-icon">+</span>
+  <details class="lux-panel">
+    <summary class="lux-summary">
+      <div class="lux-accent"></div>
+      <div class="lux-copy">
+        <div class="lux-title">Velocity Trace</div>
+        <div class="lux-sub">Live speed movement during the session</div>
+      </div>
+      <div class="lux-toggle">+</div>
     </summary>
 
-    <div class="collapse-body">
-      <div class="chart-note">Live speed changes during the current session</div>
+    <div class="lux-body">
       <canvas id="speedChart"></canvas>
     </div>
   </details>
 
-  <details class="collapse-panel">
-    <summary>
-      <span class="collapse-kicker"></span>
-      <span class="collapse-text">Brake Signature</span>
-      <span class="collapse-icon">+</span>
+  <details class="lux-panel">
+    <summary class="lux-summary">
+      <div class="lux-accent"></div>
+      <div class="lux-copy">
+        <div class="lux-title">Brake Signature</div>
+        <div class="lux-sub">Slow, normal, and hard braking intensity</div>
+      </div>
+      <div class="lux-toggle">+</div>
     </summary>
 
-    <div class="collapse-body">
-      <div class="chart-note">Green = slow, yellow = normal, red = hard brake</div>
+    <div class="lux-body">
       <canvas id="decelChart"></canvas>
     </div>
   </details>
