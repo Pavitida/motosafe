@@ -31,20 +31,12 @@
 
   <div id="popup"></div>
 
-  <section class="top-status-bar">
-    <div class="status-pill">
+  <section class="top-status-bar compact-status">
+    <div class="status-pill hero-pill">
       <div class="status-pill-label">Ride mode</div>
       <div class="status-pill-value" id="topRideMode">Idle</div>
     </div>
-    <div class="status-pill">
-      <div class="status-pill-label">GPS</div>
-      <div class="status-pill-value" id="topGpsStatus">Ready</div>
-    </div>
-    <div class="status-pill">
-      <div class="status-pill-label">Sensors</div>
-      <div class="status-pill-value" id="topSensorStatus">Waiting</div>
-    </div>
-    <div class="status-pill">
+    <div class="status-pill hero-pill">
       <div class="status-pill-label">Alert</div>
       <div class="status-pill-value" id="topAlertStatus">None</div>
     </div>
@@ -168,7 +160,7 @@
       <div class="lux-accent"></div>
       <div class="lux-copy">
         <div class="lux-title">Instant Insights</div>
-        <div class="lux-sub">Current system, zone, and road condition</div>
+        <div class="lux-sub">Current system, road, zone, and sensor state</div>
       </div>
       <div class="lux-toggle">+</div>
     </summary>
@@ -186,6 +178,14 @@
         <div class="insight-card">
           <div class="insight-label">Road condition</div>
           <div class="insight-value" id="insightRoad">Stable</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">GPS</div>
+          <div class="insight-value" id="topGpsStatus">Ready</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Sensors</div>
+          <div class="insight-value" id="topSensorStatus">Waiting</div>
         </div>
       </div>
     </div>
