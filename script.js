@@ -50,8 +50,9 @@ let smoothAccel = 0
 
 window.addEventListener("devicemotion", (e) => {
   if (e.accelerationIncludingGravity) {
-    accelY = e.accelerationIncludingGravity.y || 0
-    smoothAccel = smoothAccel * 0.45 + accelY * 0.55
+    const ay = e.accelerationIncludingGravity.y || 0
+    accelY = ay
+    smoothAccel = smoothAccel * 0.82 + ay * 0.18
   }
 })
 
@@ -59,6 +60,10 @@ window.addEventListener("devicemotion", (e) => {
 const BRAKE_THRESHOLD = 2.2
 const HARD_BRAKE_THRESHOLD = 3.8
 const SLOW_BRAKE_THRESHOLD = 1.2
+
+const MIN_MOVING_SPEED = 12
+const MIN_BRAKE_SPEED_DROP = 2.5
+const MIN_HARD_BRAKE_SPEED_DROP = 5.0
 
 const MIN_SPEED_FOR_BRAKE = 10
 const MIN_SPEED_DROP = 3.5
@@ -72,10 +77,12 @@ const ROAD_EVENT_MAX_DT = 0.25
 const POTHOLE_MAX_SPEED_DROP = 2.8
 const ROUGH_ROAD_REPEAT_MS = 1800
 
-let lastRoadEventTime = 0
-
 const ALERT_RADIUS_METERS = 60
 const ZONE_MERGE_METERS = 35
+const ALERT_COOLDOWN_MS = 1500
+
+let lastRoadEventTime = 0
+let lastBrakeAlertTime = 0
 
 // ================= BRAKE WINDOW =================
 let brakeFrames = 0
@@ -84,6 +91,8 @@ let brakeWindowStartSpeed = 0
 let brakeWindowStartTime = 0
 let brakeConfirmedType = null
 let brakeLiveShown = false
+let brakeCandidateFrames = 0
+let hardBrakeCandidateFrames = 0
 
 function resetBrakeWindow(now, speed) {
   brakeFrames = 0
@@ -92,6 +101,19 @@ function resetBrakeWindow(now, speed) {
   brakeWindowStartSpeed = speed
   brakeConfirmedType = null
   brakeLiveShown = false
+}
+
+function resetBrakeCandidates() {
+  brakeCandidateFrames = 0
+  hardBrakeCandidateFrames = 0
+}
+
+function canRaiseBrakeAlert() {
+  return Date.now() - lastBrakeAlertTime > ALERT_COOLDOWN_MS
+}
+
+function markBrakeAlertNow() {
+  lastBrakeAlertTime = Date.now()
 }
 
 // ================= SOUND FX =================
@@ -230,9 +252,7 @@ function renderDangerZones() {
       fillColor: color,
       fillOpacity: 0.18,
       weight: 2
-    })
-      .addTo(map)
-      .bindPopup(`${label}<br>Count: ${z.count}`)
+    }).addTo(map).bindPopup(`${label}<br>Count: ${z.count}`)
 
     dangerZoneMarkers.push(marker)
   })
@@ -373,6 +393,20 @@ function updateInsights(mode = "Ready", zone = "Normal", road = "Stable") {
   if (modeEl) modeEl.innerText = mode
   if (zoneEl) zoneEl.innerText = zone
   if (roadEl) roadEl.innerText = road
+
+  const heroBrakeState = document.getElementById("heroBrakeState")
+  const miniBrakeState = document.getElementById("miniBrakeState")
+  const miniRoadState = document.getElementById("miniRoadState")
+  const miniZoneState = document.getElementById("miniZoneState")
+  const topRideMode = document.getElementById("topRideMode")
+  const topAlertStatus = document.getElementById("topAlertStatus")
+
+  if (heroBrakeState) heroBrakeState.innerText = `${mode} • ${road}`
+  if (miniBrakeState) miniBrakeState.innerText = road.includes("Brake") ? road : zone
+  if (miniRoadState) miniRoadState.innerText = road
+  if (miniZoneState) miniZoneState.innerText = zone
+  if (topRideMode) topRideMode.innerText = mode
+  if (topAlertStatus) topAlertStatus.innerText = lastAlertType
 }
 
 function updateASummary() {
@@ -381,12 +415,14 @@ function updateASummary() {
   const latencyEl = document.getElementById("lastAlertLatency")
   const typeEl = document.getElementById("lastAlertType")
   const phoneEl = document.getElementById("phonePosText")
+  const topAlertStatus = document.getElementById("topAlertStatus")
 
   if (alertEl) alertEl.innerText = activeAlertCount
   if (zoneEl) zoneEl.innerText = dangerZones.length
   if (latencyEl) latencyEl.innerText = `${lastAlertLatencyMs} ms`
   if (typeEl) typeEl.innerText = lastAlertType
   if (phoneEl) phoneEl.innerText = phonePosition
+  if (topAlertStatus) topAlertStatus.innerText = lastAlertType
 }
 
 function recordAlertLatency(startTime, alertType) {
@@ -614,9 +650,7 @@ window.onload = function () {
       responsive: true,
       animation: false,
       plugins: {
-        legend: {
-          labels: { color: "rgba(255,255,255,0.85)" }
-        }
+        legend: { labels: { color: "rgba(255,255,255,0.85)" } }
       },
       scales: {
         x: {
@@ -680,9 +714,7 @@ window.onload = function () {
       responsive: true,
       animation: false,
       plugins: {
-        legend: {
-          labels: { color: "rgba(255,255,255,0.85)" }
-        }
+        legend: { labels: { color: "rgba(255,255,255,0.85)" } }
       },
       scales: {
         x: {
@@ -720,6 +752,11 @@ window.onload = function () {
   updateInsights("Ready", "Normal", "Stable")
   updateSummary()
   updateASummary()
+
+  const topGpsStatus = document.getElementById("topGpsStatus")
+  const topSensorStatus = document.getElementById("topSensorStatus")
+  if (topGpsStatus) topGpsStatus.innerText = "Ready"
+  if (topSensorStatus) topSensorStatus.innerText = "Active"
 }
 
 // ================= START =================
@@ -761,6 +798,7 @@ function startRide() {
       currentLng = pos.coords.longitude
 
       resetBrakeWindow(Date.now(), 0)
+      resetBrakeCandidates()
 
       routePoints = []
       if (routeLine) routeLine.setLatLngs(routePoints)
@@ -769,6 +807,11 @@ function startRide() {
       updateAngelMode(true)
       updateSessionUI()
       updateInsights("Angel Active", "Monitoring", "Stable")
+
+      const topGpsStatus = document.getElementById("topGpsStatus")
+      const topSensorStatus = document.getElementById("topSensorStatus")
+      if (topGpsStatus) topGpsStatus.innerText = "Tracking"
+      if (topSensorStatus) topSensorStatus.innerText = "Live"
 
       watchId = navigator.geolocation.watchPosition(
         updateSpeed,
@@ -807,6 +850,11 @@ function stopRide() {
   updateAngelMode(false)
   updateSessionUI()
   updateInsights("Idle", "Normal", "Stable")
+
+  const topGpsStatus = document.getElementById("topGpsStatus")
+  const topSensorStatus = document.getElementById("topSensorStatus")
+  if (topGpsStatus) topGpsStatus.innerText = "Paused"
+  if (topSensorStatus) topSensorStatus.innerText = "Waiting"
 }
 
 // ================= ROAD CLASSIFIER =================
@@ -891,7 +939,8 @@ function updateSpeed(pos) {
     let decel = Math.max(sensorDecel, gpsDecel)
     decel = clampDecel(decel)
 
-    if (speed < 6) {
+    if (speed < MIN_MOVING_SPEED) {
+      resetBrakeCandidates()
       lastSpeed = speed
       lastTime = now
       syncSystemMode()
@@ -936,28 +985,53 @@ function updateSpeed(pos) {
     if (decel > peakDecel) peakDecel = decel
     document.getElementById("peak").innerText = peakDecel.toFixed(2)
 
-    const quickBrakeDetected =
-      speed >= MIN_SPEED_FOR_BRAKE &&
+    const brakeLevel = getBrakeLevelFromDecel(decel)
+
+    const likelyPothole =
+      Math.abs(accelY) > POTHOLE_THRESHOLD &&
+      dt < ROAD_EVENT_MAX_DT &&
+      speedDropShort < 1.2
+
+    const likelyBrake =
+      speed >= MIN_MOVING_SPEED &&
+      !likelyPothole &&
       (
-        (decel >= HARD_BRAKE_THRESHOLD && speedDropShort >= 1.2) ||
-        (decel >= BRAKE_THRESHOLD && speedDropShort >= 0.8) ||
-        (decel >= SLOW_BRAKE_THRESHOLD && speedDropShort >= 0.4)
+        (brakeLevel === "SLOW" && speedDropShort >= 0.8) ||
+        (brakeLevel === "NORMAL" && speedDropShort >= MIN_BRAKE_SPEED_DROP) ||
+        (brakeLevel === "HARD" && speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP)
       )
 
-    const liveBrakeLevel = getBrakeLevelFromDecel(decel)
+    if (likelyBrake) {
+      if (brakeLevel === "HARD") {
+        hardBrakeCandidateFrames++
+        brakeCandidateFrames++
+      } else if (brakeLevel === "NORMAL") {
+        brakeCandidateFrames++
+        hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
+      } else if (brakeLevel === "SLOW") {
+        brakeCandidateFrames = Math.max(brakeCandidateFrames, 1)
+        hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
+      }
+    } else {
+      brakeCandidateFrames = Math.max(0, brakeCandidateFrames - 1)
+      hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
+    }
 
-    if (quickBrakeDetected && liveBrakeLevel !== "NONE" && !isPothole && !isRoughRoad) {
-      if (!brakeLiveShown) {
-        brakeLiveShown = true
-        triggerBrakeFlash(liveBrakeLevel)
-
-        if (liveBrakeLevel === "HARD") {
-          updateInsights("Alert", "Risk Zone", "Hard Brake")
-        } else if (liveBrakeLevel === "NORMAL") {
-          updateInsights("Active", "Brake", "Normal Brake")
-        } else if (liveBrakeLevel === "SLOW") {
-          updateInsights("Active", "Slowdown", "Slow Brake")
-        }
+    if (canRaiseBrakeAlert()) {
+      if (
+        hardBrakeCandidateFrames >= 2 &&
+        speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP
+      ) {
+        triggerBrakeFlash("HARD")
+        updateInsights("Alert", "Risk Zone", "Hard Brake")
+        markBrakeAlertNow()
+      } else if (
+        brakeCandidateFrames >= 2 &&
+        speedDropShort >= MIN_BRAKE_SPEED_DROP
+      ) {
+        triggerBrakeFlash("NORMAL")
+        updateInsights("Active", "Brake", "Normal Brake")
+        markBrakeAlertNow()
       }
     }
 
@@ -1085,8 +1159,6 @@ function updateSpeed(pos) {
 
     decelChart.data.labels.push(t)
     decelChart.data.datasets[0].data.push(decel)
-
-    const brakeLevel = getBrakeLevelFromDecel(decel)
     decelChart.data.datasets[1].data.push(brakeLevel === "SLOW" ? decel : null)
     decelChart.data.datasets[2].data.push(brakeLevel === "NORMAL" ? decel : null)
     decelChart.data.datasets[3].data.push(brakeLevel === "HARD" ? decel : null)
