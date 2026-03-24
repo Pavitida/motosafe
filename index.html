@@ -13,10 +13,9 @@
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 </head>
 <body>
-
   <header>
-    <h1>🏍 MOTOSAFE</h1>
-    <div class="hero-subtitle">Real-time Motorcycle Safety Dashboard</div>
+    <h1>MotoSafe</h1>
+    <div class="hero-subtitle">Motorcycle Safety Monitoring Dashboard</div>
 
     <div class="recording-wrap">
       <span class="record-dot"></span>
@@ -24,17 +23,35 @@
     </div>
 
     <div class="system-chip-row">
-      <span class="system-chip">Live Sensor Feed</span>
-      <span class="system-chip">GPS Tracking</span>
-      <span class="system-chip">Risk Detection</span>
+      <span class="system-chip">Real-time sensing</span>
+      <span class="system-chip">GPS tracking</span>
+      <span class="system-chip">Brake detection</span>
     </div>
   </header>
 
   <div id="popup"></div>
 
-  <!-- CONTROL CARD -->
+  <section class="top-status-bar">
+    <div class="status-pill">
+      <div class="status-pill-label">Ride mode</div>
+      <div class="status-pill-value" id="topRideMode">Idle</div>
+    </div>
+    <div class="status-pill">
+      <div class="status-pill-label">GPS</div>
+      <div class="status-pill-value" id="topGpsStatus">Ready</div>
+    </div>
+    <div class="status-pill">
+      <div class="status-pill-label">Sensors</div>
+      <div class="status-pill-value" id="topSensorStatus">Waiting</div>
+    </div>
+    <div class="status-pill">
+      <div class="status-pill-label">Alert</div>
+      <div class="status-pill-value" id="topAlertStatus">None</div>
+    </div>
+  </section>
+
   <section class="card">
-    <div class="section-title">Ride Control</div>
+    <div class="section-title">Ride controls</div>
     <div class="button-group">
       <button class="start" onclick="startRide()">Start</button>
       <button class="stop" onclick="stopRide()">Stop</button>
@@ -43,121 +60,160 @@
     </div>
   </section>
 
-  <!-- HERO CARD -->
   <section class="card hero-card">
-    <div class="section-title">Live Ride Status</div>
+    <div class="section-title">Ride status</div>
 
     <div class="hero-container">
-      <div class="speed-unit">CURRENT SPEED</div>
+      <div class="speed-unit">Current speed</div>
       <span id="speed">0.0</span>
       <div class="speed-unit">km/h</div>
     </div>
 
-    <div class="summary-row session-row" style="text-align:center; margin-top: 8px;">
+    <div class="hero-main-badge">
+      <span class="live-dot"></span>
+      <span id="heroBrakeState">Monitoring ride</span>
+    </div>
+
+    <div class="mini-grid">
+      <div class="mini-card">
+        <div class="mini-card-title">Brake state</div>
+        <div class="mini-card-value" id="miniBrakeState">Normal</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">Road state</div>
+        <div class="mini-card-value" id="miniRoadState">Stable</div>
+      </div>
+      <div class="mini-card">
+        <div class="mini-card-title">Zone state</div>
+        <div class="mini-card-value" id="miniZoneState">Clear</div>
+      </div>
+    </div>
+
+    <div class="summary-row session-row" style="text-align:center;">
       Session: <span id="sessionId">-</span> |
       Duration: <span id="duration">0</span>s |
       Distance: <span id="distanceRide">0.00</span> km
     </div>
 
-    <hr style="border:0;border-top:1px solid rgba(255,255,255,0.10);margin:16px 0;">
+    <hr class="soft-divider" />
 
     <div class="stats-grid">
       <div class="stat-item">
-        <div class="risk-label">PEAK DECEL</div>
+        <div class="risk-label">Peak decel</div>
         <div id="peak" class="stat-value">0</div>
       </div>
-
       <div class="stat-item">
-        <div class="risk-label">RISK LEVEL</div>
+        <div class="risk-label">Risk level</div>
         <div id="risk" class="stat-value">100</div>
       </div>
     </div>
 
     <div class="style-wrap">
-      <span class="speed-unit">STYLE:</span>
+      <span class="speed-unit">Style:</span>
       <strong id="style">SAFE</strong>
     </div>
   </section>
 
-  <!-- QUICK INSIGHTS -->
   <section class="card">
-    <div class="section-title">Quick Insights</div>
+    <div class="section-title">Overview</div>
     <div class="insight-grid">
       <div class="insight-card">
-        <div class="insight-label">System Mode</div>
+        <div class="insight-label">System mode</div>
         <div class="insight-value" id="insightMode">Ready</div>
       </div>
-
       <div class="insight-card">
-        <div class="insight-label">Current Zone</div>
+        <div class="insight-label">Current zone</div>
         <div class="insight-value" id="insightZone">Normal</div>
       </div>
-
       <div class="insight-card">
-        <div class="insight-label">Road Condition</div>
+        <div class="insight-label">Road condition</div>
         <div class="insight-value" id="insightRoad">Stable</div>
       </div>
     </div>
   </section>
 
-  <!-- SUMMARY CARD -->
   <section class="card">
-    <div class="section-title">Ride Summary</div>
+    <div class="section-title">Proactive assistant</div>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-label">Active alerts</div>
+        <div class="insight-value" id="activeAlertCount">0</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-label">Danger zones learned</div>
+        <div class="insight-value" id="dangerZoneCount">0</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-label">Last alert latency</div>
+        <div class="insight-value" id="lastAlertLatency">0 ms</div>
+      </div>
+    </div>
+
+    <div class="summary-row" style="text-align:center; margin-top:12px;">
+      Last alert: <span id="lastAlertType">None</span> |
+      Phone position: <span id="phonePosText">handlebar</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">Session summary</div>
     <div class="stats-grid">
       <div class="stat-item">
-        <div class="risk-label">TOTAL BRAKES</div>
+        <div class="risk-label">Total brakes</div>
         <div id="total" class="stat-value">0</div>
       </div>
-
       <div class="stat-item">
-        <div class="risk-label">HARD BRAKES</div>
+        <div class="risk-label">Hard brakes</div>
         <div id="hard" class="stat-value">0</div>
       </div>
-
       <div class="stat-item">
-        <div class="risk-label">BRAKE DISTANCE</div>
+        <div class="risk-label">Brake distance</div>
         <div><span id="brakeDist" class="stat-value">0</span> km</div>
       </div>
-
       <div class="stat-item">
-        <div class="risk-label">AVG DECEL</div>
+        <div class="risk-label">Avg decel</div>
         <div id="avg" class="stat-value">0</div>
       </div>
     </div>
 
     <div class="summary-row" style="text-align:center;">
-      Max Decel: <span id="max">0</span>
+      Max decel: <span id="max">0</span>
     </div>
   </section>
 
-  <!-- MAP CARD -->
   <section class="card">
-    <div class="section-title">Risk Map</div>
+    <div class="section-title">Journey map</div>
 
-    <div class="map-meta">
-      <span class="map-tag red">Hard Brake</span>
-      <span class="map-tag purple">Rough Road</span>
-      <span class="map-tag orange">Road Work</span>
-      <span class="map-tag blue">Live Route</span>
+    <div class="map-legend-float">
+      <span class="legend-chip red">Hard brake</span>
+      <span class="legend-chip purple">Rough road</span>
+      <span class="legend-chip orange">Road work</span>
+      <span class="legend-chip blue">Live route</span>
     </div>
 
     <div id="map"></div>
   </section>
 
-  <!-- CHARTS CARD -->
   <section class="card">
-    <div class="section-title">Speed Trend</div>
-    <div class="chart-meta">Live speed changes during the current session</div>
+    <div class="chart-card-head">
+      <div>
+        <div class="section-title">Speed trend</div>
+        <div class="chart-note">Live speed changes during the current session</div>
+      </div>
+    </div>
     <canvas id="speedChart"></canvas>
   </section>
 
   <section class="card">
-    <div class="section-title">Deceleration Trend</div>
-    <div class="chart-meta">Detected braking intensity and sudden motion changes</div>
+    <div class="chart-card-head">
+      <div>
+        <div class="section-title">Braking intensity</div>
+        <div class="chart-note">Green = slow, yellow = normal, red = hard brake</div>
+      </div>
+    </div>
     <canvas id="decelChart"></canvas>
   </section>
 
-  <!-- OPTIONAL SESSION TOOLS -->
   <section class="card session-tools">
     <div class="tool-block">
       <label>Phone Position</label>
