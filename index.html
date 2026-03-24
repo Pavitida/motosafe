@@ -15,7 +15,7 @@
 <body>
   <header>
     <h1>MOTOSAFE<span class="title-spark">✦</span></h1>
-    <div class="hero-subtitle">Live ride intelligence · brake awareness · road sensing</div>
+    <div class="hero-subtitle">Intelligent Riding Safety Interface</div>
 
     <div class="recording-wrap">
       <span class="record-dot"></span>
@@ -127,95 +127,118 @@
     <div id="map"></div>
   </section>
 
-  <!-- Collapsible sections -->
-  <details class="card collapsible-card">
-    <summary class="collapse-title">Ride Recap</summary>
+  <details class="collapse-panel">
+    <summary>
+      <span class="collapse-kicker"></span>
+      <span class="collapse-text">Ride Recap</span>
+      <span class="collapse-icon">+</span>
+    </summary>
 
-    <div class="stats-grid" style="margin-top:16px;">
-      <div class="stat-item">
-        <div class="risk-label">Total brakes</div>
-        <div id="total" class="stat-value">0</div>
+    <div class="collapse-body">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="risk-label">Total brakes</div>
+          <div id="total" class="stat-value">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="risk-label">Hard brakes</div>
+          <div id="hard" class="stat-value">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="risk-label">Brake distance</div>
+          <div><span id="brakeDist" class="stat-value">0</span> km</div>
+        </div>
+        <div class="stat-item">
+          <div class="risk-label">Avg decel</div>
+          <div id="avg" class="stat-value">0</div>
+        </div>
       </div>
-      <div class="stat-item">
-        <div class="risk-label">Hard brakes</div>
-        <div id="hard" class="stat-value">0</div>
-      </div>
-      <div class="stat-item">
-        <div class="risk-label">Brake distance</div>
-        <div><span id="brakeDist" class="stat-value">0</span> km</div>
-      </div>
-      <div class="stat-item">
-        <div class="risk-label">Avg decel</div>
-        <div id="avg" class="stat-value">0</div>
-      </div>
-    </div>
 
-    <div class="summary-row" style="text-align:center;">
-      Max decel: <span id="max">0</span>
-    </div>
-  </details>
-
-  <details class="card collapsible-card">
-    <summary class="collapse-title">Instant Insights</summary>
-
-    <div class="insight-grid" style="margin-top:16px;">
-      <div class="insight-card">
-        <div class="insight-label">System mode</div>
-        <div class="insight-value" id="insightMode">Ready</div>
-      </div>
-      <div class="insight-card">
-        <div class="insight-label">Current zone</div>
-        <div class="insight-value" id="insightZone">Normal</div>
-      </div>
-      <div class="insight-card">
-        <div class="insight-label">Road condition</div>
-        <div class="insight-value" id="insightRoad">Stable</div>
+      <div class="summary-row" style="text-align:center;">
+        Max decel: <span id="max">0</span>
       </div>
     </div>
   </details>
 
-  <details class="card collapsible-card">
-    <summary class="collapse-title">Proactive Guard</summary>
+  <details class="collapse-panel">
+    <summary>
+      <span class="collapse-kicker"></span>
+      <span class="collapse-text">Instant Insights</span>
+      <span class="collapse-icon">+</span>
+    </summary>
 
-    <div class="insight-grid" style="margin-top:16px;">
-      <div class="insight-card">
-        <div class="insight-label">Active alerts</div>
-        <div class="insight-value" id="activeAlertCount">0</div>
+    <div class="collapse-body">
+      <div class="insight-grid">
+        <div class="insight-card">
+          <div class="insight-label">System mode</div>
+          <div class="insight-value" id="insightMode">Ready</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Current zone</div>
+          <div class="insight-value" id="insightZone">Normal</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Road condition</div>
+          <div class="insight-value" id="insightRoad">Stable</div>
+        </div>
       </div>
-      <div class="insight-card">
-        <div class="insight-label">Danger zones learned</div>
-        <div class="insight-value" id="dangerZoneCount">0</div>
-      </div>
-      <div class="insight-card">
-        <div class="insight-label">Last alert latency</div>
-        <div class="insight-value" id="lastAlertLatency">0 ms</div>
-      </div>
-    </div>
-
-    <div class="summary-row" style="text-align:center; margin-top:12px;">
-      Last alert: <span id="lastAlertType">None</span> |
-      Phone position: <span id="phonePosText">handlebar</span>
     </div>
   </details>
 
-  <details class="card collapsible-card">
-    <summary class="collapse-title">Velocity Trace</summary>
+  <details class="collapse-panel">
+    <summary>
+      <span class="collapse-kicker"></span>
+      <span class="collapse-text">Proactive Guard</span>
+      <span class="collapse-icon">+</span>
+    </summary>
 
-    <div class="chart-card-head" style="margin-top:16px;">
+    <div class="collapse-body">
+      <div class="insight-grid">
+        <div class="insight-card">
+          <div class="insight-label">Active alerts</div>
+          <div class="insight-value" id="activeAlertCount">0</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Danger zones learned</div>
+          <div class="insight-value" id="dangerZoneCount">0</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Last alert latency</div>
+          <div class="insight-value" id="lastAlertLatency">0 ms</div>
+        </div>
+      </div>
+
+      <div class="summary-row" style="text-align:center; margin-top:12px;">
+        Last alert: <span id="lastAlertType">None</span> |
+        Phone position: <span id="phonePosText">handlebar</span>
+      </div>
+    </div>
+  </details>
+
+  <details class="collapse-panel">
+    <summary>
+      <span class="collapse-kicker"></span>
+      <span class="collapse-text">Velocity Trace</span>
+      <span class="collapse-icon">+</span>
+    </summary>
+
+    <div class="collapse-body">
       <div class="chart-note">Live speed changes during the current session</div>
+      <canvas id="speedChart"></canvas>
     </div>
-
-    <canvas id="speedChart"></canvas>
   </details>
 
-  <details class="card collapsible-card">
-    <summary class="collapse-title">Brake Signature</summary>
+  <details class="collapse-panel">
+    <summary>
+      <span class="collapse-kicker"></span>
+      <span class="collapse-text">Brake Signature</span>
+      <span class="collapse-icon">+</span>
+    </summary>
 
-    <div class="chart-card-head" style="margin-top:16px;">
+    <div class="collapse-body">
       <div class="chart-note">Green = slow, yellow = normal, red = hard brake</div>
+      <canvas id="decelChart"></canvas>
     </div>
-
-    <canvas id="decelChart"></canvas>
   </details>
 
   <section class="card session-tools">
