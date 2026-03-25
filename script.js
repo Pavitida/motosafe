@@ -4,6 +4,8 @@ let watchId = null
 
 let lastSpeed = 0
 let lastTime = 0
+let lastLat = null
+let lastLng = null
 
 let peakDecel = 0
 let brakeStart = null
@@ -52,34 +54,36 @@ window.addEventListener("devicemotion", (e) => {
   if (e.accelerationIncludingGravity) {
     const ay = e.accelerationIncludingGravity.y || 0
     accelY = ay
-    smoothAccel = smoothAccel * 0.82 + ay * 0.18
+    // smooth มากขึ้น เพื่อลด false alert จากการถือ/ขยับเครื่อง
+    smoothAccel = smoothAccel * 0.92 + ay * 0.08
   }
 })
 
 // ================= TUNING =================
-const BRAKE_THRESHOLD = 2.2
-const HARD_BRAKE_THRESHOLD = 3.8
-const SLOW_BRAKE_THRESHOLD = 1.2
+// ใช้ GPS speed drop เป็นหลัก + sensor เป็นตัวช่วย
+const SLOW_BRAKE_THRESHOLD = 1.8
+const BRAKE_THRESHOLD = 2.8
+const HARD_BRAKE_THRESHOLD = 4.2
 
-const MIN_MOVING_SPEED = 12
-const MIN_BRAKE_SPEED_DROP = 2.5
-const MIN_HARD_BRAKE_SPEED_DROP = 5.0
+const MIN_MOVING_SPEED = 15
+const MIN_BRAKE_SPEED_DROP = 4.0
+const MIN_HARD_BRAKE_SPEED_DROP = 7.0
 
-const MIN_SPEED_FOR_BRAKE = 10
-const MIN_SPEED_DROP = 3.5
-const HARD_MIN_SPEED_DROP = 5.5
-const BRAKE_WINDOW_MS = 900
+const MIN_SPEED_FOR_BRAKE = 15
+const MIN_SPEED_DROP = 4.5
+const HARD_MIN_SPEED_DROP = 7.5
+const BRAKE_WINDOW_MS = 800
 
-const MIN_SPEED_FOR_ROAD_EVENT = 8
-const ROUGH_ROAD_ACCEL_THRESHOLD = 2.8
-const POTHOLE_THRESHOLD = 4.2
-const ROAD_EVENT_MAX_DT = 0.25
-const POTHOLE_MAX_SPEED_DROP = 2.8
-const ROUGH_ROAD_REPEAT_MS = 1800
+const MIN_SPEED_FOR_ROAD_EVENT = 12
+const ROUGH_ROAD_ACCEL_THRESHOLD = 3.8
+const POTHOLE_THRESHOLD = 5.2
+const ROAD_EVENT_MAX_DT = 0.18
+const POTHOLE_MAX_SPEED_DROP = 2.0
+const ROUGH_ROAD_REPEAT_MS = 2200
 
 const ALERT_RADIUS_METERS = 60
 const ZONE_MERGE_METERS = 35
-const ALERT_COOLDOWN_MS = 1500
+const ALERT_COOLDOWN_MS = 1200
 
 let lastRoadEventTime = 0
 let lastBrakeAlertTime = 0
@@ -90,7 +94,6 @@ let hardBrakeFrames = 0
 let brakeWindowStartSpeed = 0
 let brakeWindowStartTime = 0
 let brakeConfirmedType = null
-let brakeLiveShown = false
 let brakeCandidateFrames = 0
 let hardBrakeCandidateFrames = 0
 
@@ -100,7 +103,6 @@ function resetBrakeWindow(now, speed) {
   brakeWindowStartTime = now
   brakeWindowStartSpeed = speed
   brakeConfirmedType = null
-  brakeLiveShown = false
 }
 
 function resetBrakeCandidates() {
@@ -116,7 +118,7 @@ function markBrakeAlertNow() {
   lastBrakeAlertTime = Date.now()
 }
 
-// ================= SOUND FX =================
+// ================= SOUND =================
 let audioCtx = null
 let audioReady = false
 let lastSfxTime = 0
@@ -139,7 +141,7 @@ function initSound() {
   }
 }
 
-function playTone(freq = 880, duration = 0.12, type = "sine", volume = 0.03, startDelay = 0) {
+function playTone(freq = 880, duration = 0.18, type = "square", volume = 0.12, startDelay = 0) {
   if (!audioReady || !audioCtx) return
 
   const now = audioCtx.currentTime + startDelay
@@ -150,36 +152,38 @@ function playTone(freq = 880, duration = 0.12, type = "sine", volume = 0.03, sta
   osc.frequency.setValueAtTime(freq, now)
 
   gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(volume, now + 0.01)
+  gain.gain.linearRampToValueAtTime(volume, now + 0.01)
   gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
 
   osc.connect(gain)
   gain.connect(audioCtx.destination)
 
   osc.start(now)
-  osc.stop(now + duration + 0.03)
+  osc.stop(now + duration + 0.05)
 }
 
 function playChime(kind = "start") {
   const now = Date.now()
-  if (now - lastSfxTime < 250) return
+  if (now - lastSfxTime < 180) return
   lastSfxTime = now
 
   if (!audioReady) return
 
   if (kind === "start") {
-    playTone(740, 0.10, "sine", 0.025, 0.00)
-    playTone(988, 0.12, "sine", 0.020, 0.08)
-    playTone(1318, 0.14, "triangle", 0.016, 0.16)
+    playTone(900, 0.12, "square", 0.08, 0.00)
+    playTone(1200, 0.14, "square", 0.08, 0.08)
   } else if (kind === "alert") {
-    playTone(880, 0.10, "triangle", 0.028, 0.00)
-    playTone(660, 0.12, "triangle", 0.022, 0.08)
+    // อันตราย / เบรกหนัก
+    playTone(1700, 0.16, "square", 0.14, 0.00)
+    playTone(1200, 0.18, "square", 0.14, 0.10)
+    playTone(1700, 0.16, "square", 0.14, 0.22)
   } else if (kind === "soft-alert") {
-    playTone(1046, 0.08, "sine", 0.018, 0.00)
-    playTone(1244, 0.09, "sine", 0.014, 0.06)
+    // เบรกปกติ
+    playTone(1100, 0.10, "square", 0.08, 0.00)
+    playTone(900, 0.12, "square", 0.08, 0.08)
   } else if (kind === "export") {
-    playTone(784, 0.08, "sine", 0.020, 0.00)
-    playTone(1174, 0.10, "triangle", 0.016, 0.07)
+    playTone(850, 0.10, "square", 0.06, 0.00)
+    playTone(1250, 0.12, "square", 0.06, 0.08)
   }
 }
 
@@ -332,7 +336,7 @@ function smoothValue(current, target, alpha = 0.2) {
 function clampDecel(value) {
   if (!isFinite(value)) return 0
   if (value < 0) return 0
-  if (value > 12) return 12
+  if (value > 8) return 8
   return value
 }
 
@@ -349,8 +353,10 @@ function generateSessionId() {
 
 function setPhonePosition(value) {
   phonePosition = value
-  const el = document.getElementById("phonePosText")
-  if (el) el.innerText = value
+  const nodes = document.querySelectorAll("#phonePosText")
+  nodes.forEach((el) => {
+    el.innerText = value
+  })
   updateASummary()
 }
 
@@ -364,14 +370,6 @@ function updateRecordingUI(isOn) {
   } else {
     body.classList.remove("recording")
     if (text) text.innerText = "IDLE"
-  }
-}
-
-function updateAngelMode(isActive) {
-  if (isActive) {
-    document.body.classList.add("recording")
-  } else {
-    document.body.classList.remove("recording")
   }
 }
 
@@ -414,15 +412,11 @@ function updateASummary() {
   const zoneEl = document.getElementById("dangerZoneCount")
   const latencyEl = document.getElementById("lastAlertLatency")
   const typeEl = document.getElementById("lastAlertType")
-  const phoneEl = document.getElementById("phonePosText")
-  const topAlertStatus = document.getElementById("topAlertStatus")
 
   if (alertEl) alertEl.innerText = activeAlertCount
   if (zoneEl) zoneEl.innerText = dangerZones.length
   if (latencyEl) latencyEl.innerText = `${lastAlertLatencyMs} ms`
   if (typeEl) typeEl.innerText = lastAlertType
-  if (phoneEl) phoneEl.innerText = phonePosition
-  if (topAlertStatus) topAlertStatus.innerText = lastAlertType
 }
 
 function recordAlertLatency(startTime, alertType) {
@@ -456,7 +450,7 @@ function raiseAlert({
 
 function speak(text) {
   const now = Date.now()
-  if (now - lastVoiceTime < 3000) return
+  if (now - lastVoiceTime < 2000) return
   lastVoiceTime = now
 
   if ("speechSynthesis" in window) {
@@ -466,6 +460,7 @@ function speak(text) {
       msg.lang = "en-US"
       msg.rate = 1
       msg.pitch = 1
+      msg.volume = 1
       speechSynthesis.speak(msg)
     } catch (e) {
       console.log("Speech error:", e)
@@ -481,7 +476,7 @@ function showPopup(text, color) {
   p.style.display = "block"
   setTimeout(() => {
     p.style.display = "none"
-  }, 1500)
+  }, 1600)
 }
 
 function triggerEffect() {
@@ -523,9 +518,12 @@ function triggerBrakeFlash(level) {
 
 function vibrate(type) {
   if (!navigator.vibrate) return
+
   if (type === "hard") {
-    navigator.vibrate([100, 50, 100])
+    navigator.vibrate([250, 80, 250, 80, 250])
   } else if (type === "normal") {
+    navigator.vibrate([160, 60, 160])
+  } else if (type === "soft") {
     navigator.vibrate(100)
   }
 }
@@ -544,7 +542,7 @@ function syncSystemMode() {
   let zone = "Monitoring"
   let road = "Stable"
 
-  const recentLabels = dataset.slice(-10).map(d => d.label || "")
+  const recentLabels = dataset.slice(-10).map((d) => d.label || "")
   if (recentLabels.includes("POTHOLE")) {
     road = "Pothole"
   } else if (recentLabels.includes("ROUGH_ROAD")) {
@@ -571,8 +569,8 @@ function checkNearbyDangerZones(lat, lng) {
 
         if (z.type === "HARD_BRAKE") {
           raiseAlert({
-            text: "⚠️ Approaching Risk Zone",
-            color: "#ff6b6b",
+            text: "⚠️ APPROACHING RISK ZONE",
+            color: "#ff4d6d",
             voiceText: "Warning approaching risk zone",
             vibration: "hard",
             chime: "alert",
@@ -584,7 +582,7 @@ function checkNearbyDangerZones(lat, lng) {
           })
         } else if (z.type === "ROUGH_ROAD") {
           raiseAlert({
-            text: "⚠️ Rough Road Ahead",
+            text: "⚠️ ROUGH ROAD AHEAD",
             color: "#845ef7",
             voiceText: "Warning rough road ahead",
             vibration: "normal",
@@ -597,28 +595,28 @@ function checkNearbyDangerZones(lat, lng) {
           })
         } else if (z.type === "ROAD_WORK") {
           raiseAlert({
-            text: "🚧 Possible Road Work Area",
+            text: "🚧 ROAD WORK AREA",
             color: "#f59f00",
-            voiceText: "Warning possible road work area",
+            voiceText: "Warning road work area",
             vibration: "normal",
             chime: "soft-alert",
             insightMode: "Warning",
             insightZone: "Road Zone",
-            insightRoad: "Possible Road Work",
-            alertType: "Possible Road Work",
+            insightRoad: "Road Work",
+            alertType: "Road Work",
             startTime: alertStart
           })
         } else if (z.type === "POTHOLE") {
           raiseAlert({
-            text: "⚠️ Approaching Pothole Zone",
+            text: "⚠️ POTHOLE ZONE",
             color: "#845ef7",
-            voiceText: "Warning approaching pothole zone",
+            voiceText: "Warning pothole zone",
             vibration: "normal",
             chime: "soft-alert",
             insightMode: "Warning",
             insightZone: "Road Zone",
             insightRoad: "Pothole Area",
-            alertType: "Approaching Pothole Zone",
+            alertType: "Pothole Zone",
             startTime: alertStart
           })
         }
@@ -747,16 +745,15 @@ window.onload = function () {
   renderDangerZones()
   setPhonePosition(phonePosition)
   updateRecordingUI(false)
-  updateAngelMode(false)
   updateSessionUI()
   updateInsights("Ready", "Normal", "Stable")
   updateSummary()
   updateASummary()
 
-  const topGpsStatus = document.getElementById("topGpsStatus")
-  const topSensorStatus = document.getElementById("topSensorStatus")
-  if (topGpsStatus) topGpsStatus.innerText = "Ready"
-  if (topSensorStatus) topSensorStatus.innerText = "Active"
+  const gpsNodes = document.querySelectorAll("#topGpsStatus")
+  const sensorNodes = document.querySelectorAll("#topSensorStatus")
+  gpsNodes.forEach((el) => { el.innerText = "Ready" })
+  sensorNodes.forEach((el) => { el.innerText = "Active" })
 }
 
 // ================= START =================
@@ -793,6 +790,8 @@ function startRide() {
       decelBuffer = []
       smoothSpeed = 0
       lastRoadEventTime = 0
+      lastLat = pos.coords.latitude
+      lastLng = pos.coords.longitude
 
       currentLat = pos.coords.latitude
       currentLng = pos.coords.longitude
@@ -804,14 +803,13 @@ function startRide() {
       if (routeLine) routeLine.setLatLngs(routePoints)
 
       updateRecordingUI(true)
-      updateAngelMode(true)
       updateSessionUI()
       updateInsights("Angel Active", "Monitoring", "Stable")
 
-      const topGpsStatus = document.getElementById("topGpsStatus")
-      const topSensorStatus = document.getElementById("topSensorStatus")
-      if (topGpsStatus) topGpsStatus.innerText = "Tracking"
-      if (topSensorStatus) topSensorStatus.innerText = "Live"
+      const gpsNodes = document.querySelectorAll("#topGpsStatus")
+      const sensorNodes = document.querySelectorAll("#topSensorStatus")
+      gpsNodes.forEach((el) => { el.innerText = "Tracking" })
+      sensorNodes.forEach((el) => { el.innerText = "Live" })
 
       watchId = navigator.geolocation.watchPosition(
         updateSpeed,
@@ -847,14 +845,13 @@ function stopRide() {
   }
 
   updateRecordingUI(false)
-  updateAngelMode(false)
   updateSessionUI()
   updateInsights("Idle", "Normal", "Stable")
 
-  const topGpsStatus = document.getElementById("topGpsStatus")
-  const topSensorStatus = document.getElementById("topSensorStatus")
-  if (topGpsStatus) topGpsStatus.innerText = "Paused"
-  if (topSensorStatus) topSensorStatus.innerText = "Waiting"
+  const gpsNodes = document.querySelectorAll("#topGpsStatus")
+  const sensorNodes = document.querySelectorAll("#topSensorStatus")
+  gpsNodes.forEach((el) => { el.innerText = "Paused" })
+  sensorNodes.forEach((el) => { el.innerText = "Waiting" })
 }
 
 // ================= ROAD CLASSIFIER =================
@@ -875,7 +872,7 @@ function classifyRoadEvent(speed, dt, decel, speedDropShort) {
     accelAbs > ROUGH_ROAD_ACCEL_THRESHOLD &&
     dt < ROAD_EVENT_MAX_DT &&
     decel > 1.0 &&
-    speedDropShort < 2.5
+    speedDropShort < 2.2
 
   return { isPothole, isRoughRoad }
 }
@@ -925,7 +922,7 @@ function updateSpeed(pos) {
 
   if (lastTime) {
     const dt = (now - lastTime) / 1000
-    if (dt === 0) return
+    if (dt <= 0) return
 
     const dv = speed - lastSpeed
     const acceleration = dv / dt
@@ -933,24 +930,26 @@ function updateSpeed(pos) {
     totalDistance += speed * dt / 3600
     updateSessionUI()
 
-    const sensorDecel = -smoothAccel
-    const gpsDecel = -(dv / dt)
-
-    let decel = Math.max(sensorDecel, gpsDecel)
-    decel = clampDecel(decel)
+    const sensorDecel = clampDecel(-smoothAccel)
+    const gpsDecel = clampDecel(-(dv / dt))
+    let decel = Math.max(sensorDecel * 0.45, gpsDecel)
 
     if (speed < MIN_MOVING_SPEED) {
       resetBrakeCandidates()
       lastSpeed = speed
       lastTime = now
+      lastLat = lat
+      lastLng = lng
       syncSystemMode()
       logLatency("updateSpeed", startTime)
       return
     }
 
-    if (Math.abs(sensorDecel) < 0.45 && Math.abs(gpsDecel) < 0.45) {
+    if (Math.abs(sensorDecel) < 0.35 && Math.abs(gpsDecel) < 0.35) {
       lastSpeed = speed
       lastTime = now
+      lastLat = lat
+      lastLng = lng
       syncSystemMode()
       logLatency("updateSpeed", startTime)
       return
@@ -969,6 +968,8 @@ function updateSpeed(pos) {
     if (decel < 0.8 && !isPothole && !isRoughRoad) {
       lastSpeed = speed
       lastTime = now
+      lastLat = lat
+      lastLng = lng
       syncSystemMode()
       logLatency("updateSpeed", startTime)
       return
@@ -988,15 +989,17 @@ function updateSpeed(pos) {
     const brakeLevel = getBrakeLevelFromDecel(decel)
 
     const likelyPothole =
+      speed >= MIN_SPEED_FOR_ROAD_EVENT &&
       Math.abs(accelY) > POTHOLE_THRESHOLD &&
       dt < ROAD_EVENT_MAX_DT &&
-      speedDropShort < 1.2
+      speedDropShort < 1.0
 
     const likelyBrake =
       speed >= MIN_MOVING_SPEED &&
       !likelyPothole &&
+      gpsDecel > 1.8 &&
       (
-        (brakeLevel === "SLOW" && speedDropShort >= 0.8) ||
+        (brakeLevel === "SLOW" && speedDropShort >= 2.0) ||
         (brakeLevel === "NORMAL" && speedDropShort >= MIN_BRAKE_SPEED_DROP) ||
         (brakeLevel === "HARD" && speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP)
       )
@@ -1017,20 +1020,43 @@ function updateSpeed(pos) {
       hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
     }
 
+    // แจ้งเตือนทันทีเมื่อเข้าเงื่อนไข
     if (canRaiseBrakeAlert()) {
       if (
-        hardBrakeCandidateFrames >= 2 &&
+        hardBrakeCandidateFrames >= 1 &&
         speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP
       ) {
         triggerBrakeFlash("HARD")
-        updateInsights("Alert", "Risk Zone", "Hard Brake")
+        raiseAlert({
+          text: "🔴 HARD BRAKE",
+          color: "#ff4d6d",
+          voiceText: "Hard brake detected",
+          vibration: "hard",
+          chime: "alert",
+          insightMode: "Alert",
+          insightZone: "Brake Event",
+          insightRoad: "Hard Brake",
+          alertType: "Hard Brake",
+          startTime: startTime
+        })
         markBrakeAlertNow()
       } else if (
-        brakeCandidateFrames >= 2 &&
+        brakeCandidateFrames >= 1 &&
         speedDropShort >= MIN_BRAKE_SPEED_DROP
       ) {
         triggerBrakeFlash("NORMAL")
-        updateInsights("Active", "Brake", "Normal Brake")
+        raiseAlert({
+          text: "🟡 BRAKE DETECTED",
+          color: "#ffd166",
+          voiceText: "Brake detected",
+          vibration: "normal",
+          chime: "soft-alert",
+          insightMode: "Active",
+          insightZone: "Brake Event",
+          insightRoad: "Normal Brake",
+          alertType: "Normal Brake",
+          startTime: startTime
+        })
         markBrakeAlertNow()
       }
     }
@@ -1044,10 +1070,10 @@ function updateSpeed(pos) {
         resetBrakeWindow(now, speed)
       }
 
-      if (decel >= BRAKE_THRESHOLD || speedDropShort >= 0.8) brakeFrames++
+      if (decel >= BRAKE_THRESHOLD || speedDropShort >= 1.2) brakeFrames++
       else brakeFrames = Math.max(0, brakeFrames - 1)
 
-      if (decel >= HARD_BRAKE_THRESHOLD || speedDropShort >= 1.6) hardBrakeFrames++
+      if (decel >= HARD_BRAKE_THRESHOLD || speedDropShort >= 2.0) hardBrakeFrames++
       else hardBrakeFrames = Math.max(0, hardBrakeFrames - 1)
 
       const speedDrop = Math.max(0, brakeWindowStartSpeed - speed)
@@ -1064,11 +1090,9 @@ function updateSpeed(pos) {
           brakeConfirmedType = "HARD"
         } else if (brakeFrames >= 1 && speedDrop >= MIN_SPEED_DROP) {
           brakeConfirmedType = decel >= HARD_BRAKE_THRESHOLD ? "HARD" : "NORMAL"
-        } else if (brakeFrames >= 1 && decel >= SLOW_BRAKE_THRESHOLD && speedDrop >= 1.5) {
-          if (!brakeConfirmedType) brakeConfirmedType = "NORMAL"
         }
 
-        if (brakeStart && decel < 0.9 && speedDropShort < 0.3) {
+        if (brakeStart && decel < 0.9 && speedDropShort < 0.5) {
           if (brakeConfirmedType) logBrake(lat, lng, brakeConfirmedType)
           brakeStart = null
           resetBrakeWindow(now, speed)
@@ -1078,7 +1102,7 @@ function updateSpeed(pos) {
       resetBrakeWindow(now, speed)
     }
 
-    if (isPothole && now - lastRoadEventTime > 800) {
+    if (isPothole && now - lastRoadEventTime > 900) {
       lastRoadEventTime = now
       const alertStart = Date.now()
 
@@ -1201,6 +1225,8 @@ function updateSpeed(pos) {
 
   lastSpeed = speed
   lastTime = now
+  lastLat = lat
+  lastLng = lng
   logLatency("updateSpeed", startTime)
 }
 
@@ -1233,8 +1259,8 @@ function logBrake(lat, lng, forcedType = null) {
 
     raiseAlert({
       text: "🔴 HARD BRAKE",
-      color: "#ff4d4d",
-      voiceText: "Warning hard brake",
+      color: "#ff4d6d",
+      voiceText: "Warning hard brake detected",
       vibration: "hard",
       chime: "alert",
       insightMode: "Alert",
@@ -1252,9 +1278,9 @@ function logBrake(lat, lng, forcedType = null) {
     const alertStart = Date.now()
 
     raiseAlert({
-      text: "🟡 NORMAL BRAKE",
-      color: "#ffd43b",
-      voiceText: "",
+      text: "🟡 BRAKE DETECTED",
+      color: "#ffd166",
+      voiceText: "Brake detected",
       vibration: "normal",
       chime: "soft-alert",
       insightMode: "Active",
@@ -1270,11 +1296,11 @@ function logBrake(lat, lng, forcedType = null) {
     const alertStart = Date.now()
 
     raiseAlert({
-      text: "🟢 SLOW",
-      color: "#51cf66",
-      voiceText: "",
-      vibration: "",
-      chime: "",
+      text: "🟢 SLOWDOWN",
+      color: "#80ed99",
+      voiceText: "Slow down",
+      vibration: "soft",
+      chime: "soft-alert",
       insightMode: "Active",
       insightZone: "Slowdown",
       insightRoad: "Slow Brake",
@@ -1317,9 +1343,6 @@ function logBrake(lat, lng, forcedType = null) {
 
   document.getElementById("style").innerText = style
 
-  if (type === "HARD") vibrate("hard")
-  else if (type === "NORMAL") vibrate("normal")
-
   dataset.push({
     sessionId: currentSessionId,
     phonePosition: phonePosition,
@@ -1345,14 +1368,13 @@ function logBrake(lat, lng, forcedType = null) {
 
   peakDecel = 0
   brakeConfirmedType = null
-  brakeLiveShown = false
 }
 
 // ================= SUMMARY =================
 function updateSummary() {
   const decels = dataset
     .map((d) => Number(d.deceleration || 0))
-    .filter((v) => isFinite(v) && v > 0 && v <= 12)
+    .filter((v) => isFinite(v) && v > 0 && v <= 8)
 
   const avg = decels.length ? decels.reduce((a, b) => a + b, 0) / decels.length : 0
   const max = decels.length ? Math.max(...decels) : 0
