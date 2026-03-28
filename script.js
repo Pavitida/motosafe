@@ -54,36 +54,39 @@ window.addEventListener("devicemotion", (e) => {
   if (e.accelerationIncludingGravity) {
     const ay = e.accelerationIncludingGravity.y || 0
     accelY = ay
-    // smooth มากขึ้น เพื่อลด false alert จากการถือ/ขยับเครื่อง
     smoothAccel = smoothAccel * 0.92 + ay * 0.08
   }
 })
 
 // ================= TUNING =================
-// ใช้ GPS speed drop เป็นหลัก + sensor เป็นตัวช่วย
-const SLOW_BRAKE_THRESHOLD = 1.8
-const BRAKE_THRESHOLD = 2.8
-const HARD_BRAKE_THRESHOLD = 4.2
+// brake tuning
+const SLOW_BRAKE_THRESHOLD = 1.5
+const BRAKE_THRESHOLD = 2.4
+const HARD_BRAKE_THRESHOLD = 3.6
 
-const MIN_MOVING_SPEED = 15
-const MIN_BRAKE_SPEED_DROP = 4.0
-const MIN_HARD_BRAKE_SPEED_DROP = 7.0
+const MIN_MOVING_SPEED = 10
+const MIN_BRAKE_SPEED_DROP = 2.5
+const MIN_HARD_BRAKE_SPEED_DROP = 4.5
 
-const MIN_SPEED_FOR_BRAKE = 15
-const MIN_SPEED_DROP = 4.5
-const HARD_MIN_SPEED_DROP = 7.5
-const BRAKE_WINDOW_MS = 800
+const MIN_SPEED_FOR_BRAKE = 10
+const MIN_SPEED_DROP = 2.8
+const HARD_MIN_SPEED_DROP = 4.8
+const BRAKE_WINDOW_MS = 900
 
-const MIN_SPEED_FOR_ROAD_EVENT = 12
-const ROUGH_ROAD_ACCEL_THRESHOLD = 3.8
-const POTHOLE_THRESHOLD = 5.2
-const ROAD_EVENT_MAX_DT = 0.18
-const POTHOLE_MAX_SPEED_DROP = 2.0
-const ROUGH_ROAD_REPEAT_MS = 2200
+// road tuning
+const MIN_SPEED_FOR_ROAD_EVENT = 8
+const ROUGH_ROAD_ACCEL_THRESHOLD = 3.0
+const POTHOLE_THRESHOLD = 4.6
+const ROAD_EVENT_MAX_DT = 0.22
+const POTHOLE_MAX_SPEED_DROP = 1.6
+const ROUGH_ROAD_REPEAT_MS = 1800
 
-const ALERT_RADIUS_METERS = 60
-const ZONE_MERGE_METERS = 35
-const ALERT_COOLDOWN_MS = 1200
+// map zone tuning
+const ALERT_RADIUS_METERS = 55
+const ZONE_MERGE_METERS = 28
+
+// alert tuning
+const ALERT_COOLDOWN_MS = 700
 
 let lastRoadEventTime = 0
 let lastBrakeAlertTime = 0
@@ -173,12 +176,10 @@ function playChime(kind = "start") {
     playTone(900, 0.12, "square", 0.08, 0.00)
     playTone(1200, 0.14, "square", 0.08, 0.08)
   } else if (kind === "alert") {
-    // อันตราย / เบรกหนัก
     playTone(1700, 0.16, "square", 0.14, 0.00)
     playTone(1200, 0.18, "square", 0.14, 0.10)
     playTone(1700, 0.16, "square", 0.14, 0.22)
   } else if (kind === "soft-alert") {
-    // เบรกปกติ
     playTone(1100, 0.10, "square", 0.08, 0.00)
     playTone(900, 0.12, "square", 0.08, 0.08)
   } else if (kind === "export") {
@@ -227,36 +228,107 @@ function clearDangerZoneMarkers() {
   dangerZoneMarkers = []
 }
 
+function getZoneDisplay(type) {
+  if (type === "HARD_BRAKE") {
+    return {
+      title: "Hard Brake Zone",
+      color: "#ff4d6d",
+      short: "Risk Zone"
+    }
+  }
+
+  if (type === "BRAKE") {
+    return {
+      title: "Brake Event",
+      color: "#ffd166",
+      short: "Brake"
+    }
+  }
+
+  if (type === "POTHOLE") {
+    return {
+      title: "Pothole Zone",
+      color: "#5f3dc4",
+      short: "Pothole Area"
+    }
+  }
+
+  if (type === "ROUGH_ROAD") {
+    return {
+      title: "Rough Road Zone",
+      color: "#845ef7",
+      short: "Rough Road"
+    }
+  }
+
+  if (type === "ROAD_WORK") {
+    return {
+      title: "Damaged Road Area",
+      color: "#f08c00",
+      short: "Road Damage"
+    }
+  }
+
+  return {
+    title: "Hazard Zone",
+    color: "#f59f00",
+    short: "Hazard"
+  }
+}
+
+function addEventMarker(lat, lng, type) {
+  const zoneInfo = getZoneDisplay(type)
+
+  let radius = 6
+  if (type === "HARD_BRAKE") radius = 8
+  if (type === "BRAKE") radius = 7
+  if (type === "POTHOLE") radius = 7
+  if (type === "ROUGH_ROAD") radius = 6
+  if (type === "ROAD_WORK") radius = 8
+
+  L.circleMarker([lat, lng], {
+    color: zoneInfo.color,
+    fillColor: zoneInfo.color,
+    fillOpacity: 0.85,
+    radius: radius,
+    weight: 2
+  }).addTo(map).bindPopup(zoneInfo.title.toUpperCase())
+}
+
 function renderDangerZones() {
   if (!map) return
 
   clearDangerZoneMarkers()
 
   dangerZones.forEach((z) => {
-    let color = "orange"
-    let label = "Risk Zone"
+    const zoneInfo = getZoneDisplay(z.type)
 
-    if (z.type === "HARD_BRAKE") {
-      color = "red"
-      label = "Risk Zone"
-    } else if (z.type === "ROUGH_ROAD") {
-      color = "purple"
-      label = "Rough Road Zone"
-    } else if (z.type === "ROAD_WORK") {
-      color = "#f59f00"
-      label = "Possible Road Work Area"
-    } else if (z.type === "POTHOLE") {
-      color = "#845ef7"
-      label = "Pothole Zone"
+    let radius = 22
+    let fillOpacity = 0.20
+
+    if (z.type === "HARD_BRAKE") radius = 24
+    if (z.type === "POTHOLE") radius = 20
+    if (z.type === "ROUGH_ROAD") radius = 26
+    if (z.type === "ROAD_WORK") {
+      radius = 30
+      fillOpacity = 0.24
     }
 
     const marker = L.circle([z.lat, z.lng], {
-      radius: 25,
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.18,
+      radius: radius,
+      color: zoneInfo.color,
+      fillColor: zoneInfo.color,
+      fillOpacity: fillOpacity,
       weight: 2
-    }).addTo(map).bindPopup(`${label}<br>Count: ${z.count}`)
+    })
+      .addTo(map)
+      .bindPopup(
+        `<b>${zoneInfo.title}</b><br>` +
+        `Count: ${z.count}<br>` +
+        `Hard brake: ${z.hardBrakeCount || 0}<br>` +
+        `Pothole: ${z.potholeCount || 0}<br>` +
+        `Rough road: ${z.roughRoadCount || 0}`
+      )
 
     dangerZoneMarkers.push(marker)
   })
@@ -271,8 +343,8 @@ function addDangerZone(lat, lng, type) {
 
     if (dist <= ZONE_MERGE_METERS) {
       z.count += 1
-      z.lat = (z.lat + lat) / 2
-      z.lng = (z.lng + lng) / 2
+      z.lat = (z.lat * 2 + lat) / 3
+      z.lng = (z.lng * 2 + lng) / 3
       z.updatedAt = Date.now()
 
       if (type === "HARD_BRAKE") z.hardBrakeCount = (z.hardBrakeCount || 0) + 1
@@ -283,9 +355,11 @@ function addDangerZone(lat, lng, type) {
       const potholeCount = z.potholeCount || 0
       const roughCount = z.roughRoadCount || 0
 
-      if (potholeCount + roughCount >= 6) {
+      if (potholeCount >= 2 || roughCount >= 3 || potholeCount + roughCount >= 4) {
         z.type = "ROAD_WORK"
-      } else if (potholeCount >= 2 || roughCount >= 3) {
+      } else if (potholeCount >= 1) {
+        z.type = "POTHOLE"
+      } else if (roughCount >= 2) {
         z.type = "ROUGH_ROAD"
       } else if (hardCount >= 2) {
         z.type = "HARD_BRAKE"
@@ -547,6 +621,8 @@ function syncSystemMode() {
     road = "Pothole"
   } else if (recentLabels.includes("ROUGH_ROAD")) {
     road = "Rough Road"
+  } else if (recentLabels.includes("ROAD_WORK")) {
+    road = "Road Work"
   }
 
   if (hardBrakes > 0) {
@@ -569,15 +645,28 @@ function checkNearbyDangerZones(lat, lng) {
 
         if (z.type === "HARD_BRAKE") {
           raiseAlert({
-            text: "⚠️ APPROACHING RISK ZONE",
+            text: "⚠️ APPROACHING HARD BRAKE ZONE",
             color: "#ff4d6d",
-            voiceText: "Warning approaching risk zone",
+            voiceText: "Warning approaching hard brake zone",
             vibration: "hard",
             chime: "alert",
             insightMode: "Warning",
             insightZone: "Risk Zone",
             insightRoad: "Brake Hotspot",
-            alertType: "Approaching Risk Zone",
+            alertType: "Approaching Hard Brake Zone",
+            startTime: alertStart
+          })
+        } else if (z.type === "POTHOLE") {
+          raiseAlert({
+            text: "⚠️ POTHOLE ZONE AHEAD",
+            color: "#5f3dc4",
+            voiceText: "Warning pothole zone ahead",
+            vibration: "normal",
+            chime: "soft-alert",
+            insightMode: "Warning",
+            insightZone: "Road Zone",
+            insightRoad: "Pothole Area",
+            alertType: "Pothole Zone",
             startTime: alertStart
           })
         } else if (z.type === "ROUGH_ROAD") {
@@ -595,28 +684,28 @@ function checkNearbyDangerZones(lat, lng) {
           })
         } else if (z.type === "ROAD_WORK") {
           raiseAlert({
-            text: "🚧 ROAD WORK AREA",
-            color: "#f59f00",
-            voiceText: "Warning road work area",
+            text: "🚧 DAMAGED ROAD AREA AHEAD",
+            color: "#f08c00",
+            voiceText: "Warning damaged road area ahead",
             vibration: "normal",
             chime: "soft-alert",
             insightMode: "Warning",
             insightZone: "Road Zone",
-            insightRoad: "Road Work",
-            alertType: "Road Work",
+            insightRoad: "Damaged Road",
+            alertType: "Damaged Road Area",
             startTime: alertStart
           })
-        } else if (z.type === "POTHOLE") {
+        } else {
           raiseAlert({
-            text: "⚠️ POTHOLE ZONE",
-            color: "#845ef7",
-            voiceText: "Warning pothole zone",
+            text: "⚠️ HAZARD AHEAD",
+            color: "#f59f00",
+            voiceText: "Warning hazard ahead",
             vibration: "normal",
             chime: "soft-alert",
             insightMode: "Warning",
             insightZone: "Road Zone",
-            insightRoad: "Pothole Area",
-            alertType: "Pothole Zone",
+            insightRoad: "Hazard",
+            alertType: "Hazard Ahead",
             startTime: alertStart
           })
         }
@@ -863,16 +952,17 @@ function classifyRoadEvent(speed, dt, decel, speedDropShort) {
   const accelAbs = Math.abs(accelY)
 
   const isPothole =
-    accelAbs > POTHOLE_THRESHOLD &&
-    dt < ROAD_EVENT_MAX_DT &&
-    speedDropShort < POTHOLE_MAX_SPEED_DROP
+    accelAbs >= POTHOLE_THRESHOLD &&
+    dt <= ROAD_EVENT_MAX_DT &&
+    speedDropShort <= POTHOLE_MAX_SPEED_DROP &&
+    decel < BRAKE_THRESHOLD
 
   const isRoughRoad =
     !isPothole &&
-    accelAbs > ROUGH_ROAD_ACCEL_THRESHOLD &&
-    dt < ROAD_EVENT_MAX_DT &&
-    decel > 1.0 &&
-    speedDropShort < 2.2
+    accelAbs >= ROUGH_ROAD_ACCEL_THRESHOLD &&
+    dt <= ROAD_EVENT_MAX_DT &&
+    speedDropShort < 2.0 &&
+    decel < HARD_BRAKE_THRESHOLD
 
   return { isPothole, isRoughRoad }
 }
@@ -988,43 +1078,40 @@ function updateSpeed(pos) {
 
     const brakeLevel = getBrakeLevelFromDecel(decel)
 
-    const likelyPothole =
-      speed >= MIN_SPEED_FOR_ROAD_EVENT &&
-      Math.abs(accelY) > POTHOLE_THRESHOLD &&
-      dt < ROAD_EVENT_MAX_DT &&
-      speedDropShort < 1.0
-
     const likelyBrake =
       speed >= MIN_MOVING_SPEED &&
-      !likelyPothole &&
-      gpsDecel > 1.8 &&
+      !isPothole &&
+      !isRoughRoad &&
       (
-        (brakeLevel === "SLOW" && speedDropShort >= 2.0) ||
+        gpsDecel > 1.0 ||
+        decel > BRAKE_THRESHOLD
+      ) &&
+      (
+        (brakeLevel === "SLOW" && speedDropShort >= 1.5) ||
         (brakeLevel === "NORMAL" && speedDropShort >= MIN_BRAKE_SPEED_DROP) ||
         (brakeLevel === "HARD" && speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP)
       )
 
     if (likelyBrake) {
       if (brakeLevel === "HARD") {
-        hardBrakeCandidateFrames++
-        brakeCandidateFrames++
+        hardBrakeCandidateFrames += 2
+        brakeCandidateFrames += 1
       } else if (brakeLevel === "NORMAL") {
-        brakeCandidateFrames++
+        brakeCandidateFrames += 1
         hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
       } else if (brakeLevel === "SLOW") {
-        brakeCandidateFrames = Math.max(brakeCandidateFrames, 1)
+        brakeCandidateFrames += 1
         hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
       }
     } else {
       brakeCandidateFrames = Math.max(0, brakeCandidateFrames - 1)
-      hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 1)
+      hardBrakeCandidateFrames = Math.max(0, hardBrakeCandidateFrames - 2)
     }
 
-    // แจ้งเตือนทันทีเมื่อเข้าเงื่อนไข
     if (canRaiseBrakeAlert()) {
       if (
-        hardBrakeCandidateFrames >= 1 &&
-        speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP
+        (hardBrakeCandidateFrames >= 1 && speedDropShort >= MIN_HARD_BRAKE_SPEED_DROP) ||
+        (brakeLevel === "HARD" && gpsDecel > 1.8)
       ) {
         triggerBrakeFlash("HARD")
         raiseAlert({
@@ -1070,10 +1157,10 @@ function updateSpeed(pos) {
         resetBrakeWindow(now, speed)
       }
 
-      if (decel >= BRAKE_THRESHOLD || speedDropShort >= 1.2) brakeFrames++
+      if (decel >= BRAKE_THRESHOLD || speedDropShort >= 1.0) brakeFrames++
       else brakeFrames = Math.max(0, brakeFrames - 1)
 
-      if (decel >= HARD_BRAKE_THRESHOLD || speedDropShort >= 2.0) hardBrakeFrames++
+      if (decel >= HARD_BRAKE_THRESHOLD || speedDropShort >= 1.8) hardBrakeFrames++
       else hardBrakeFrames = Math.max(0, hardBrakeFrames - 1)
 
       const speedDrop = Math.max(0, brakeWindowStartSpeed - speed)
@@ -1108,7 +1195,7 @@ function updateSpeed(pos) {
 
       raiseAlert({
         text: "🕳 POTHOLE",
-        color: "#845ef7",
+        color: "#5f3dc4",
         voiceText: "Warning pothole detected",
         vibration: "normal",
         chime: "alert",
@@ -1120,11 +1207,7 @@ function updateSpeed(pos) {
       })
 
       addPotholeZone(lat, lng)
-
-      L.circleMarker([lat, lng], {
-        color: "purple",
-        radius: 6
-      }).addTo(map).bindPopup("POTHOLE")
+      addEventMarker(lat, lng, "POTHOLE")
 
       dataset.push({
         sessionId: currentSessionId,
@@ -1145,7 +1228,7 @@ function updateSpeed(pos) {
 
       raiseAlert({
         text: "⚠️ ROUGH ROAD",
-        color: "#6f42c1",
+        color: "#6741d9",
         voiceText: "Warning rough road ahead",
         vibration: "normal",
         chime: "soft-alert",
@@ -1157,11 +1240,7 @@ function updateSpeed(pos) {
       })
 
       addRoughRoadZone(lat, lng)
-
-      L.circleMarker([lat, lng], {
-        color: "#6f42c1",
-        radius: 5
-      }).addTo(map).bindPopup("ROUGH ROAD")
+      addEventMarker(lat, lng, "ROUGH_ROAD")
 
       dataset.push({
         sessionId: currentSessionId,
@@ -1235,21 +1314,16 @@ function logBrake(lat, lng, forcedType = null) {
   totalBrakes++
 
   let type = "SLOW"
-  let color = "green"
 
   if (forcedType === "HARD") {
     type = "HARD"
-    color = "red"
   } else if (forcedType === "NORMAL") {
     type = "NORMAL"
-    color = "yellow"
   } else {
     if (peakDecel >= HARD_BRAKE_THRESHOLD) {
       type = "HARD"
-      color = "red"
     } else if (peakDecel >= BRAKE_THRESHOLD) {
       type = "NORMAL"
-      color = "yellow"
     }
   }
 
@@ -1273,6 +1347,7 @@ function logBrake(lat, lng, forcedType = null) {
     triggerEffect()
     addDangerZone(lat, lng, "HARD_BRAKE")
     triggerBrakeFlash("HARD")
+    addEventMarker(lat, lng, "HARD_BRAKE")
   } else if (type === "NORMAL") {
     normalBrakes++
     const alertStart = Date.now()
@@ -1291,6 +1366,7 @@ function logBrake(lat, lng, forcedType = null) {
     })
 
     triggerBrakeFlash("NORMAL")
+    addEventMarker(lat, lng, "BRAKE")
   } else {
     slowBrakes++
     const alertStart = Date.now()
@@ -1309,12 +1385,8 @@ function logBrake(lat, lng, forcedType = null) {
     })
 
     triggerBrakeFlash("SLOW")
+    addEventMarker(lat, lng, "BRAKE")
   }
-
-  L.circleMarker([lat, lng], {
-    color,
-    radius: 8
-  }).addTo(map).bindPopup(type)
 
   if (type === "HARD") {
     heatPoints.push([lat, lng, 1])
