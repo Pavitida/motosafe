@@ -671,6 +671,159 @@ function refreshMapLayersFromState() {
   renderDangerZones()
 }
 
+// ================= CSV IMPORT / REBUILD =================
+function dedupeDatasetRows(rows) {
+  const seen = new Set()
+  const result = []
+
+  rows.forEach((row) => {
+    const key = [
+      row.sessionId || "",
+      row.timestamp || "",
+      row.label || "",
+      Number(row.lat || 0).toFixed(6),
+      Number(row.lng || 0).toFixed(6)
+    ].join("|")
+
+    if (!seen.has(key)) {
+      seen.add(key)
+      result.push(row)
+    }
+  })
+
+  return result
+}
+
+function normalizeImportedRow(row) {
+  const normalized = { ...row }
+
+  normalized.lat = Number(row.lat)
+  normalized.lng = Number(row.lng)
+  normalized.speed = Number(row.speed || 0)
+  normalized.acceleration = Number(row.acceleration || 0)
+  normalized.deceleration = Number(row.deceleration || row.decel || 0)
+  normalized.accelY = Number(row.accelY || 0)
+  normalized.sensorDecel = Number(row.sensorDecel || 0)
+  normalized.gpsDecel = Number(row.gpsDecel || 0)
+  normalized.peakDecel = Number(row.peakDecel || 0)
+  normalized.totalDistance = Number(row.totalDistance || 0)
+  normalized.distance = Number(row.distance || 0)
+  normalized.riskScore = row.riskScore != null && row.riskScore !== "" ? Number(row.riskScore) : undefined
+  normalized.markerEvent =
+    row.markerEvent === true ||
+    row.markerEvent === "true" ||
+    ["HARD_BRAKE", "BRAKE", "SLOW_BRAKE", "POTHOLE", "ROUGH_ROAD"].includes(normalizeEventLabel(row.label, row.type))
+
+  normalized.instantMarker = row.instantMarker === true || row.instantMarker === "true"
+  normalized.label = normalizeEventLabel(row.label, row.type)
+
+  return normalized
+}
+
+function parseCSVLine(line) {
+  const result = []
+  let current = ""
+  let insideQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    const next = line[i + 1]
+
+    if (ch === '"') {
+      if (insideQuotes && next === '"') {
+        current += '"'
+        i++
+      } else {
+        insideQuotes = !insideQuotes
+      }
+    } else if (ch === "," && !insideQuotes) {
+      result.push(current)
+      current = ""
+    } else {
+      current += ch
+    }
+  }
+
+  result.push(current)
+  return result
+}
+
+function importCSV(mode = "append") {
+  const fileInput = document.getElementById("csvFileInput")
+  const file = fileInput?.files?.[0]
+
+  if (!file) {
+    alert("Please select a CSV file first.")
+    return
+  }
+
+  const reader = new FileReader()
+
+  reader.onload = function (e) {
+    const text = e.target.result
+    const lines = text.split(/\r?\n/).filter(line => line.trim() !== "")
+
+    if (lines.length < 2) {
+      alert("CSV file is empty or invalid.")
+      return
+    }
+
+    const headers = parseCSVLine(lines[0]).map(h => h.trim())
+
+    const parsedData = lines.slice(1).map((line) => {
+      const values = parseCSVLine(line)
+      const row = {}
+
+      headers.forEach((header, i) => {
+        row[header] = values[i] != null ? values[i] : ""
+      })
+
+      return normalizeImportedRow(row)
+    })
+
+    if (mode === "replace") {
+      dataset = parsedData
+    } else {
+      dataset = dedupeDatasetRows([...dataset, ...parsedData])
+    }
+
+    localStorage.setItem("moto_dataset", JSON.stringify(dataset))
+    rebuildZonesFromDataset()
+    renderHistoricalEventMarkers()
+    renderDangerZones()
+    updateSummary()
+    updateASummary()
+
+    alert(`CSV imported successfully. Mode: ${mode}. Rows loaded: ${parsedData.length}`)
+  }
+
+  reader.readAsText(file)
+}
+
+function rebuildZonesFromDataset() {
+  dangerZones = []
+  alertedZones.clear()
+
+  const validRows = dataset.filter((row) => {
+    const label = normalizeEventLabel(row.label, row.type)
+    return (
+      Number.isFinite(Number(row.lat)) &&
+      Number.isFinite(Number(row.lng)) &&
+      ["HARD_BRAKE", "BRAKE", "SLOW_BRAKE", "POTHOLE", "ROUGH_ROAD"].includes(label)
+    )
+  })
+
+  validRows.forEach((rawRow) => {
+    const row = normalizeImportedRow(rawRow)
+    addDangerZone(row)
+  })
+
+  saveDangerZones()
+  renderDangerZones()
+  updateASummary()
+}
+
+// ================= LEGEND / FILTERS =================
 function createMapLegendAndFilters() {
   if (!map) return
 
@@ -685,7 +838,7 @@ function createMapLegendAndFilters() {
     div.style.fontSize = "12px"
     div.style.lineHeight = "1.6"
     div.style.boxShadow = "0 4px 12px rgba(0,0,0,0.25)"
-    div.style.maxWidth = "220px"
+    div.style.maxWidth = "230px"
 
     div.innerHTML = `
       <div style="font-weight:700; margin-bottom:6px;">Map Filters</div>
@@ -729,6 +882,238 @@ function createMapLegendAndFilters() {
   }
 
   legend.addTo(map)
+}
+
+// ================= HELPERS =================
+let decelBuffer = []
+
+function smoothValue(current, target, alpha = 0.2) {
+  return current * (1 - alpha) + target * alpha
+}
+
+function clampDecel(value) {
+  if (!isFinite(value)) return 0
+  if (value < 0) return 0
+  if (value > 8) return 8
+  return value
+}
+
+function getBrakeLevelFromDecel(decel) {
+  if (decel >= HARD_BRAKE_THRESHOLD) return "HARD"
+  if (decel >= BRAKE_THRESHOLD) return "NORMAL"
+  if (decel >= SLOW_BRAKE_THRESHOLD) return "SLOW"
+  return "NONE"
+}
+
+function generateSessionId() {
+  return "SESSION-" + new Date().toISOString().replace(/[:.]/g, "-")
+}
+
+function setPhonePosition(value) {
+  phonePosition = value
+  const nodes = document.querySelectorAll("#phonePosText")
+  nodes.forEach((el) => {
+    el.innerText = value
+  })
+  updateASummary()
+}
+
+function updateRecordingUI(isOn) {
+  const body = document.body
+  const text = document.getElementById("recordText")
+
+  if (isOn) {
+    body.classList.add("recording")
+    if (text) text.innerText = "RECORDING"
+  } else {
+    body.classList.remove("recording")
+    if (text) text.innerText = "IDLE"
+  }
+}
+
+function updateSessionUI() {
+  const sid = document.getElementById("sessionId")
+  const dur = document.getElementById("duration")
+  const dist = document.getElementById("distanceRide")
+
+  if (sid) sid.innerText = currentSessionId
+  if (dur && rideStartTime) dur.innerText = Math.floor((Date.now() - rideStartTime) / 1000)
+  if (dist) dist.innerText = totalDistance.toFixed(2)
+}
+
+function updateInsights(mode = "Ready", zone = "Normal", road = "Stable") {
+  const modeEl = document.getElementById("insightMode")
+  const zoneEl = document.getElementById("insightZone")
+  const roadEl = document.getElementById("insightRoad")
+
+  if (modeEl) modeEl.innerText = mode
+  if (zoneEl) zoneEl.innerText = zone
+  if (roadEl) roadEl.innerText = road
+
+  const heroBrakeState = document.getElementById("heroBrakeState")
+  const miniBrakeState = document.getElementById("miniBrakeState")
+  const miniRoadState = document.getElementById("miniRoadState")
+  const miniZoneState = document.getElementById("miniZoneState")
+  const topRideMode = document.getElementById("topRideMode")
+  const topAlertStatus = document.getElementById("topAlertStatus")
+
+  if (heroBrakeState) heroBrakeState.innerText = `${mode} • ${road}`
+  if (miniBrakeState) miniBrakeState.innerText = road.includes("Brake") ? road : zone
+  if (miniRoadState) miniRoadState.innerText = road
+  if (miniZoneState) miniZoneState.innerText = zone
+  if (topRideMode) topRideMode.innerText = mode
+  if (topAlertStatus) topAlertStatus.innerText = lastAlertType
+}
+
+function updateASummary() {
+  const alertEl = document.getElementById("activeAlertCount")
+  const zoneEl = document.getElementById("dangerZoneCount")
+  const latencyEl = document.getElementById("lastAlertLatency")
+  const typeEl = document.getElementById("lastAlertType")
+
+  if (alertEl) alertEl.innerText = activeAlertCount
+  if (zoneEl) zoneEl.innerText = dangerZones.length
+  if (latencyEl) latencyEl.innerText = `${lastAlertLatencyMs} ms`
+  if (typeEl) typeEl.innerText = lastAlertType
+}
+
+function recordAlertLatency(startTime, alertType) {
+  lastAlertLatencyMs = Math.max(0, Date.now() - startTime)
+  lastAlertType = alertType
+  activeAlertCount++
+  updateASummary()
+}
+
+function raiseAlert({
+  text,
+  color,
+  voiceText = "",
+  vibration = "",
+  chime = "",
+  insightMode = "Warning",
+  insightZone = "Risk Zone",
+  insightRoad = "Hazard",
+  alertType = "Alert",
+  startTime = Date.now()
+}) {
+  showPopup(text, color)
+
+  if (voiceText) speak(voiceText)
+  if (vibration) vibrate(vibration)
+  if (chime) playChime(chime)
+
+  updateInsights(insightMode, insightZone, insightRoad)
+  recordAlertLatency(startTime, alertType)
+}
+
+function speak(text) {
+  const now = Date.now()
+  if (now - lastVoiceTime < 2000) return
+  lastVoiceTime = now
+
+  if ("speechSynthesis" in window) {
+    try {
+      speechSynthesis.cancel()
+      const msg = new SpeechSynthesisUtterance(text)
+      msg.lang = "en-US"
+      msg.rate = 1
+      msg.pitch = 1
+      msg.volume = 1
+      speechSynthesis.speak(msg)
+    } catch (e) {
+      console.log("Speech error:", e)
+    }
+  }
+}
+
+function showPopup(text, color) {
+  const p = document.getElementById("popup")
+  if (!p) return
+  p.innerText = text
+  p.style.background = color
+  p.style.display = "block"
+  setTimeout(() => {
+    p.style.display = "none"
+  }, 1600)
+}
+
+function triggerEffect() {
+  document.body.classList.add("shake")
+  setTimeout(() => document.body.classList.remove("shake"), 300)
+}
+
+function triggerBrakeFlash(level) {
+  const hero = document.querySelector(".hero-card")
+  const riskEl = document.getElementById("risk")
+  const styleEl = document.getElementById("style")
+
+  if (!hero || !riskEl || !styleEl) return
+
+  hero.classList.remove("flash-slow", "flash-normal", "flash-hard")
+  riskEl.classList.remove("flash-slow-text", "flash-normal-text", "flash-hard-text")
+  styleEl.classList.remove("flash-slow-text", "flash-normal-text", "flash-hard-text")
+
+  if (level === "SLOW") {
+    hero.classList.add("flash-slow")
+    riskEl.classList.add("flash-slow-text")
+    styleEl.classList.add("flash-slow-text")
+  } else if (level === "NORMAL") {
+    hero.classList.add("flash-normal")
+    riskEl.classList.add("flash-normal-text")
+    styleEl.classList.add("flash-normal-text")
+  } else if (level === "HARD") {
+    hero.classList.add("flash-hard")
+    riskEl.classList.add("flash-hard-text")
+    styleEl.classList.add("flash-hard-text")
+  }
+
+  setTimeout(() => {
+    hero.classList.remove("flash-slow", "flash-normal", "flash-hard")
+    riskEl.classList.remove("flash-slow-text", "flash-normal-text", "flash-hard-text")
+    styleEl.classList.remove("flash-slow-text", "flash-normal-text", "flash-hard-text")
+  }, 900)
+}
+
+function vibrate(type) {
+  if (!navigator.vibrate) return
+
+  if (type === "hard") {
+    navigator.vibrate([250, 80, 250, 80, 250])
+  } else if (type === "normal") {
+    navigator.vibrate([160, 60, 160])
+  } else if (type === "soft") {
+    navigator.vibrate(100)
+  }
+}
+
+function logLatency(tag, startTime) {
+  const latency = Date.now() - startTime
+  console.log(`${tag} latency: ${latency} ms`)
+}
+
+function syncSystemMode() {
+  if (!watching) {
+    updateInsights("Idle", "Normal", "Stable")
+    return
+  }
+
+  let zone = "Monitoring"
+  let road = "Stable"
+
+  const recentLabels = dataset.slice(-10).map((d) => d.label || "")
+  if (recentLabels.includes("POTHOLE")) {
+    road = "Pothole"
+  } else if (recentLabels.includes("ROUGH_ROAD")) {
+    road = "Rough Road"
+  } else if (recentLabels.includes("ROAD_WORK")) {
+    road = "Road Work"
+  }
+
+  if (hardBrakes > 0) {
+    zone = "Risk Zone"
+  }
+
+  updateInsights("Angel Active", zone, road)
 }
 
 // ================= DANGER ZONE ALERTS =================
@@ -945,26 +1330,17 @@ window.onload = function () {
 
   const saved = localStorage.getItem("moto_dataset")
   if (saved) {
-    dataset = JSON.parse(saved).map((d) => ({
-      ...d,
-      lat: Number(d.lat),
-      lng: Number(d.lng),
-      speed: Number(d.speed || 0),
-      acceleration: Number(d.acceleration || 0),
-      deceleration: Number(d.deceleration || d.decel || 0),
-      sensorDecel: Number(d.sensorDecel || 0),
-      gpsDecel: Number(d.gpsDecel || 0),
-      peakDecel: Number(d.peakDecel || 0),
-      totalDistance: Number(d.totalDistance || 0),
-      distance: Number(d.distance || 0),
-      riskScore: d.riskScore != null ? Number(d.riskScore) : undefined,
-      label: normalizeEventLabel(d.label, d.type)
-    }))
+    dataset = JSON.parse(saved).map((d) => normalizeImportedRow(d))
   }
 
   loadDangerZones()
-  renderHistoricalEventMarkers()
-  renderDangerZones()
+
+  if (dataset.length > 0) {
+    rebuildZonesFromDataset()
+    renderHistoricalEventMarkers()
+  } else {
+    renderDangerZones()
+  }
 
   setPhonePosition(phonePosition)
   updateRecordingUI(false)
