@@ -1,4 +1,4 @@
-// ================= CORE STATE =================
+ // ================= CORE STATE =================
 let watching = false
 let watchId = null
 
@@ -59,7 +59,6 @@ window.addEventListener("devicemotion", (e) => {
 })
 
 // ================= TUNING =================
-// brake tuning
 const SLOW_BRAKE_THRESHOLD = 1.5
 const BRAKE_THRESHOLD = 2.4
 const HARD_BRAKE_THRESHOLD = 3.6
@@ -73,7 +72,6 @@ const MIN_SPEED_DROP = 2.8
 const HARD_MIN_SPEED_DROP = 4.8
 const BRAKE_WINDOW_MS = 900
 
-// road tuning
 const MIN_SPEED_FOR_ROAD_EVENT = 8
 const ROUGH_ROAD_ACCEL_THRESHOLD = 3.0
 const POTHOLE_THRESHOLD = 4.6
@@ -81,11 +79,9 @@ const ROAD_EVENT_MAX_DT = 0.22
 const POTHOLE_MAX_SPEED_DROP = 1.6
 const ROUGH_ROAD_REPEAT_MS = 1800
 
-// map zone tuning
 const ALERT_RADIUS_METERS = 55
 const ZONE_MERGE_METERS = 28
 
-// alert tuning
 const ALERT_COOLDOWN_MS = 700
 
 let lastRoadEventTime = 0
@@ -462,17 +458,17 @@ function addEventMarker(rowOrLat, lngArg = null, typeArg = null) {
   const zoneInfo = getZoneDisplay(label)
   const riskScore = row.riskScore != null ? row.riskScore : computeEventRiskScore(row)
 
-    let radius = 4
+  let radius = 4
   if (label === "HARD_BRAKE") radius = 5
   if (label === "BRAKE") radius = 4
   if (label === "POTHOLE") radius = 5
   if (label === "ROUGH_ROAD") radius = 4
   if (label === "SLOW_BRAKE") radius = 3
 
-    const marker = L.circleMarker([Number(row.lat), Number(row.lng)], {
+  const marker = L.circleMarker([Number(row.lat), Number(row.lng)], {
     color: zoneInfo.color,
     fillColor: zoneInfo.color,
-    fillOpacity: 0.55,
+    fillOpacity: 0.6,
     radius: radius,
     weight: 1
   }).bindPopup(
@@ -503,6 +499,28 @@ function clearEventMarkers() {
   eventMarkers = []
 }
 
+function renderHistoricalEventMarkers() {
+  clearEventMarkers()
+
+  dataset.forEach((row) => {
+    const label = normalizeEventLabel(row.label, row.type)
+
+    if (
+      Number.isFinite(Number(row.lat)) &&
+      Number.isFinite(Number(row.lng)) &&
+      ["HARD_BRAKE", "BRAKE", "SLOW_BRAKE", "POTHOLE", "ROUGH_ROAD"].includes(label)
+    ) {
+      addEventMarker({
+        ...row,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        label,
+        riskScore: row.riskScore != null ? Number(row.riskScore) : computeEventRiskScore(row)
+      })
+    }
+  })
+}
+
 function renderDangerZones() {
   if (!map) return
 
@@ -513,30 +531,23 @@ function renderDangerZones() {
     const potholeCount = Number(z.potholeCount || 0)
     const roughCount = Number(z.roughRoadCount || 0)
 
-    let dominantType = z.dominantType || getDominantType(z)
-
-    if (potholeCount + roughCount >= 4 || potholeCount >= 2 || roughCount >= 3) {
-      dominantType = "ROAD_WORK"
-    }
-
+    let dominantType = z.dominantType || "BRAKE"
     const borderInfo = getZoneDisplay(dominantType)
     const levelColor = getLevelColor(z.level || "LOW")
 
-    let radius = 42
-    if (dominantType === "HARD_BRAKE") radius = 50
-    if (dominantType === "BRAKE") radius = 46
-    if (dominantType === "POTHOLE") radius = 40
-    if (dominantType === "ROUGH_ROAD") radius = 56
-    if (dominantType === "ROAD_WORK") radius = 68
-
-    const scoreBoost = Math.min(Number(z.totalScore || 0), 12) * 6
+    let radius = 70
+    if (dominantType === "HARD_BRAKE") radius = 80
+    if (dominantType === "BRAKE") radius = 70
+    if (dominantType === "POTHOLE") radius = 60
+    if (dominantType === "ROUGH_ROAD") radius = 85
+    if (dominantType === "ROAD_WORK") radius = 100
 
     const marker = L.circle([z.lat, z.lng], {
-      radius: radius + scoreBoost,
+      radius: radius + Math.min(Number(z.totalScore || 0), 20) * 3,
       color: borderInfo.color,
       fillColor: levelColor,
-      fillOpacity: 0.55,
-      weight: 5
+      fillOpacity: 0.45,
+      weight: 4
     }).addTo(map)
 
     marker.bindPopup(
@@ -645,37 +656,136 @@ function addRoughRoadZone(rowOrLat, lngArg = null) {
   else addDangerZone({ lat: rowOrLat, lng: lngArg, label: "ROUGH_ROAD" })
 }
 
-function renderHistoricalEventMarkers() {
-  clearEventMarkers()
+function rebuildZonesFromDataset() {
+  const existingZoneMap = new Map()
+  dangerZones.forEach((z) => {
+    existingZoneMap.set(z.id, z)
+  })
 
-  dataset.forEach((row) => {
+  const validRows = dataset.filter((row) => {
     const label = normalizeEventLabel(row.label, row.type)
-
-    if (
-      row.markerEvent === true &&
+    return (
       Number.isFinite(Number(row.lat)) &&
       Number.isFinite(Number(row.lng)) &&
       ["HARD_BRAKE", "BRAKE", "SLOW_BRAKE", "POTHOLE", "ROUGH_ROAD"].includes(label)
-    ) {
-      addEventMarker({
-        ...row,
-        lat: Number(row.lat),
-        lng: Number(row.lng),
-        label,
-        riskScore: row.riskScore != null ? Number(row.riskScore) : computeEventRiskScore(row)
+    )
+  }).map((row) => normalizeImportedRow(row))
+
+  const clusters = []
+
+  validRows.forEach((row) => {
+    const label = normalizeEventLabel(row.label, row.type)
+    const lat = Number(row.lat)
+    const lng = Number(row.lng)
+    const eventScore = row.riskScore != null ? Number(row.riskScore) : computeEventRiskScore(row)
+
+    let assigned = false
+
+    for (let i = 0; i < clusters.length; i++) {
+      const c = clusters[i]
+      const dist = getDistanceMeters(lat, lng, c.centerLat, c.centerLng)
+
+      if (dist <= 60) {
+        c.rows.push(row)
+        c.totalScore += eventScore
+        c.centerLat = (c.centerLat * (c.rows.length - 1) + lat) / c.rows.length
+        c.centerLng = (c.centerLng * (c.rows.length - 1) + lng) / c.rows.length
+
+        if (label === "HARD_BRAKE") c.hardBrakeCount++
+        if (label === "BRAKE") c.brakeCount++
+        if (label === "SLOW_BRAKE") c.slowBrakeCount++
+        if (label === "POTHOLE") c.potholeCount++
+        if (label === "ROUGH_ROAD") c.roughRoadCount++
+
+        assigned = true
+        break
+      }
+    }
+
+    if (!assigned) {
+      clusters.push({
+        centerLat: lat,
+        centerLng: lng,
+        rows: [row],
+        totalScore: eventScore,
+        hardBrakeCount: label === "HARD_BRAKE" ? 1 : 0,
+        brakeCount: label === "BRAKE" ? 1 : 0,
+        slowBrakeCount: label === "SLOW_BRAKE" ? 1 : 0,
+        potholeCount: label === "POTHOLE" ? 1 : 0,
+        roughRoadCount: label === "ROUGH_ROAD" ? 1 : 0
       })
     }
   })
+
+  const newZones = clusters.map((c, index) => {
+    let dominantType = "BRAKE"
+
+    const counts = {
+      HARD_BRAKE: c.hardBrakeCount,
+      BRAKE: c.brakeCount,
+      SLOW_BRAKE: c.slowBrakeCount,
+      POTHOLE: c.potholeCount,
+      ROUGH_ROAD: c.roughRoadCount
+    }
+
+    let maxType = "BRAKE"
+    let maxCount = -1
+
+    Object.entries(counts).forEach(([k, v]) => {
+      if (v > maxCount) {
+        maxCount = v
+        maxType = k
+      }
+    })
+
+    dominantType = maxType
+
+    if (c.potholeCount + c.roughRoadCount >= 4 || c.potholeCount >= 2 || c.roughRoadCount >= 3) {
+      dominantType = "ROAD_WORK"
+    }
+
+    const avgScore = c.totalScore / c.rows.length
+    const scoreEMA = avgScore
+
+    const zoneId = "zone_cluster_" + index
+    const oldZone = existingZoneMap.get(zoneId)
+
+    return {
+      id: zoneId,
+      lat: c.centerLat,
+      lng: c.centerLng,
+      type: dominantType,
+      dominantType,
+      level: getPersistentZoneLevel(oldZone ? oldZone.level : null, scoreEMA),
+      count: c.rows.length,
+      totalScore: c.totalScore,
+      scoreEMA: scoreEMA,
+      hardBrakeCount: c.hardBrakeCount,
+      brakeCount: c.brakeCount,
+      slowBrakeCount: c.slowBrakeCount,
+      potholeCount: c.potholeCount,
+      roughRoadCount: c.roughRoadCount,
+      createdAt: oldZone?.createdAt || Date.now(),
+      updatedAt: Date.now()
+    }
+  })
+
+  dangerZones = newZones
+  saveDangerZones()
+  renderDangerZones()
+  updateASummary()
 }
 
 function refreshMapLayersFromState() {
   renderHistoricalEventMarkers()
   renderDangerZones()
 }
+
 function toggleMapFilter(key, checked) {
   mapFilters[key] = checked
   refreshMapLayersFromState()
 }
+
 // ================= CSV IMPORT / REBUILD =================
 function dedupeDatasetRows(rows) {
   const seen = new Set()
@@ -805,88 +915,13 @@ function importCSV(mode = "append") {
   reader.readAsText(file)
 }
 
-function rebuildZonesFromDataset() {
+function clearZonesOnly() {
   dangerZones = []
   alertedZones.clear()
-
-  const validRows = dataset.filter((row) => {
-    const label = normalizeEventLabel(row.label, row.type)
-    return (
-      Number.isFinite(Number(row.lat)) &&
-      Number.isFinite(Number(row.lng)) &&
-      ["HARD_BRAKE", "BRAKE", "SLOW_BRAKE", "POTHOLE", "ROUGH_ROAD"].includes(label)
-    )
-  })
-
-  validRows.forEach((rawRow) => {
-    const row = normalizeImportedRow(rawRow)
-    addDangerZone(row)
-  })
-
   saveDangerZones()
   renderDangerZones()
   updateASummary()
-}
-
-// ================= LEGEND / FILTERS =================
-function createMapLegendAndFilters() {
-  if (!map) return
-
-  const legend = L.control({ position: "bottomright" })
-
-  legend.onAdd = function () {
-    const div = L.DomUtil.create("div", "info legend")
-    div.style.background = "rgba(20,20,20,0.9)"
-    div.style.color = "#fff"
-    div.style.padding = "10px 12px"
-    div.style.borderRadius = "10px"
-    div.style.fontSize = "12px"
-    div.style.lineHeight = "1.6"
-    div.style.boxShadow = "0 4px 12px rgba(0,0,0,0.25)"
-    div.style.maxWidth = "230px"
-
-    div.innerHTML = `
-      <div style="font-weight:700; margin-bottom:6px;">Map Filters</div>
-
-      <label><input type="checkbox" data-filter="HARD_BRAKE" checked> Hard Brake</label><br>
-      <label><input type="checkbox" data-filter="BRAKE" checked> Brake</label><br>
-      <label><input type="checkbox" data-filter="SLOW_BRAKE" checked> Slow Brake</label><br>
-      <label><input type="checkbox" data-filter="POTHOLE" checked> Pothole</label><br>
-      <label><input type="checkbox" data-filter="ROUGH_ROAD" checked> Rough Road</label><br>
-      <label><input type="checkbox" data-filter="ZONES" checked> Risk Zones</label>
-
-      <hr style="border-color:rgba(255,255,255,0.15); margin:8px 0;">
-
-      <div style="font-weight:700; margin-bottom:4px;">Legend</div>
-      <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff4d6d;margin-right:6px;"></span>Hard Brake</div>
-      <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffd166;margin-right:6px;"></span>Brake</div>
-      <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#80ed99;margin-right:6px;"></span>Slow Brake</div>
-      <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#5f3dc4;margin-right:6px;"></span>Pothole</div>
-      <div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#845ef7;margin-right:6px;"></span>Rough Road</div>
-      <div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#69db7c;margin-right:6px;border:1px solid #fff3;"></span>Low Zone</div>
-      <div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ffd43b;margin-right:6px;border:1px solid #fff3;"></span>Medium Zone</div>
-      <div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f76707;margin-right:6px;border:1px solid #fff3;"></span>High Zone</div>
-      <div><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ff4d6d;margin-right:6px;border:1px solid #fff3;"></span>Severe Zone</div>
-    `
-
-    L.DomEvent.disableClickPropagation(div)
-    L.DomEvent.disableScrollPropagation(div)
-
-    setTimeout(() => {
-      const checks = div.querySelectorAll("input[data-filter]")
-      checks.forEach((cb) => {
-        cb.addEventListener("change", (e) => {
-          const key = e.target.getAttribute("data-filter")
-          mapFilters[key] = e.target.checked
-          refreshMapLayersFromState()
-        })
-      })
-    }, 0)
-
-    return div
-  }
-
-  legend.addTo(map)
+  alert("All zones were cleared.")
 }
 
 // ================= HELPERS =================
@@ -1321,6 +1356,7 @@ window.onload = function () {
   })
 
   map = L.map("map").setView([13.7563, 100.5018], 15)
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{y}.png")
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
 
   eventLayerGroup = L.layerGroup().addTo(map)
@@ -1358,8 +1394,6 @@ window.onload = function () {
   const sensorNodes = document.querySelectorAll("#topSensorStatus")
   gpsNodes.forEach((el) => { el.innerText = "Ready" })
   sensorNodes.forEach((el) => { el.innerText = "Active" })
-
-  // createMapLegendAndFilters()
 }
 
 // ================= START =================
@@ -2123,14 +2157,7 @@ function markEvent(type) {
 
   showPopup("Marked: " + type, "#339af0")
 }
-function clearZonesOnly() {
-  dangerZones = []
-  alertedZones.clear()
-  saveDangerZones()
-  renderDangerZones()
-  updateASummary()
-  alert("All zones were cleared.")
-}
+
 // ================= AUTO SAVE =================
 setInterval(() => {
   if (dataset.length > 0) {
