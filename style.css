@@ -1029,3 +1029,101 @@ input[type="file"]::file-selector-button:hover {
     padding: 9px 12px;
   }
 }
+/* ================= ADDED: CLEAN EXTERNAL MAP TOOLS ================= */
+.external-map-tools {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06)),
+    rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow:
+    0 10px 22px rgba(35,28,52,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.external-map-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.external-map-filter-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-soft);
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.external-map-filter-row input[type="checkbox"] {
+  accent-color: #7aa7ff;
+  transform: scale(1.05);
+}
+
+.external-map-mini-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.external-map-mini-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.external-map-mini-legend .dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.external-map-mini-legend .dot.hard { background: #ff4d6d; }
+.external-map-mini-legend .dot.brake { background: #ffd166; }
+.external-map-mini-legend .dot.slow { background: #80ed99; }
+.external-map-mini-legend .dot.pothole { background: #5f3dc4; }
+.external-map-mini-legend .dot.rough { background: #845ef7; }
+.external-map-mini-legend .dot.low { background: #69db7c; }
+.external-map-mini-legend .dot.medium { background: #ffd43b; }
+.external-map-mini-legend .dot.high { background: #f76707; }
+.external-map-mini-legend .dot.severe { background: #ff4d6d; }
+
+#map {
+  height: 420px;
+}
+
+@media (max-width: 640px) {
+  .external-map-tools {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .external-map-filter-row {
+    gap: 8px 10px;
+  }
+
+  .external-map-filter-row label {
+    font-size: 12px;
+    padding: 7px 9px;
+  }
+
+  .external-map-mini-legend {
+    font-size: 11px;
+    gap: 8px 10px;
+  }
+
+  #map {
+    height: 460px;
+  }
+}
