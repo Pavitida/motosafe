@@ -2118,7 +2118,14 @@ function markEvent(type) {
 
   showPopup("Marked: " + type, "#339af0")
 }
-
+function clearZonesOnly() {
+  dangerZones = []
+  alertedZones.clear()
+  saveDangerZones()
+  renderDangerZones()
+  updateASummary()
+  alert("All zones were cleared.")
+}
 // ================= AUTO SAVE =================
 setInterval(() => {
   if (dataset.length > 0) {
