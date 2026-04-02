@@ -118,18 +118,42 @@
     </div>
   </section>
 
-  <section class="card map-card">
-    <div class="section-title">Risk Landscape</div>
+<section class="card map-card">
+  <div class="section-title">Risk Landscape</div>
 
-    <div class="map-legend-float">
-      <span class="legend-chip red">Hard brake</span>
-      <span class="legend-chip purple">Rough road</span>
-      <span class="legend-chip orange">Road work</span>
-      <span class="legend-chip blue">Live route</span>
+  <div class="map-legend-float">
+    <span class="legend-chip red">Hard brake</span>
+    <span class="legend-chip purple">Rough road</span>
+    <span class="legend-chip orange">Road work</span>
+    <span class="legend-chip blue">Live route</span>
+  </div>
+
+  <!-- ADDED: external map tools -->
+  <div class="external-map-tools">
+    <div class="external-map-filter-row">
+      <label><input type="checkbox" id="filterHardBrake" checked onchange="toggleMapFilter('HARD_BRAKE', this.checked)"> Hard Brake</label>
+      <label><input type="checkbox" id="filterBrake" checked onchange="toggleMapFilter('BRAKE', this.checked)"> Brake</label>
+      <label><input type="checkbox" id="filterSlowBrake" checked onchange="toggleMapFilter('SLOW_BRAKE', this.checked)"> Slow Brake</label>
+      <label><input type="checkbox" id="filterPothole" checked onchange="toggleMapFilter('POTHOLE', this.checked)"> Pothole</label>
+      <label><input type="checkbox" id="filterRoughRoad" checked onchange="toggleMapFilter('ROUGH_ROAD', this.checked)"> Rough Road</label>
+      <label><input type="checkbox" id="filterZones" checked onchange="toggleMapFilter('ZONES', this.checked)"> Risk Zones</label>
     </div>
 
-    <div id="map"></div>
-  </section>
+    <div class="external-map-mini-legend">
+      <span><i class="dot hard"></i> Hard Brake</span>
+      <span><i class="dot brake"></i> Brake</span>
+      <span><i class="dot slow"></i> Slow Brake</span>
+      <span><i class="dot pothole"></i> Pothole</span>
+      <span><i class="dot rough"></i> Rough Road</span>
+      <span><i class="dot low"></i> Low</span>
+      <span><i class="dot medium"></i> Medium</span>
+      <span><i class="dot high"></i> High</span>
+      <span><i class="dot severe"></i> Severe</span>
+    </div>
+  </div>
+
+  <div id="map"></div>
+</section>
 
   <details class="lux-panel">
     <summary class="lux-summary">
