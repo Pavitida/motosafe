@@ -331,10 +331,10 @@ function getPersistentZoneLevel(currentLevel, scoreEMA) {
 }
 
 function getLevelColor(level) {
-  if (level === "SEVERE") return "#ff4d6d"
-  if (level === "HIGH") return "#f76707"
-  if (level === "MEDIUM") return "#ffd43b"
-  return "#69db7c"
+  if (level === "SEVERE") return "#ff1744"
+  if (level === "HIGH") return "#ff9100"
+  if (level === "MEDIUM") return "#ffd600"
+  return "#00e676"
 }
 
 function getDominantType(zone) {
@@ -462,19 +462,19 @@ function addEventMarker(rowOrLat, lngArg = null, typeArg = null) {
   const zoneInfo = getZoneDisplay(label)
   const riskScore = row.riskScore != null ? row.riskScore : computeEventRiskScore(row)
 
-  let radius = 6
-  if (label === "HARD_BRAKE") radius = 8
-  if (label === "BRAKE") radius = 7
-  if (label === "POTHOLE") radius = 7
-  if (label === "ROUGH_ROAD") radius = 6
-  if (label === "SLOW_BRAKE") radius = 5
+    let radius = 4
+  if (label === "HARD_BRAKE") radius = 5
+  if (label === "BRAKE") radius = 4
+  if (label === "POTHOLE") radius = 5
+  if (label === "ROUGH_ROAD") radius = 4
+  if (label === "SLOW_BRAKE") radius = 3
 
-  const marker = L.circleMarker([Number(row.lat), Number(row.lng)], {
+    const marker = L.circleMarker([Number(row.lat), Number(row.lng)], {
     color: zoneInfo.color,
     fillColor: zoneInfo.color,
-    fillOpacity: 0.85,
+    fillOpacity: 0.55,
     radius: radius,
-    weight: 2
+    weight: 1
   }).bindPopup(
     `<b>${label}</b><br>` +
     `Speed: ${Number(row.speed || 0).toFixed(1)} km/h<br>` +
@@ -522,22 +522,22 @@ function renderDangerZones() {
     const borderInfo = getZoneDisplay(dominantType)
     const levelColor = getLevelColor(z.level || "LOW")
 
-    let radius = 30
-    if (dominantType === "HARD_BRAKE") radius = 36
-    if (dominantType === "BRAKE") radius = 32
-    if (dominantType === "POTHOLE") radius = 28
-    if (dominantType === "ROUGH_ROAD") radius = 42
-    if (dominantType === "ROAD_WORK") radius = 52
+    let radius = 42
+    if (dominantType === "HARD_BRAKE") radius = 50
+    if (dominantType === "BRAKE") radius = 46
+    if (dominantType === "POTHOLE") radius = 40
+    if (dominantType === "ROUGH_ROAD") radius = 56
+    if (dominantType === "ROAD_WORK") radius = 68
+
+    const scoreBoost = Math.min(Number(z.totalScore || 0), 12) * 6
 
     const marker = L.circle([z.lat, z.lng], {
-      radius: radius + Math.min(Number(z.totalScore || 0), 12) * 5,
+      radius: radius + scoreBoost,
       color: borderInfo.color,
       fillColor: levelColor,
-      fillOpacity: 0.42,
-      weight: 4
+      fillOpacity: 0.55,
+      weight: 5
     }).addTo(map)
-
-    marker.bringToFront()
 
     marker.bindPopup(
       `<b>${z.level || "LOW"} RISK ZONE</b><br>` +
@@ -547,8 +547,7 @@ function renderDangerZones() {
       `Hard brake: ${Number(z.hardBrakeCount || 0)}<br>` +
       `Pothole: ${potholeCount}<br>` +
       `Rough road: ${roughCount}<br>` +
-      `Total score: ${Number(z.totalScore || 0).toFixed(1)}<br>` +
-      `Recent score: ${Number(z.scoreEMA || 0).toFixed(2)}`
+      `Total score: ${Number(z.totalScore || 0).toFixed(1)}`
     )
 
     dangerZoneMarkers.push(marker)
