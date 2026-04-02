@@ -52,6 +52,18 @@
     </div>
   </section>
 
+  <!-- ADDED: CSV IMPORT / ZONE TOOLS -->
+  <section class="card">
+    <div class="section-title">Historical CSV Tools</div>
+    <div class="button-group" style="flex-wrap: wrap;">
+      <input type="file" id="csvFileInput" accept=".csv">
+      <button onclick="importCSV('append')">Append CSV</button>
+      <button onclick="importCSV('replace')">Replace with CSV</button>
+      <button onclick="rebuildZonesFromDataset()">Rebuild Zones</button>
+      <button onclick="clearZonesOnly()">Clear Zones Only</button>
+    </div>
+  </section>
+
   <section class="card hero-card">
     <div class="section-title">Ride Pulse</div>
 
