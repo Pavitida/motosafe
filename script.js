@@ -205,12 +205,12 @@ let mapFilters = {
 }
 
 const EVENT_WEIGHTS = {
-  HARD_BRAKE: 3,
+  HARD_BRAKE: 4,
   BRAKE: 2,
   SLOW_BRAKE: 1,
   POTHOLE: 3,
   ROUGH_ROAD: 2,
-  ROAD_WORK: 2
+  ROAD_WORK: 3
 }
 
 function loadDangerZones() {
@@ -291,6 +291,19 @@ function computeEventRiskScore(row) {
   if (speed >= 30) score += 1
 
   return score
+}
+function getZoneLevelFromScore(totalScore, pointCount) {
+  const score = Number(totalScore || 0)
+  const count = Number(pointCount || 0)
+
+  // bonus ถ้าจุดในพื้นที่เยอะ
+  const densityBoost = count >= 10 ? 4 : count >= 6 ? 2 : 0
+  const finalScore = score + densityBoost
+
+  if (finalScore >= 20) return "SEVERE"
+  if (finalScore >= 12) return "HIGH"
+  if (finalScore >= 6) return "MEDIUM"
+  return "LOW"
 }
 
 function getPersistentZoneLevel(currentLevel, scoreEMA) {
@@ -535,30 +548,31 @@ function renderDangerZones() {
     const borderInfo = getZoneDisplay(dominantType)
     const levelColor = getLevelColor(z.level || "LOW")
 
-    let radius = 70
-    if (dominantType === "HARD_BRAKE") radius = 80
-    if (dominantType === "BRAKE") radius = 70
-    if (dominantType === "POTHOLE") radius = 60
-    if (dominantType === "ROUGH_ROAD") radius = 85
-    if (dominantType === "ROAD_WORK") radius = 100
+    let radius = 32
+    if (dominantType === "HARD_BRAKE") radius = 36
+    if (dominantType === "BRAKE") radius = 32
+    if (dominantType === "POTHOLE") radius = 28
+    if (dominantType === "ROUGH_ROAD") radius = 36
+    if (dominantType === "ROAD_WORK") radius = 42
 
     const marker = L.circle([z.lat, z.lng], {
-      radius: radius + Math.min(Number(z.totalScore || 0), 20) * 3,
+      radius: radius + Math.min(Number(z.count || 0), 12) * 8,
       color: borderInfo.color,
       fillColor: levelColor,
-      fillOpacity: 0.45,
-      weight: 4
+      fillOpacity: 0.22,
+      weight: 3
     }).addTo(map)
 
     marker.bindPopup(
       `<b>${z.level || "LOW"} RISK ZONE</b><br>` +
       `Main type: ${dominantType}<br>` +
-      `Count: ${z.count}<br>` +
-      `Brake: ${Number(z.brakeCount || 0) + Number(z.slowBrakeCount || 0)}<br>` +
+      `Point count: ${z.count}<br>` +
       `Hard brake: ${Number(z.hardBrakeCount || 0)}<br>` +
+      `Brake: ${Number(z.brakeCount || 0)}<br>` +
+      `Slow brake: ${Number(z.slowBrakeCount || 0)}<br>` +
       `Pothole: ${potholeCount}<br>` +
       `Rough road: ${roughCount}<br>` +
-      `Total score: ${Number(z.totalScore || 0).toFixed(1)}`
+      `Zone score: ${Number(z.totalScore || 0).toFixed(1)}`
     )
 
     dangerZoneMarkers.push(marker)
@@ -685,7 +699,7 @@ function rebuildZonesFromDataset() {
       const c = clusters[i]
       const dist = getDistanceMeters(lat, lng, c.centerLat, c.centerLng)
 
-      if (dist <= 60) {
+      if (dist <= 40) {
         c.rows.push(row)
         c.totalScore += eventScore
         c.centerLat = (c.centerLat * (c.rows.length - 1) + lat) / c.rows.length
@@ -718,8 +732,10 @@ function rebuildZonesFromDataset() {
   })
 
   const newZones = clusters.map((c, index) => {
-    let dominantType = "BRAKE"
+    const zoneId = "zone_cluster_" + index
+    const oldZone = existingZoneMap.get(zoneId)
 
+    let dominantType = "BRAKE"
     const counts = {
       HARD_BRAKE: c.hardBrakeCount,
       BRAKE: c.brakeCount,
@@ -744,11 +760,7 @@ function rebuildZonesFromDataset() {
       dominantType = "ROAD_WORK"
     }
 
-    const avgScore = c.totalScore / c.rows.length
-    const scoreEMA = avgScore
-
-    const zoneId = "zone_cluster_" + index
-    const oldZone = existingZoneMap.get(zoneId)
+    const calculatedLevel = getZoneLevelFromScore(c.totalScore, c.rows.length)
 
     return {
       id: zoneId,
@@ -756,10 +768,10 @@ function rebuildZonesFromDataset() {
       lng: c.centerLng,
       type: dominantType,
       dominantType,
-      level: getPersistentZoneLevel(oldZone ? oldZone.level : null, scoreEMA),
+      level: oldZone ? getPersistentZoneLevel(oldZone.level, c.totalScore / c.rows.length) : calculatedLevel,
       count: c.rows.length,
       totalScore: c.totalScore,
-      scoreEMA: scoreEMA,
+      scoreEMA: c.totalScore / c.rows.length,
       hardBrakeCount: c.hardBrakeCount,
       brakeCount: c.brakeCount,
       slowBrakeCount: c.slowBrakeCount,
@@ -770,12 +782,15 @@ function rebuildZonesFromDataset() {
     }
   })
 
-  dangerZones = newZones
+  dangerZones = newZones.map((z) => ({
+    ...z,
+    level: getZoneLevelFromScore(z.totalScore, z.count)
+  }))
+
   saveDangerZones()
   renderDangerZones()
   updateASummary()
 }
-
 function refreshMapLayersFromState() {
   renderHistoricalEventMarkers()
   renderDangerZones()
