@@ -509,6 +509,12 @@ function renderDangerZones() {
   clearDangerZoneMarkers()
   if (!mapFilters.ZONES) return
 
+  function renderDangerZones() {
+  if (!map) return
+
+  clearDangerZoneMarkers()
+  if (!mapFilters.ZONES) return
+
   dangerZones.forEach((z) => {
     const potholeCount = Number(z.potholeCount || 0)
     const roughCount = Number(z.roughRoadCount || 0)
@@ -522,31 +528,68 @@ function renderDangerZones() {
     const borderInfo = getZoneDisplay(dominantType)
     const levelColor = getLevelColor(z.level || "LOW")
 
-    let radius = 22
-    if (dominantType === "HARD_BRAKE") radius = 24
-    if (dominantType === "POTHOLE") radius = 20
-    if (dominantType === "ROUGH_ROAD") radius = 26
-    if (dominantType === "ROAD_WORK") radius = 30
+    // ขนาดฐานของโซน
+    let major = 55
+    let minor = 35
 
-    const marker = L.circle([z.lat, z.lng], {
-      radius: radius + Math.min(Number(z.totalScore || 0), 12) * 2,
+    if (dominantType === "HARD_BRAKE") {
+      major = 60
+      minor = 38
+    }
+
+    if (dominantType === "BRAKE") {
+      major = 52
+      minor = 34
+    }
+
+    if (dominantType === "POTHOLE") {
+      major = 46
+      minor = 32
+    }
+
+    if (dominantType === "ROUGH_ROAD") {
+      major = 70
+      minor = 40
+    }
+
+    if (dominantType === "ROAD_WORK") {
+      major = 85
+      minor = 50
+    }
+
+    // ขยายตามความรุนแรงสะสม
+    const scoreBoost = Math.min(Number(z.totalScore || 0), 12)
+    major += scoreBoost * 6
+    minor += scoreBoost * 4
+
+    // มุมเอียงของวงรี
+    let tilt = 0
+    if (dominantType === "HARD_BRAKE") tilt = 25
+    if (dominantType === "BRAKE") tilt = 18
+    if (dominantType === "POTHOLE") tilt = 0
+    if (dominantType === "ROUGH_ROAD") tilt = 35
+    if (dominantType === "ROAD_WORK") tilt = 15
+
+    const marker = L.ellipse([z.lat, z.lng], [major, minor], tilt, {
       color: borderInfo.color,
       fillColor: levelColor,
-      fillOpacity: 0.22,
-      weight: 2
-    })
-      .addTo(map)
-      .bindPopup(
-        `<b>${z.level || "LOW"} RISK ZONE</b><br>` +
-        `Main type: ${dominantType}<br>` +
-        `Count: ${z.count}<br>` +
-        `Brake: ${Number(z.brakeCount || 0) + Number(z.slowBrakeCount || 0)}<br>` +
-        `Hard brake: ${Number(z.hardBrakeCount || 0)}<br>` +
-        `Pothole: ${potholeCount}<br>` +
-        `Rough road: ${roughCount}<br>` +
-        `Total score: ${Number(z.totalScore || 0).toFixed(1)}<br>` +
-        `Recent score: ${Number(z.scoreEMA || 0).toFixed(2)}`
-      )
+      fillOpacity: 0.42,
+      weight: 4
+    }).addTo(map)
+
+    marker.bringToFront()
+
+    marker.bindPopup(
+      `<b>${z.level || "LOW"} RISK ZONE</b><br>` +
+      `Main type: ${dominantType}<br>` +
+      `Count: ${z.count}<br>` +
+      `Brake: ${Number(z.brakeCount || 0) + Number(z.slowBrakeCount || 0)}<br>` +
+      `Hard brake: ${Number(z.hardBrakeCount || 0)}<br>` +
+      `Pothole: ${potholeCount}<br>` +
+      `Rough road: ${roughCount}<br>` +
+      `Total score: ${Number(z.totalScore || 0).toFixed(1)}<br>` +
+      `Recent score: ${Number(z.scoreEMA || 0).toFixed(2)}`
+    )
 
     dangerZoneMarkers.push(marker)
   })
