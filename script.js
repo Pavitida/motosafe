@@ -670,7 +670,10 @@ function refreshMapLayersFromState() {
   renderHistoricalEventMarkers()
   renderDangerZones()
 }
-
+function toggleMapFilter(key, checked) {
+  mapFilters[key] = checked
+  refreshMapLayersFromState()
+}
 // ================= CSV IMPORT / REBUILD =================
 function dedupeDatasetRows(rows) {
   const seen = new Set()
@@ -1354,7 +1357,7 @@ window.onload = function () {
   gpsNodes.forEach((el) => { el.innerText = "Ready" })
   sensorNodes.forEach((el) => { el.innerText = "Active" })
 
-  createMapLegendAndFilters()
+  // createMapLegendAndFilters()
 }
 
 // ================= START =================
