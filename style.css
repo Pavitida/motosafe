@@ -975,3 +975,57 @@ canvas {
     padding: 0 16px 16px;
   }
 }
+/* ================= ADDED: CSV IMPORT TOOLS ================= */
+input[type="file"] {
+  width: 100%;
+  min-height: 58px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.10);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 14px;
+  box-shadow: 0 10px 22px rgba(35,28,52,0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.12);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: rgba(255,255,255,0.18);
+  transform: translateY(-1px);
+}
+
+.button-group input[type="file"] {
+  grid-column: 1 / -1;
+}
+
+.button-group button {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  input[type="file"] {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+
+  input[type="file"]::file-selector-button {
+    font-size: 12px;
+    padding: 9px 12px;
+  }
+}
