@@ -544,28 +544,30 @@ function renderDangerZones() {
     const potholeCount = Number(z.potholeCount || 0)
     const roughCount = Number(z.roughRoadCount || 0)
 
-    let dominantType = z.dominantType || "BRAKE"
-    const borderInfo = getZoneDisplay(dominantType)
+    const borderInfo = getZoneDisplay(z.dominantType || "BRAKE")
     const levelColor = getLevelColor(z.level || "LOW")
 
-    let radius = 32
-    if (dominantType === "HARD_BRAKE") radius = 36
-    if (dominantType === "BRAKE") radius = 32
-    if (dominantType === "POTHOLE") radius = 28
-    if (dominantType === "ROUGH_ROAD") radius = 36
-    if (dominantType === "ROAD_WORK") radius = 42
+    // จุดใหญ่แบบเป็นโซนเดียว
+    let baseRadius = 35
+
+    if (z.level === "MEDIUM") baseRadius = 50
+    if (z.level === "HIGH") baseRadius = 65
+    if (z.level === "SEVERE") baseRadius = 82
+
+    // ขยายตามจำนวนจุดในโซน
+    const finalRadius = baseRadius + Math.min(Number(z.count || 0), 10) * 6
 
     const marker = L.circle([z.lat, z.lng], {
-      radius: radius + Math.min(Number(z.count || 0), 12) * 8,
+      radius: finalRadius,
       color: borderInfo.color,
       fillColor: levelColor,
-      fillOpacity: 0.22,
-      weight: 3
+      fillOpacity: 0.28,
+      weight: 4
     }).addTo(map)
 
     marker.bindPopup(
-      `<b>${z.level || "LOW"} RISK ZONE</b><br>` +
-      `Main type: ${dominantType}<br>` +
+      `<b>${z.level} RISK ZONE</b><br>` +
+      `Main type: ${z.dominantType}<br>` +
       `Point count: ${z.count}<br>` +
       `Hard brake: ${Number(z.hardBrakeCount || 0)}<br>` +
       `Brake: ${Number(z.brakeCount || 0)}<br>` +
@@ -671,11 +673,6 @@ function addRoughRoadZone(rowOrLat, lngArg = null) {
 }
 
 function rebuildZonesFromDataset() {
-  const existingZoneMap = new Map()
-  dangerZones.forEach((z) => {
-    existingZoneMap.set(z.id, z)
-  })
-
   const validRows = dataset.filter((row) => {
     const label = normalizeEventLabel(row.label, row.type)
     return (
@@ -699,7 +696,8 @@ function rebuildZonesFromDataset() {
       const c = clusters[i]
       const dist = getDistanceMeters(lat, lng, c.centerLat, c.centerLng)
 
-      if (dist <= 40) {
+      // ระยะรวมจุดใกล้กันเป็นโซนเดียว
+      if (dist <= 55) {
         c.rows.push(row)
         c.totalScore += eventScore
         c.centerLat = (c.centerLat * (c.rows.length - 1) + lat) / c.rows.length
@@ -731,11 +729,7 @@ function rebuildZonesFromDataset() {
     }
   })
 
-  const newZones = clusters.map((c, index) => {
-    const zoneId = "zone_cluster_" + index
-    const oldZone = existingZoneMap.get(zoneId)
-
-    let dominantType = "BRAKE"
+  dangerZones = clusters.map((c, index) => {
     const counts = {
       HARD_BRAKE: c.hardBrakeCount,
       BRAKE: c.brakeCount,
@@ -744,48 +738,45 @@ function rebuildZonesFromDataset() {
       ROUGH_ROAD: c.roughRoadCount
     }
 
-    let maxType = "BRAKE"
+    let dominantType = "BRAKE"
     let maxCount = -1
 
     Object.entries(counts).forEach(([k, v]) => {
       if (v > maxCount) {
         maxCount = v
-        maxType = k
+        dominantType = k
       }
     })
-
-    dominantType = maxType
 
     if (c.potholeCount + c.roughRoadCount >= 4 || c.potholeCount >= 2 || c.roughRoadCount >= 3) {
       dominantType = "ROAD_WORK"
     }
 
-    const calculatedLevel = getZoneLevelFromScore(c.totalScore, c.rows.length)
+    const pointCount = c.rows.length
+    const totalScore = c.totalScore
+
+    let level = "LOW"
+    if (totalScore >= 20 || c.hardBrakeCount >= 5) level = "SEVERE"
+    else if (totalScore >= 12 || c.hardBrakeCount >= 3) level = "HIGH"
+    else if (totalScore >= 6 || pointCount >= 4) level = "MEDIUM"
 
     return {
-      id: zoneId,
+      id: "zone_cluster_" + index,
       lat: c.centerLat,
       lng: c.centerLng,
-      type: dominantType,
       dominantType,
-      level: oldZone ? getPersistentZoneLevel(oldZone.level, c.totalScore / c.rows.length) : calculatedLevel,
-      count: c.rows.length,
-      totalScore: c.totalScore,
-      scoreEMA: c.totalScore / c.rows.length,
+      level,
+      count: pointCount,
+      totalScore,
       hardBrakeCount: c.hardBrakeCount,
       brakeCount: c.brakeCount,
       slowBrakeCount: c.slowBrakeCount,
       potholeCount: c.potholeCount,
       roughRoadCount: c.roughRoadCount,
-      createdAt: oldZone?.createdAt || Date.now(),
+      createdAt: Date.now(),
       updatedAt: Date.now()
     }
   })
-
-  dangerZones = newZones.map((z) => ({
-    ...z,
-    level: getZoneLevelFromScore(z.totalScore, z.count)
-  }))
 
   saveDangerZones()
   renderDangerZones()
